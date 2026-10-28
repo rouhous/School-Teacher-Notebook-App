@@ -2623,6 +2623,11 @@ function applySchedGridImport(){
   db.schedule.push(...newSlots);
   db.scheduleView='data';
   db.onboarded=true;
+  // Preserve existing class/student-linked records by keeping stable identifiers whenever possible.
+  const priorClassByName=new Map(previousClasses.map(c=>[c.name,c.id]));
+  for(const c of db.classes){const oldId=priorClassByName.get(c.name);if(oldId){const newId=c.id;c.id=oldId;db.students.forEach(st=>{if(st.classId===newId)st.classId=oldId;});}}
+  const priorByNumber=new Map(previousStudents.filter(st=>st.studentNumber).map(st=>[st.studentNumber,st.id]));
+  db.students.forEach(st=>{if(priorByNumber.has(st.studentNumber))st.id=priorByNumber.get(st.studentNumber)});
   save();
   closeM();
   go('home');
@@ -3725,7 +3730,7 @@ window.openM=function(type,data){
  if(type==='settings'){
   const box=document.getElementById('modalBox');
   box.innerHTML='<div class="modal-head"><h3>إعدادات التنبيهات</h3><button class="modal-x" onclick="closeM()">×</button></div><div class="school-managed-notice">تتم إدارة الجدول وأوقات الحصص والصفوف مركزيًا بواسطة المشرف.</div><p>لضبط التنبيهات استخدم إعدادات المنبه الموجودة في الدفتر. النسخ الاحتياطي المحلي متاح من قسم حماية البيانات.</p><button class="btn btn-primary btn-block" onclick="closeM()">إغلاق</button>';
-  document.getElementById('modalOverlay')?.classList.add('show');
+  document.getElementById('modalBg')?.classList.add('open');
   return;
  }
  return originalOpenM(type,data);
@@ -3744,7 +3749,7 @@ async function syncManaged(){
   managedRoster=Array.isArray(roster)?roster:[];
   loaded=true;
   // School-controlled rosters: do not import old local class lists.
-  db.classes=[];db.students=[];db.schedule=[];
+  if(!managedRoster.length){replaceHome();return;}const previousClasses=db.classes.slice(),previousStudents=db.students.slice();db.classes=[];db.students=[];
   const ids=new Map();
   for(const st of managedRoster){
    if(!st||!st.classId||!st.name)continue;
