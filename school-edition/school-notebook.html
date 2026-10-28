@@ -668,7 +668,7 @@ function teacherTodayCards(){
  items.forEach(x=>{
   const cls=db.classes.find(c=>c.id===x.classId);
   const duty=x.dutyPriority||'';
-  const title=duty||String(cls?.name||'').replace(/\\s*\\/\\s*1\\s*$/,'');
+  const title=duty||String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'');
   const key=today+'_'+x.periodId;
   html+='<button class="today-lesson" onclick="openDatedPeriodNote('+Number(x.day)+','+Number(x.periodId)+')"><strong>'+(db.lang==='ar'?'ح':'P')+escHTML(x.periodId)+' · '+escHTML(title)+'</strong><small>'+(notes[key]?'📝 ':'')+(db.lang==='ar'?'إضافة ملاحظة':'Add note')+'</small></button>';
  });
@@ -677,7 +677,7 @@ function teacherTodayCards(){
 function openDatedPeriodNote(day,period){
  const date=prompt(db.lang==='ar'?'تاريخ الملاحظة (سنة-شهر-يوم)':'Note date (YYYY-MM-DD)',todayStr());
  if(date===null)return;
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||Number.isNaN(new Date(date+'T12:00:00').getTime())){toast('تاريخ غير صحيح');return}
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(new Date(date+'T12:00:00').getTime())){toast('تاريخ غير صحيح');return}
  db.dailyPeriodNotes=db.dailyPeriodNotes||{};
  const key=date+'_'+period;
  const value=prompt((db.lang==='ar'?'ملاحظة الحصة ':'Period note ')+period+' · '+date,db.dailyPeriodNotes[key]||'');
