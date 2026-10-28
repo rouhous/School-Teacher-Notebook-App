@@ -292,7 +292,13 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js', {scope:'./'}).catch(e => console.warn('Offline install unavailable:',e)));
 }
 </script>
-</head>
+<style>
+/* Mobile scrolling recovery: do not trap the document behind the fixed navigation. */
+html{height:auto!important;min-height:100%;overflow-y:auto!important;overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch}
+body{height:auto!important;min-height:100dvh;overflow-y:visible!important;touch-action:pan-y pinch-zoom}
+main,.page,.content{touch-action:pan-y pinch-zoom}
+select{max-width:100%;touch-action:auto}
+</style></head>
 <body data-lang="ar"><div id="schoolAuthCover"><div>جارٍ التحقق من حساب المعلم المدرسي…<p><a href="teacher-home.html">العودة إلى تسجيل الدخول</a></p></div></div>
 <div id="appLock" class="app-lock" aria-hidden="false">
   <div class="app-lock-card">
