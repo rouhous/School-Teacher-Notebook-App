@@ -55,6 +55,25 @@ section h2{font-size:1.1rem;margin:0 0 8px}
 table{max-width:100%;min-width:0}
 .table-scroll{max-width:100%;overflow-x:auto}
 @media(max-width:400px){header>a:not(:first-of-type){font-size:11px!important}header .official-banner{max-height:66px}}
+</style><style id="supervisor-responsive-final">
+:root{overflow-x:clip}
+html{width:100%;overflow-x:clip}
+body{width:100%;min-width:0;max-width:100%;overflow-x:clip;position:relative}
+main{display:block;inline-size:100%!important;max-inline-size:100%!important;min-inline-size:0!important;box-sizing:border-box;margin:0!important;padding:8px!important;overflow:visible}
+main>header,main>section{inline-size:100%!important;max-inline-size:100%!important;min-inline-size:0!important;box-sizing:border-box;position:relative;inset-inline:0;transform:none}
+header{padding:12px!important;overflow:hidden}
+header .official-banner{display:block!important;inline-size:100%!important;max-inline-size:100%!important;height:auto!important;object-fit:contain}
+header h1{font-size:clamp(22px,5vw,30px)!important;white-space:normal!important;overflow-wrap:anywhere}
+header>a:not(:first-child){box-sizing:border-box!important;max-inline-size:calc(50% - 9px)!important;min-inline-size:0!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#data,#data>.grid,#schools{max-inline-size:100%!important;min-inline-size:0!important}
+#data>.grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+#data>.grid>section{min-inline-size:0!important;max-inline-size:100%!important}
+#data table{display:table!important;width:100%!important;min-width:0!important}
+#data .table-scroll,.supervisor-table-scroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+#data .supervisor-table-scroll table{min-width:520px!important;width:100%!important}
+#signin{max-width:100%;min-width:0;overflow:hidden}
+#signin iframe{max-width:100%!important}
+@media(max-width:600px){main{padding:7px!important}header{margin:0 0 8px!important}header p{margin:3px 0!important}section{padding:10px!important}#data>.grid>section{padding:8px 3px!important}}
 </style></head><body><main><header><img class="official-banner" src="../assets/official_school_banner.jpg" alt="الشعارات الرسمية للمدرسة ووزارة التربية والتعليم ورؤية عُمان 2040" loading="eager"><a href="../">الرئيسية</a><h1>لوحة المشرف المدرسي</h1><p style="color:#886a35;margin:5px 0">إدارة المعلمين والبيانات والصلاحيات</p><p>إدارة المدرستين والحسابات المعتمدة</p><a href="roster-admin.html">تعديل أسماء المعلمين</a> <a href="data-admin.html" style="display:inline-block;padding:9px 13px;border-radius:10px;background:#075b49;color:white;text-decoration:none;margin:5px 0">مركز البيانات والاستيراد</a> <a href="teacher-registration.html">تسجيل معلم</a> <a href="teacher-home.html">مساحة المعلم</a></header><section><h2>الدخول الآمن</h2><div id="signin"></div><button type="button" id="googleQuickEntry" style="display:none;margin:7px 0;padding:9px 14px;background:#e9f3ed;color:#07594a;border:1px solid #b5d1c1;border-radius:12px;font-size:14px">الدخول السريع بحساب Google المحفوظ</button><p id="status" role="status">جارٍ تحميل تسجيل الدخول باستخدام Google...</p><small id="help"></small></section><div id="data" hidden><div class="grid"><section><div>المعلمون في القوائم</div><div class="num" id="teachers">—</div></section><section><div>الحسابات المعتمدة</div><div class="num" id="approved">—</div></section><section><div>طلبات التسجيل المعلقة</div><div class="num" id="pending">—</div></section></div><section><h2>المدارس</h2><div id="schools"></div></section><section><h2>طلبات التسجيل</h2><div style="overflow-x:auto"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div><p id="empty"></p><button id="refresh">تحديث البيانات</button></section></div></main><script src="https://accounts.google.com/gsi/client" async defer></script><script src="./session-auth.js"></script><script>
 const $=id=>document.getElementById(id);let credential='';
 const base='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
@@ -69,4 +88,14 @@ let tries=0;const timer=setInterval(()=>{if(window.google?.accounts?.id){clearIn
 const restoredCredential=schoolAuthRestore();if(restoredCredential)onGoogle({credential:restoredCredential});
 </script><script>
 (function(){const b=document.getElementById('googleQuickEntry');if(!b)return;let tries=0;const timer=setInterval(()=>{if(window.google?.accounts?.id){clearInterval(timer);b.style.display='inline-block';b.onclick=()=>{try{google.accounts.id.prompt()}catch(e){b.textContent='استخدم زر Google لتسجيل الدخول'}}}else if(++tries>60)clearInterval(timer)},250)})();
+</script><script>
+(function(){
+function fixTables(){
+document.querySelectorAll('#data table').forEach(t=>{
+if(t.closest('.supervisor-table-scroll'))return;
+const w=document.createElement('div');w.className='supervisor-table-scroll';t.parentNode.insertBefore(w,t);w.appendChild(t);
+});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixTables);else fixTables();
+})();
 </script></body></html>
