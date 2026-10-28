@@ -384,7 +384,29 @@ footer{z-index:1!important}
  var url=innerWidth>800?'assets/school-home-desktop.webp':'assets/school-home-mobile.webp';
  var img=new Image();img.onload=function(){document.addEventListener('DOMContentLoaded',function(){document.querySelector('.site')?.classList.add('has-school-art')})};img.src=url;
 })();
-</script></head><body><div class="site">
+</script><style id="school-art-live-overlay-fix">
+/* Artwork is the static background. Login remains native and interactive. */
+.site.has-school-art{background-repeat:no-repeat!important;background-attachment:fixed!important}
+.site.has-school-art .masthead,.site.has-school-art .hero,.site.has-school-art footer,.site.has-school-art .features{visibility:hidden!important}
+.site.has-school-art .content{position:relative!important;z-index:5!important}
+.site.has-school-art .panel{visibility:visible!important;box-shadow:0 8px 28px #073b3224!important}
+.site.has-school-art #teacher-google,.site.has-school-art #teacher-google *{visibility:visible!important}
+.site.has-school-art #device-auth-test{display:none!important}
+@media(max-width:800px){
+ .site.has-school-art{height:100svh!important;min-height:100svh!important;overflow:hidden!important;background-size:100% 100%!important;display:flex!important;flex-direction:column!important;justify-content:center!important}
+ .site.has-school-art .masthead,.site.has-school-art .hero,.site.has-school-art footer{display:none!important}
+ .site.has-school-art .content{padding:0 3vw!important;margin:0 auto!important;display:block!important;flex:none!important;width:100%!important;max-width:550px!important}
+ .site.has-school-art .panel{padding:clamp(7px,1.5svh,14px)!important;margin:0!important}
+ .site.has-school-art .panel h2{font-size:clamp(1rem,4vw,1.3rem)!important;padding:7px!important}
+ .site.has-school-art .features,.site.has-school-art .access{display:none!important}
+}
+@media(min-width:801px){
+ .site.has-school-art{min-height:100vh!important;grid-template-rows:0 minmax(0,1fr) 0!important}
+ .site.has-school-art .masthead,.site.has-school-art .hero,.site.has-school-art footer{display:none!important}
+ .site.has-school-art .content{grid-column:2!important;grid-row:2!important;align-self:center!important}
+ .site.has-school-art .features,.site.has-school-art .access{display:none!important}
+}
+</style></head><body><div class="site">
 <header class="masthead"><div class="official-banner-wrap"><img src="assets/official_school_banner.jpg" alt="شعارات رؤية عُمان 2040 ومدرسة وادي الحواسنة ووزارة التربية والتعليم" loading="eager" decoding="async"></div></header>
 <section class="hero"><div class="school-scene" aria-hidden="true"></div><div class="school-floating-icons" aria-hidden="true"><span>♧</span><span>☼</span><span>▣</span></div><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
 <main class="content"><section class="panel" aria-labelledby="login-heading"><h2 id="login-heading">تسجيل الدخول / إنشاء حساب جديد</h2><label class="field" for="school"><span>المدرسة</span><select id="school"><option value="">اختر المدرسة أولًا</option><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><div id="teacher-google"></div><p id="teacher-status" role="status" aria-live="polite"></p><div class="actions"><a class="register" id="register" href="school-edition/teacher-registration.html">إنشاء حساب معلم جديد</a><button type="button" id="supervisor-pencil" aria-label="دخول المشرف" title="دخول المشرف">✎</button></div><p class="hint">الدخول الآمن باستخدام Google. لا نطلب كلمة المرور داخل هذه الصفحة.</p></section>
