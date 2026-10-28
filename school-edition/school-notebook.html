@@ -3809,7 +3809,7 @@ async function syncManaged(){
   db.classes=[...scheduleClasses.values()];
   db.schedule=managedSchedule.filter(x=>x&&Number.isInteger(Number(x.weekday))&&Number.isInteger(Number(x.period))).map(x=>{
     const cls=scheduleClasses.get(String(x.classId||''));
-    return {day:Number(x.weekday),periodId:Number(x.period),classId:cls?.id||'',subject:String(x.subject||x.dutyPriority||''),dutyPriority:String(x.dutyPriority||''),type:cls?'lesson':'rest'};
+    return {day:Number(x.weekday),periodId:Number(x.period),classId:cls?.id||'',subject:String(x.subject||x.dutyPriority||''),dutyPriority:String(x.dutyPriority||(!cls&&/^[ABCD]$/i.test(String(x.subject||''))?x.subject:'')),type:cls?'lesson':'rest'};
   });
   db.scheduleView='data';
   db.onboarded=true;
