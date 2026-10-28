@@ -1,0 +1,61 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>دخول المعلم — النسخة الجديدة</title><style>:root{--g:#075d4e;--g2:#117b65;--gold:#c19c50}*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#e8f3ec,#fff9e9 65%,#f1e2c1);font:16px system-ui,Tahoma;color:#174d41;min-height:100vh}header{background:linear-gradient(120deg,#075345,#15816a);color:white;padding:25px 18px 65px;border-bottom:5px solid var(--gold)}.wrap{max-width:1050px;margin:auto}header h1{margin:12px 0 4px;font-size:clamp(1.6rem,5vw,2.4rem)}header a{color:#fff}main{max-width:1050px;margin:-40px auto 30px;padding:0 15px}.card{background:white;border:1px solid #e5d7b8;border-radius:19px;padding:22px;margin-bottom:15px;box-shadow:0 8px 24px #114b3217}.hero{border-top:5px solid var(--gold)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:13px}.grid .card{margin:0}.muted{color:#63756e}h2{font-size:1.2rem;color:var(--g)}.number{font-size:1.8rem;font-weight:800;color:var(--g)}.tag{display:inline-block;border:1px solid #d9c28c;background:#fff8e6;border-radius:99px;padding:6px 12px;font-size:.85rem}a{color:var(--g)}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.action{border:1px solid #b7d2c5;border-radius:10px;padding:10px 13px;text-decoration:none;font-weight:700}.action.primary{background:var(--g);color:white}#google{margin:15px 0;min-height:42px}ul{padding-right:22px}li{margin:6px 0}button{font:inherit;background:var(--g);color:white;border:0;border-radius:10px;padding:10px 16px}#status{line-height:1.8}@media(max-width:600px){header{padding-bottom:60px}.card{padding:17px}}</style><style>
+:root{--g:#0f766e;--g2:#0d9488;--gold:#b99549}
+body{background:#f1f6f5;font-family:Tajawal,system-ui,Tahoma;padding-bottom:85px}
+header{background:linear-gradient(135deg,#0f766e,#0b5954);padding:18px 18px 58px;border-bottom:3px solid var(--gold)}
+header h1{font-size:1.65rem}
+main{max-width:800px}
+.card{border:1px solid #e1eae8;border-radius:16px;box-shadow:0 3px 14px #164c4610}
+.hero{border-top:4px solid var(--gold)}
+.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.grid .card{min-height:150px}
+.grid h2{font-size:1rem}
+.number{font-size:1.35rem}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);display:flex;justify-content:space-around;padding:9px 5px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #d9e8e4;box-shadow:0 -4px 20px #134e4418;z-index:100}
+.bottom-nav button{flex:1;border:0;background:transparent;color:#56736d;font-size:.85rem;font-weight:700;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bottom-nav button.active{color:var(--g)}
+.bottom-nav button span{font-size:1.3rem}
+.module{display:none}
+.module.active{display:block}
+.notice{background:#f7f9f6;border-right:3px solid var(--gold);padding:12px;border-radius:8px}
+@media(max-width:480px){.grid .card{padding:13px;min-height:142px}.card{padding:15px}header{padding-bottom:53px}}
+</style><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet"><link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#075c4e"></head><body><header><div class="wrap"><a href="../">الرئيسية</a><h1>دفتر المعلم المدرسي</h1><div>مساحة المعلم · العام الدراسي 2026–2027</div></div></header><main><section class="card hero"><span class="tag">دخول Google الآمن</span><h2>حسابي المدرسي</h2><div id="google"></div><p id="status" role="status">جارٍ تهيئة تسجيل الدخول...</p><p id="help" class="muted">إذا استمر التحميل، افتح الصفحة في تبويب خاص أو امسح بيانات الموقع القديمة.</p><p class="muted"><a href="login-check.html">فحص تسجيل الدخول والنسخة المنشورة</a></p></section><div id="workspace" hidden><div id="module-home" class="module active"><section class="card"><h2 id="name"></h2><p id="role" class="muted"></p><div id="schools"></div><div class="actions"><a class="action primary" href="founder-dashboard.html" id="admin" hidden>لوحة المشرف المؤسس</a><a class="action" href="teacher-registration.html">التسجيل والحسابات</a></div></section><div class="grid"><section class="card"><h2>جدولي الأسبوعي</h2><div class="number">—</div><p class="muted"><span id="timetable-summary">جارٍ التحقق من الجدول المعتمد...</span></p></section><section class="card"><h2>الصفوف والطلاب</h2><div class="number">—</div><p class="muted"><span id="student-summary">جارٍ التحقق من قوائم الطلاب...</span></p></section><section class="card"><h2>حصص الاحتياط</h2><div class="number">—</div><p class="muted">ستظهر بعد اعتماد الجدول وتفعيل التوزيع.</p></section></div><section class="card"><h2>إجراءات المعلم</h2><p>ستُفعّل متابعة الحضور والدرجات والحصص بعد نشر الجداول وقوائم الطلاب من إدارة المدرسة.</p><p class="muted">لا تتوفر صلاحيات إضافة أو رفع صفوف أو طلاب أو جداول يدويًا.</p></section></div><section class="card module" id="module-att"><h2>الحضور والغياب</h2><p><a class="action primary" href="attendance.html">فتح سجل الحضور وحفظ الغياب</a></p><p class="notice"><span id="student-list">تُفعّل قوائم الحضور بعد نشر بيانات الطلاب المعتمدة من المشرف.</span></p></section><section class="card module" id="module-grades"><h2>الدرجات والتقييم</h2><p class="notice">ستظهر صفوفك وطلابك هنا بعد ربط القوائم المركزية. لا يُسمح برفع قوائم بديلة.</p></section><section class="card module" id="module-schedule"><h2>الجدول والحصص</h2><p class="notice"><span id="timetable-detail">جارٍ التحقق من بيانات الجدول...</span></p></section></div><section class="card" id="notapproved"><h2>لم يُفعّل حسابك بعد؟</h2><p>سجّل بحساب Google واطلب الانضمام إلى مدرستك. إذا كنت المشرف المؤسس، استخدم حسابك الحالي لعرض وضع المعلم.</p><a class="action" href="teacher-registration.html">صفحة التسجيل</a></section></main><nav class="bottom-nav" id="navigation" hidden aria-label="التنقل"><button class="active" data-target="home" onclick="showModule('home')"><span>⌂</span>الرئيسية</button><button data-target="schedule" onclick="showModule('schedule')"><span>▦</span>الجدول</button><button data-target="att" onclick="showModule('att')"><span>✓</span>الحضور</button><button data-target="grades" onclick="showModule('grades')"><span>▤</span>الدرجات</button></nav><script>function showModule(which){document.querySelectorAll('.module').forEach(x=>x.classList.toggle('active',x.id==='module-'+which));document.querySelectorAll('#navigation button').forEach(x=>x.classList.toggle('active',x.dataset.target===which));window.scrollTo({top:0,behavior:'smooth'})}</script><script>
+const $=id=>document.getElementById(id);
+async function loadStudents(token){try{const r=await fetch("https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-students",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({credential:token})});const j=await r.json();if(!r.ok||!j.ok)throw Error("FETCH_FAILED");const students=j.data||[];$("student-summary").textContent=students.length?students.length+" طالبًا مرتبطًا بصفوفك":"لم تُنشر قوائم طلاب لصفوفك بعد.";$("student-list").replaceChildren(...(students.length?students.map(x=>{const p=document.createElement("p");p.textContent=x.classId+" — "+x.name;return p}):[document.createTextNode("لم تتوفر قوائم طلاب معتمدة بعد.")]))}catch{$("student-summary").textContent="تعذر تحميل الطلاب";$("student-list").textContent="تعذر الاتصال بخدمة الطلاب."}}
+async function loadTimetable(token){try{const r=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-timetable',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:token})});const j=await r.json();if(!r.ok||!j.ok||!j.data.approved)throw Error('تعذر جلب الجدول');const slots=j.data.slots||[];$('timetable-summary').textContent=slots.length?'تم نشر '+slots.length+' حصة':'لم يُنشر جدول معتمد بعد.';const detail=$('timetable-detail');if(!slots.length){detail.textContent='الجدول قيد الاستيراد والتحقق لدى إدارة المدرسة.';return}const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];const table=document.createElement('div');slots.forEach(x=>{const p=document.createElement('p');p.textContent=(days[x.weekday]||'اليوم '+x.weekday)+' · الحصة '+x.period+' · '+(x.classId||'احتياط')+' · '+(x.subject||x.dutyPriority||'');table.append(p)});detail.replaceChildren(table)}catch{$('timetable-summary').textContent='تعذر تحميل الجدول';$('timetable-detail').textContent='تعذر الاتصال بخدمة الجداول.'}}
+async function onGoogle(result){$('status').textContent='جارٍ التحقق من الحساب...';$('workspace').hidden=true;try{const r=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:result.credential})});const j=await r.json();if(!r.ok||!j.ok)throw Error('تعذر التحقق من الحساب. حاول مجددًا.');const d=j.data;if(!d.approved){$('status').textContent='الحساب غير معتمد بعد. أرسل طلب تسجيل وانتظر موافقة المشرف.';return}$('name').textContent='مرحبًا، '+d.name;$('role').textContent=d.role==='founder'?'حساب مزدوج: معلم ومشرف مؤسس':d.role==='supervisor'?'حساب معلم ومشرف':'معلم معتمد';$('admin').hidden=!['founder','supervisor'].includes(d.role);$('schools').replaceChildren(...d.schools.map(x=>{const p=document.createElement('p');p.className='tag';p.textContent=x.name;return p}));$('workspace').hidden=false;loadTimetable(result.credential);loadStudents(result.credential);$('navigation').hidden=false;$('notapproved').hidden=true;$('status').textContent='تم التحقق من الحساب بنجاح.'}catch(e){$('status').textContent=e.message}}
+const GOOGLE_SRC='https://accounts.google.com/gsi/client';
+let loginTimer=null;
+function loginMessage(message){$('status').textContent=message}
+function retryButton(){
+ const btn=document.createElement('button');btn.type='button';btn.textContent='إعادة محاولة تسجيل الدخول';
+ btn.style.cssText='display:block;margin:12px auto;padding:12px 18px;border:1px solid #b89445;border-radius:10px;background:#07594b;color:white;cursor:pointer';
+ btn.onclick=()=>initializeLogin();return btn;
+}
+function loginFailed(message){
+ if(loginTimer){clearTimeout(loginTimer);loginTimer=null}
+ loginMessage(message);$('help').replaceChildren(retryButton());
+}
+function initializeLogin(){
+ if(loginTimer){clearTimeout(loginTimer);loginTimer=null}
+ $('help').replaceChildren();$('google').replaceChildren();
+ loginMessage('إصدار 26 — جارٍ تحميل خدمة Google...');
+ if(window.google?.accounts?.id){renderGoogle();return}
+ document.querySelectorAll('script[data-school-google]').forEach(el=>el.remove());
+ const script=document.createElement('script');
+ script.dataset.schoolGoogle='1';script.src=GOOGLE_SRC;script.async=true;
+ script.onload=()=>{if(loginTimer){clearTimeout(loginTimer);loginTimer=null}renderGoogle()};
+ script.onerror=()=>loginFailed('تعذر تنزيل خدمة Google. تحقق من اتصال الإنترنت ثم أعد المحاولة.');
+ document.head.append(script);
+ loginTimer=setTimeout(()=>loginFailed('انتهت مهلة تحميل Google بعد 12 ثانية. يمكنك إعادة المحاولة.'),12000);
+}
+function renderGoogle(){
+ if(loginTimer){clearTimeout(loginTimer);loginTimer=null}
+ try{
+  if(!window.google?.accounts?.id)throw Error('مكتبة Google غير متاحة');
+  google.accounts.id.initialize({client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:onGoogle});
+  google.accounts.id.renderButton($('google'),{theme:'outline',size:'large',width:260});
+  loginMessage('اختر حساب Google لتسجيل الدخول.');
+ }catch(e){loginFailed('تعذر تهيئة Google: '+(e?.message||'خطأ غير معروف'))}
+}
+initializeLogin();
+</script><script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.filter(r=>r.scope.includes('/school-edition/')).map(r=>r.unregister()))).catch(()=>{});}</script></body></html>
