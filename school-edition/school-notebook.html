@@ -3695,4 +3695,68 @@ scheduleAlarmChecker();
   const a=document.createElement('a');a.href='teacher-home.html';a.textContent='العودة إلى تسجيل الدخول';cover.append(document.createElement('p'),a);
  }
 })();
+</script><style id="school-managed-ui">
+#school-managed-schedule{margin:12px 0}
+.school-managed-notice{padding:14px;border:1px solid #b7d9d0;border-radius:14px;background:#effaf6;color:#075d4e;margin:12px 0}
+button[onclick*="openM('addClass'"],button[onclick*="openM('importSched'"],button[onclick*="openM('importStudents'"],button[onclick*="loadSample()"],button[onclick*="openM('editPeriods'"],button[onclick*="openM('addStudent'"]{display:none!important}
+</style>
+<script id="school-managed-integration">
+(function(){
+const originalOpenM=window.openM;
+const forbidden=new Set(['addClass','editClass','addStudent','editStudent','importSched','importStudents','editPeriods','schedGrid','schedImage','schedImport','addPeriod']);
+const schoolApi='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
+let managedSchedule=[],managedRoster=[],loaded=false;
+function statusMessage(message){const node=document.getElementById('school-managed-status');if(node)node.textContent=message;}
+function managedHTML(){
+ const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+ if(!loaded)return '<div class="school-managed-notice" id="school-managed-status">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
+ if(!managedSchedule.length)return '<div class="school-managed-notice">لم تنشر إدارة المدرسة جدولًا معتمدًا لهذا الحساب بعد. لا يمكن إضافة جدول يدويًا.</div>';
+ const rows=managedSchedule.slice().sort((a,b)=>Number(a.weekday)-Number(b.weekday)||Number(a.period)-Number(b.period));
+ return '<div class="card" id="school-managed-schedule"><h3>الجدول المعتمد من إدارة المدرسة</h3><div style="overflow:auto"><table class="sched-compact"><thead><tr><th>اليوم</th><th>الحصة</th><th>الصف</th><th>المادة</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+escHTML(days[x.weekday]||String(x.weekday))+'</td><td>'+escHTML(String(x.period||''))+'</td><td>'+escHTML(String(x.classId||'احتياط'))+'</td><td>'+escHTML(String(x.subject||x.dutyPriority||''))+'</td></tr>').join('')+'</tbody></table></div></div>';
+}
+function replaceHome(){
+ const body=document.getElementById('homeBody');if(!body)return;
+ body.innerHTML=managedHTML();
+}
+window.renderHome=replaceHome;
+window.loadSample=function(){toast('البيانات التجريبية غير متاحة في النسخة المدرسية.')};
+window.openM=function(type,data){
+ if(forbidden.has(type)){toast('إدارة الصفوف والطلاب والجداول من صلاحيات المشرف فقط.');return;}
+ if(type==='settings'){
+  const box=document.getElementById('modalBox');
+  box.innerHTML='<div class="modal-head"><h3>إعدادات التنبيهات</h3><button class="modal-x" onclick="closeM()">×</button></div><div class="school-managed-notice">تتم إدارة الجدول وأوقات الحصص والصفوف مركزيًا بواسطة المشرف.</div><p>لضبط التنبيهات استخدم إعدادات المنبه الموجودة في الدفتر. النسخ الاحتياطي المحلي متاح من قسم حماية البيانات.</p><button class="btn btn-primary btn-block" onclick="closeM()">إغلاق</button>';
+  document.getElementById('modalOverlay')?.classList.add('show');
+  return;
+ }
+ return originalOpenM(type,data);
+};
+async function fetchApproved(path){
+ const response=await fetch(schoolApi+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:schoolNotebookCredential})});
+ const result=await response.json();
+ if(!response.ok||!result.ok)throw Error('تعذر تحميل بيانات المدرسة المعتمدة');
+ return result.data;
+}
+async function syncManaged(){
+ try{
+  const [table,roster]=await Promise.all([fetchApproved('school-teacher-timetable'),fetchApproved('school-teacher-students')]);
+  if(!table?.approved)throw Error('الحساب غير معتمد لعرض الجدول');
+  managedSchedule=Array.isArray(table.slots)?table.slots:[];
+  managedRoster=Array.isArray(roster)?roster:[];
+  loaded=true;
+  // School-controlled rosters: do not import old local class lists.
+  db.classes=[];db.students=[];db.schedule=[];
+  const ids=new Map();
+  for(const st of managedRoster){
+   if(!st||!st.classId||!st.name)continue;
+   const key=String(st.schoolId||'')+'|'+String(st.classId);
+   if(!ids.has(key)){const id='school-'+key;ids.set(key,id);db.classes.push({id,name:String(st.classId),subject:''})}
+   db.students.push({id:'school-student-'+String(st.studentCode||key+'|'+st.name),name:String(st.name),classId:ids.get(key),studentNumber:String(st.studentCode||'')});
+  }
+  db.onboarded=true;
+  save();
+  replaceHome();
+ }catch(e){loaded=true;managedSchedule=[];replaceHome();const body=document.getElementById('homeBody');body.insertAdjacentHTML('afterbegin','<div class="school-managed-notice">تعذر جلب البيانات المعتمدة. لم يتم تعديل القوائم المحلية. حاول إعادة فتح التطبيق بعد التحقق من الاتصال.</div>');}
+}
+setTimeout(syncManaged,250);
+})();
 </script></body></html>
