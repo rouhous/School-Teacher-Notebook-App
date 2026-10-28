@@ -3808,9 +3808,17 @@ async function syncManaged(){
   }
   // Never erase the teacher's existing work when the central roster is temporarily empty.
   if(nextStudents.length){
-    db.classes=nextClasses;db.students=nextStudents;
-    db.onboarded=true;save();
+    // Merge approved roster into existing classes; do not erase timetable-only classes.
+    const mergedClasses=new Map((db.classes||[]).map(c=>[String(c.id),c]));
+    nextClasses.forEach(c=>mergedClasses.set(String(c.id),c));
+    db.classes=[...mergedClasses.values()];
+    const mergedStudents=new Map((db.students||[]).map(st=>[String(st.id),st]));
+    nextStudents.forEach(st=>mergedStudents.set(String(st.id),st));
+    db.students=[...mergedStudents.values()];
+    db.onboarded=true;
   }
+  // Persist the approved timetable even when no student list has been returned.
+  save();
   replaceHome();
  }catch(e){loaded=true;managedSchedule=[];replaceHome();const body=document.getElementById('homeBody');body.insertAdjacentHTML('afterbegin','<div class="school-managed-notice">تعذر جلب البيانات المعتمدة. لم يتم تعديل القوائم المحلية. حاول إعادة فتح التطبيق بعد التحقق من الاتصال.</div>');}
 }
