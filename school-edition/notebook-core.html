@@ -1023,23 +1023,34 @@ function exportAttReport(){
   <div class="sum"><span>${t('presentCount')}: ${p}</span><span>${t('absentCount')}: ${a}</span><span>${t('lateCount')}: ${l}</span><span>${t('excusedCount')}: ${e}</span></div>
   <table><thead><tr><th>#</th><th>${t('studentName')}</th><th>${t('studentNumber')}</th><th>${t('attendance')}</th></tr></thead><tbody>${rows}</tbody></table>
   <script>setTimeout(()=>window.print(),400)<\/script><script id="school-approved-roster-bridge">
-/* School roster is imported only after the teacher explicitly confirms. */
 window.addEventListener('message',function(event){
- if(event.origin!==location.origin||event.source!==window.parent||!event.data||event.data.type!=='SCHOOL_ROSTER_IMPORT_V1')return;
+ if(event.origin!==location.origin||event.source!==window.parent||event.data?.type!=='SCHOOL_ROSTER_IMPORT_V1')return;
  const items=event.data.students;
- if(!Array.isArray(items)||items.length>3000||!items.every(x=>x&&typeof x.name==='string'&&typeof x.classId==='string'&&x.name.length<=160&&x.classId.length<=80))return;
- const classes=[...new Set(items.map(x=>x.classId.trim()).filter(Boolean))];
- if(!classes.length)return;
- if(!confirm('استيراد '+items.length+' طالبًا من قوائم المدرسة المعتمدة إلى نسخة الدفتر المحلية؟ ستُضاف السجلات الناقصة فقط، ولن تُحذف بياناتك الحالية.'))return;
+ if(!Array.isArray(items)||items.length>3000||!items.every(x=>x&&typeof x.name==='string'&&typeof x.classId==='string'&&typeof x.schoolId==='string'&&x.name.length<=160&&x.classId.length<=80&&x.schoolId.length<=80))return;
+ const rows=items.filter(x=>x.name.trim()&&x.classId.trim()&&x.schoolId.trim());
+ if(!rows.length)return;
+ const classKey=x=>x.schoolId.trim()+' / '+x.classId.trim();
+ const classes=[...new Set(rows.map(classKey))];
+ if(!confirm('استيراد '+rows.length+' طالبًا إلى الدفتر المحلي؟ ستُفصل صفوف المدارس المختلفة ولن تُحذف البيانات الحالية.'))return;
  try{
   const existingClasses=new Map(db.classes.map(c=>[String(c.name).trim(),c.id]));
   let addedClasses=0,addedStudents=0;
   for(const name of classes){if(!existingClasses.has(name)){const id=uid();db.classes.push({id,name,subject:''});existingClasses.set(name,id);addedClasses++}}
-  const existing=new Set(db.students.map(st=>String(st.classId)+'|'+String(st.studentNumber||'').trim()+'|'+String(st.name||'').trim()));
-  for(const st of items){const classId=existingClasses.get(st.classId.trim());if(!classId)continue;const number=String(st.studentCode||'').trim().slice(0,80);const name=st.name.trim();if(!name)continue;const key=classId+'|'+number+'|'+name;if(existing.has(key))continue;db.students.push({id:uid(),name,classId,phone:'',studentNumber:number,city:'',village:''});existing.add(key);addedStudents++}
-  db.onboarded=true;save();renderHome();if(typeof renderClasses==='function')renderClasses();
-  alert('تمت إضافة '+addedClasses+' صفوف و'+addedStudents+' طلاب إلى الدفتر المحلي. لا تعني هذه العملية تفعيل المزامنة السحابية المدرسية.');
- }catch(e){alert('تعذر الاستيراد. لم يكتمل تحديث القوائم.')}
+  const existingCodes=new Set(db.students.filter(st=>String(st.studentNumber||'').trim()).map(st=>String(st.classId)+'|'+String(st.studentNumber).trim()));
+  const existingNames=new Set(db.students.map(st=>String(st.classId)+'|'+String(st.name||'').trim()));
+  for(const st of rows){
+   const classId=existingClasses.get(classKey(st));if(!classId)continue;
+   const number=String(st.studentCode||'').trim().slice(0,80),name=st.name.trim();
+   const codeKey=classId+'|'+number,nameKey=classId+'|'+name;
+   if((number&&existingCodes.has(codeKey))||existingNames.has(nameKey))continue;
+   db.students.push({id:uid(),name,classId,phone:'',studentNumber:number,city:'',village:''});
+   if(number)existingCodes.add(codeKey);existingNames.add(nameKey);addedStudents++;
+  }
+  db.onboarded=true;
+  if(!save())throw Error('SAVE_FAILED');
+  renderHome();if(typeof renderClasses==='function')renderClasses();
+  alert('تمت إضافة '+addedClasses+' صفوف و'+addedStudents+' طلاب محليًا. لم تُفعّل المزامنة المدرسية بعد.');
+ }catch(e){alert('تعذر إتمام الاستيراد. تحقق من البيانات والحفظ المحلي.')}
 });
 </script></body></html>`);
   w.document.close();
