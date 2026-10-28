@@ -3556,10 +3556,15 @@ function cellMenuNote(day,periodId){
   if(!db.periodNotes)db.periodNotes={};
   const key=day+'_'+periodId;
   const cur=db.periodNotes[key]||'';
-  const text=prompt(db.lang==='ar'?'ملاحظة لهذه الحصة:':'Note for this period:',cur);
+  const date=prompt(db.lang==='ar'?'تاريخ الملاحظة (YYYY-MM-DD)':'Note date (YYYY-MM-DD)',todayStr());
+  if(date===null)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date+'T12:00:00'))){toast('تاريخ غير صحيح');return;}
+  db.dailyPeriodNotes=db.dailyPeriodNotes||{};
+  const datedKey=date+'_'+day+'_'+periodId;
+  const text=prompt(db.lang==='ar'?'ملاحظة الحصة في '+date+':':'Period note on '+date+':',db.dailyPeriodNotes[datedKey]||cur);
   if(text===null)return;
-  if(text.trim())db.periodNotes[key]=text.trim();
-  else delete db.periodNotes[key];
+  if(text.trim())db.dailyPeriodNotes[datedKey]=text.trim();
+  else delete db.dailyPeriodNotes[datedKey];
   save();
   document.getElementById('cellMenuBg')?.remove();
   toast('✓');
@@ -3880,6 +3885,13 @@ window.openM=function(type,data){
   const box=document.getElementById('modalBox');
   box.innerHTML=`<div class="modal-head"><h3>إعدادات المنبه والنسخ المحلي</h3><button class="modal-x" onclick="closeM()">×</button></div>
   <div class="school-managed-notice">الجدول وأوقات الحصص والصفوف والطلاب تُدار من المشرف فقط.</div>
+  <div class="form-group theme-settings" style="padding:12px;border:1px solid var(--bd);border-radius:14px;margin-top:12px">
+    <label style="font-weight:800">🎨 ألوان التطبيق</label>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px">
+      <label>اللون الأساسي <input type="color" value="${db.teacherTheme?.primary||'#0f766e'}" onchange="setTeacherTheme('primary',this.value)"></label>
+      <label>اللون الثاني <input type="color" value="${db.teacherTheme?.secondary||'#14b8a6'}" onchange="setTeacherTheme('secondary',this.value)"></label>
+    </div><small>تُحفظ الألوان فور اختيارها.</small>
+  </div>
   <div class="form-group"><label><input id="schoolAlarmEnabled" type="checkbox" ${db.alarmEnabled!==false?'checked':''}> تفعيل تنبيهات الحصص</label></div>
   <div class="form-group"><label>التنبيه قبل بداية الحصة (دقائق)</label><input id="schoolAlarmBefore" type="number" min="0" max="60" value="${Number(db.alarmBeforeMin??5)}"></div>
   <div class="form-group"><label>التنبيه قبل نهاية الحصة (دقائق)</label><input id="schoolAlarmEnd" type="number" min="0" max="30" value="${Number(db.alarmBeforeEndMin??5)}"></div>
