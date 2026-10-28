@@ -1033,21 +1033,23 @@ window.addEventListener('message',function(event){
  const classes=[...new Set(rows.map(classKey))];
  if(!confirm('استيراد '+rows.length+' طالبًا إلى الدفتر المحلي؟ ستُفصل صفوف المدارس المختلفة ولن تُحذف البيانات الحالية.'))return;
  try{
-  const existingClasses=new Map(db.classes.map(c=>[String(c.name).trim(),c.id]));
+  const nextClasses=db.classes.map(x=>({...x}));const nextStudents=db.students.map(x=>({...x}));
+  const existingClasses=new Map(nextClasses.map(c=>[String(c.name).trim(),c.id]));
   let addedClasses=0,addedStudents=0;
-  for(const name of classes){if(!existingClasses.has(name)){const id=uid();db.classes.push({id,name,subject:''});existingClasses.set(name,id);addedClasses++}}
-  const existingCodes=new Set(db.students.filter(st=>String(st.studentNumber||'').trim()).map(st=>String(st.classId)+'|'+String(st.studentNumber).trim()));
-  const existingNames=new Set(db.students.map(st=>String(st.classId)+'|'+String(st.name||'').trim()));
+  for(const name of classes){if(!existingClasses.has(name)){const id=uid();nextClasses.push({id,name,subject:''});existingClasses.set(name,id);addedClasses++}}
+  const existingCodes=new Set(nextStudents.filter(st=>String(st.studentNumber||'').trim()).map(st=>String(st.classId)+'|'+String(st.studentNumber).trim()));
+  const existingNames=new Set(nextStudents.map(st=>String(st.classId)+'|'+String(st.name||'').trim()));
   for(const st of rows){
    const classId=existingClasses.get(classKey(st));if(!classId)continue;
    const number=String(st.studentCode||'').trim().slice(0,80),name=st.name.trim();
    const codeKey=classId+'|'+number,nameKey=classId+'|'+name;
    if((number&&existingCodes.has(codeKey))||existingNames.has(nameKey))continue;
-   db.students.push({id:uid(),name,classId,phone:'',studentNumber:number,city:'',village:''});
+   nextStudents.push({id:uid(),name,classId,phone:'',studentNumber:number,city:'',village:''});
    if(number)existingCodes.add(codeKey);existingNames.add(nameKey);addedStudents++;
   }
-  db.onboarded=true;
-  if(!save())throw Error('SAVE_FAILED');
+  const next={...db,classes:nextClasses,students:nextStudents,onboarded:true};
+  localStorage.setItem('tnb_v4',JSON.stringify(next));
+  db=next;if(window.cloudMarkDirty)cloudMarkDirty();
   renderHome();if(typeof renderClasses==='function')renderClasses();
   alert('تمت إضافة '+addedClasses+' صفوف و'+addedStudents+' طلاب محليًا. لم تُفعّل المزامنة المدرسية بعد.');
  }catch(e){alert('تعذر إتمام الاستيراد. تحقق من البيانات والحفظ المحلي.')}
