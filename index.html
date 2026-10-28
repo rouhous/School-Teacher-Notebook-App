@@ -184,6 +184,45 @@ footer{padding:clamp(7px,1.1svh,15px) 12px!important;margin-top:clamp(5px,1svh,1
 }
 @media(max-width:360px){.features{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(min-width:701px){#device-auth-test{display:none!important}}
+</style><style id="reference-inspired-layout-v2">
+/* Main reference: cream canvas, emerald/gold ribbons, right welcome and left login on desktop. */
+.site{background:linear-gradient(160deg,#fffdf4 0%,#faf5e8 60%,#fffaf0 100%)!important;position:relative}
+.site:before{content:"";position:absolute;left:0;right:0;top:clamp(110px,17svh,175px);height:clamp(270px,45svh,470px);pointer-events:none;opacity:.36;background:radial-gradient(ellipse at 10% 78%,#c3a36b44,transparent 34%),radial-gradient(ellipse at 91% 65%,#d7bc7b33,transparent 37%);}
+.masthead{background:#fff9e9!important;border-top:7px solid #08745b!important;border-bottom:5px solid #c5a052!important;box-shadow:0 4px 0 #08745b24}
+.official-banner-wrap{background:#fffaf0!important;max-width:none!important}
+.official-banner-wrap img{object-fit:contain!important;max-width:min(100%,1450px)!important;width:100%!important;max-height:clamp(105px,20svh,200px)!important}
+@media(min-width:801px){
+ .site{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;align-items:center;column-gap:clamp(20px,4vw,70px)}
+ .masthead{grid-column:1/-1;grid-row:1}
+ .hero{grid-column:2;grid-row:2;width:100%!important;max-width:640px!important;justify-self:start;text-align:right!important;align-self:center;margin:0!important;padding:clamp(20px,4vw,65px) 3vw!important}
+ .hero .eyebrow{font-size:clamp(1.5rem,2.6vw,2.6rem)!important;color:#0a634d!important}
+ .hero h1{font-size:clamp(2rem,3.8vw,4rem)!important;line-height:1.3!important;color:#07553f!important;margin:12px 0 18px!important}
+ .hero p{font-size:clamp(.98rem,1.4vw,1.35rem)!important;line-height:1.9!important;margin:0!important;max-width:540px!important}
+ .hero .rule{justify-content:flex-start!important;margin-top:24px!important}
+ .content{grid-column:1;grid-row:2;width:100%!important;max-width:620px!important;justify-self:end;align-self:center;padding:18px clamp(12px,2vw,30px)!important;gap:clamp(12px,2vh,20px)!important}
+ .panel{width:100%!important;max-width:520px!important;padding:clamp(16px,2vw,25px)!important;box-shadow:0 18px 42px #143b271e!important}
+ .features{grid-column:unset;width:100%!important;max-width:570px!important}
+ .feature{padding:8px 3px!important}
+ .access{margin:0 auto!important}
+ footer{grid-column:1/-1;grid-row:3;width:100%;margin:0!important}
+}
+@media(max-width:800px){
+ .site{display:flex!important}
+ .hero{background:transparent!important;text-align:center!important}
+ .hero h1{color:#07563e!important}
+ .content{width:min(100%,520px)!important}
+ .panel{background:#fffefa!important}
+ .masthead{border-top-width:4px!important}
+ .official-banner-wrap img{max-height:clamp(75px,13svh,125px)!important;object-fit:contain!important}
+}
+@media(max-height:680px) and (min-width:801px){
+ .hero{padding:12px 2vw!important}
+ .hero h1{font-size:clamp(1.8rem,3vw,3rem)!important}
+ .content{padding:8px 18px!important;gap:6px!important}
+ .panel{padding:10px 15px!important}
+ .features{padding:4px!important}
+ .feature .symbol{width:32px!important;height:32px!important}
+}
 </style></head><body><div class="site">
 <header class="masthead"><div class="official-banner-wrap"><img src="assets/official_school_banner.jpg" alt="شعارات رؤية عُمان 2040 ومدرسة وادي الحواسنة ووزارة التربية والتعليم" loading="eager" decoding="async"></div></header>
 <section class="hero"><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
