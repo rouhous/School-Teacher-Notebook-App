@@ -28,8 +28,8 @@ let approvedRoster=[];let authGeneration=0;let activeCredential=null;let rosterR
 function scheduleAuthExpiry(credential,generation){
  if(authExpiryTimer)clearTimeout(authExpiryTimer);
  try{const payload=JSON.parse(atob(credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-  const remaining=payload.exp*1000-Date.now()-30000;
-  if(remaining<=0){switchTeacherAccount();return;}
+  const remaining=Number(payload.exp)*1000-Date.now()-30000;
+  if(!Number.isFinite(remaining)||remaining<=0){switchTeacherAccount();return;}
   authExpiryTimer=setTimeout(()=>{if(generation===authGeneration){switchTeacherAccount();$('status').textContent='انتهت صلاحية جلسة Google. يرجى تسجيل الدخول مجددًا.';}},Math.min(remaining,2147483647));
  }catch(e){switchTeacherAccount();}
 }
