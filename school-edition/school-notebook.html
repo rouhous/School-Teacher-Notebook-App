@@ -3718,7 +3718,7 @@ function managedHTML(){
  if(!loaded)return '<div class="school-managed-notice">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
  if(!managedSchedule.length)return '<div class="school-managed-notice">لم يتوفر جدول منشور لهذا الحساب. لن يتم تعديل بياناتك المحلية.</div>';
  // Reuse the ORIGINAL notebook's weekly timetable, rather than a separate school-only list.
- const weekly=buildScheduleTableHTML().replace(/\\s+onclick="[^"]*"/g,'');
+ const weekly=buildScheduleTableHTML().replace(/\s+onclick="[^"]*"/g,'');
  return '<div class="card" id="school-managed-schedule"><h3 style="text-align:center;margin-bottom:12px">الجدول الأسبوعي المعتمد</h3><div style="width:100%;overflow-x:auto">'+weekly+'</div></div>';
 }
 function replaceHome(){
