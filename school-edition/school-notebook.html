@@ -3894,7 +3894,7 @@ function schoolDutyLabel(day,period){
  if(!slot)return '';
  const code=String(slot.dutyPriority||slot.subject||'').trim().toUpperCase();
  if(!/^[ABCD]$/.test(code))return '';
- return slot.coverApproved===true?'حصة احتياط · '+code:'احتياط '+code;
+ return code;
 }
 // Browser back should never silently discard the teacher's session.
 (function protectTeacherBack(){
