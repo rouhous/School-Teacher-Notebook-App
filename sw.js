@@ -1,5 +1,5 @@
-const VERSION='school-pwa-v8-offline-first-home';
-const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean.webp'];
+const VERSION='school-pwa-v9-pc-clean2';
+const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)));
  self.skipWaiting();
@@ -21,7 +21,7 @@ self.addEventListener('fetch',event=>{
    })());
    return;
  }
- if(/\/assets\/school-home-reference-clean(?:1\.png|\.webp)$/.test(u.pathname)){
+ if(/\/assets\/school-home-reference-clean(?:1\.png|2\.png)$/.test(u.pathname)){
    event.respondWith((async()=>{
      const cache=await caches.open(VERSION);
      const local=await cache.match(u.pathname);
