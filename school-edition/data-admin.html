@@ -291,7 +291,7 @@ async function loadRosterReview(){
 }
 $('loadPending').onclick=loadRosterReview;
 $('school').addEventListener('change',()=>{$('reviewClasses').replaceChildren();$('reviewMessage').textContent='اختر عرض القوائم للمراجعة للمدرسة المحددة.'});
-function onGoogle(r){if(!r?.credential)return;credential=r.credential;schoolAuthSave(credential);$('status').textContent='تم تسجيل الدخول. جارٍ جلب القوائم...';loadRosterReview();$('publish').disabled=!rows.length}
+function onGoogle(r){if(!r?.credential)return;document.querySelector('.auth-card')?.setAttribute('hidden','');credential=r.credential;schoolAuthSave(credential);$('status').textContent='تم تسجيل الدخول. جارٍ جلب القوائم...';loadRosterReview();$('publish').disabled=!rows.length}
 const savedSupervisorCredential=schoolAuthRestore();if(savedSupervisorCredential)onGoogle({credential:savedSupervisorCredential});
 // Google sign-in is initialized in a separate script so an import-parser error cannot hide the login button.
 
