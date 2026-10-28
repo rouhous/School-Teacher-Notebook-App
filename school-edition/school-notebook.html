@@ -3796,13 +3796,13 @@ async function syncManaged(){
     if(!st||!st.classId||!st.name)continue;
     const key=String(st.schoolId||'')+'|'+String(st.classId);
     if(!ids.has(key)){
-      const prior=classByKey.get(key)||previousClasses.find(c=>c.name===String(st.classId));
+      const prior=classByKey.get(key)||previousClasses.find(c=>c.name===String(st.classId)&&(!c.schoolRosterKey||c.schoolRosterKey===key));
       const id=prior?.id||'school-'+key;
       ids.set(key,id);
       nextClasses.push({...prior,id,name:String(st.classId),schoolRosterKey:key,subject:prior?.subject||''});
     }
     const code=String(st.studentCode||'');
-    const prior=code?studentByCode.get(code):null;
+    const prior=code?studentByCode.get(code):previousStudents.find(x=>x.classId===ids.get(key)&&x.name===String(st.name));
     const id=prior?.id||'school-student-'+(code||key+'|'+st.name);
     nextStudents.push({...prior,id,name:String(st.name),classId:ids.get(key),studentNumber:code});
   }
@@ -3817,6 +3817,13 @@ async function syncManaged(){
     db.students=[...mergedStudents.values()];
     db.onboarded=true;
   }
+  // Keep schedule references pointing to the same class IDs as approved students.
+  const rosterClassIds=new Map(nextClasses.map(c=>[String(c.name),c.id]));
+  db.schedule=db.schedule.map(slot=>{
+    const cls=db.classes.find(c=>c.id===slot.classId);
+    const rosterId=cls&&rosterClassIds.get(String(cls.name));
+    return rosterId?{...slot,classId:rosterId}:slot;
+  });
   // Persist the approved timetable even when no student list has been returned.
   save();
   replaceHome();
