@@ -3,7 +3,7 @@
   "name": "دفتر المعلم المدرسي | وادي الحواسنة",
   "short_name": "دفتر المدرسة",
   "description": "دفتر المعلم المدرسي - النسخة المستقلة",
-  "start_url": "/School-Teacher-Notebook-App/index.html?source=pwa",
+  "start_url": "/School-Teacher-Notebook-App/",
   "scope": "/School-Teacher-Notebook-App/",
   "display": "standalone",
   "background_color": "#fffdf7",
