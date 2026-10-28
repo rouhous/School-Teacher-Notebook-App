@@ -14,7 +14,7 @@
 const schoolNotebookCredential=schoolAuthRestore();
 const schoolNotebookSubject=(()=>{try{return String(JSON.parse(atob(schoolNotebookCredential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub||'')}catch{return ''}})();
 const schoolNotebookKey='school-notebook-v1:'+schoolNotebookSubject+':data';
-if(!schoolNotebookCredential||!schoolNotebookSubject)location.replace('teacher-home.html');
+if(!schoolNotebookCredential||!schoolNotebookSubject)location.replace('../');
 </script>
 <style>#appLock{display:none!important}#schoolAuthCover{position:fixed;inset:0;background:#f1f6f5;z-index:2147483646;display:grid;place-items:center;padding:24px;font:18px Tahoma;color:#075d4e;text-align:center}#schoolAuthCover a{color:#075d4e}</style>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -332,7 +332,7 @@ select{max-width:100%;touch-action:auto}
 @keyframes lessonGlow{from{filter:brightness(1)}to{filter:brightness(1.13)}}
 @media(prefers-reduced-motion:reduce){.sched-vertical td.lesson-start-now,.today-lesson.lesson-start-now{animation:none}}
 </style></head>
-<body data-lang="ar"><div id="schoolAuthCover"><div>جارٍ التحقق من حساب المعلم المدرسي…<p><a href="teacher-home.html">العودة إلى تسجيل الدخول</a></p></div></div>
+<body data-lang="ar"><div id="schoolAuthCover"><div>جارٍ التحقق من حساب المعلم المدرسي…<p><a href="../">العودة إلى تسجيل الدخول</a></p></div></div>
 <div id="appLock" class="app-lock" aria-hidden="false">
   <div class="app-lock-card">
     <h2>دفتر المعلم</h2>
@@ -3838,7 +3838,7 @@ scheduleAlarmChecker();
   cover.remove();
  }catch(e){
   cover.textContent='تعذر التحقق من حساب المعلم. يرجى تسجيل الدخول من مساحة المعلم.';
-  const a=document.createElement('a');a.href='teacher-home.html';a.textContent='العودة إلى تسجيل الدخول';cover.append(document.createElement('p'),a);
+  const a=document.createElement('a');a.href='../';a.textContent='العودة إلى تسجيل الدخول';cover.append(document.createElement('p'),a);
  }
 })();
 </script><style id="school-managed-ui">
@@ -4011,7 +4011,7 @@ function schoolDutyLabel(day,period){
   const leave=window.confirm('هل تريد الخروج من دفتر المعلم؟');
   if(!leave){history.pushState(guard,'',location.href);return;}
   // Exit only on explicit confirmation; do not sign out or clear credentials.
-  location.replace('teacher-home.html');
+  location.replace('../');
  });
 })();
 
