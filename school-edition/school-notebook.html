@@ -298,7 +298,21 @@ html{height:auto!important;min-height:100%;overflow-y:auto!important;overscroll-
 body{height:auto!important;min-height:100dvh;overflow-y:visible!important;touch-action:pan-y pinch-zoom}
 main,.page,.content{touch-action:pan-y pinch-zoom}
 select{max-width:100%;touch-action:auto}
-</style></head>
+</style><style>
+:root{--teacher-gradient:linear-gradient(140deg,#0f766e,#14b8a6)}
+.sched-compact{border-collapse:separate!important;border-spacing:3px!important;width:100%;table-layout:fixed}
+.sched-compact th{background:var(--teacher-gradient)!important;color:white!important;border-radius:9px;box-shadow:0 3px 7px #0002;font-size:clamp(9px,2vw,12px)}
+.sched-compact td.sched-cell{border-radius:10px!important;background:linear-gradient(150deg,#fff,#f3f7fa)!important;box-shadow:0 3px 7px #0002, inset 0 1px 0 #fff;transition:transform .12s}
+.sched-compact td.sched-cell:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #0002}
+.today-lessons{margin-top:15px}.today-title{font-weight:800;margin-bottom:8px;color:var(--p)}
+.today-items{display:flex;gap:8px;overflow-x:auto;padding:3px 2px 9px}
+.today-lesson{min-width:94px;flex:1;border:1px solid var(--bd);border-radius:14px;padding:9px;background:linear-gradient(155deg,#fff,#f1f5f9);box-shadow:0 5px 10px #0002;text-align:center;color:var(--tx)}
+.today-lesson strong,.today-lesson small{display:block}.today-lesson small{font-size:10px;color:var(--mu)}
+.theme-pick{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:13px;padding:10px;border-top:1px solid var(--bd);font-size:12px}
+.theme-pick label{display:flex;align-items:center;gap:5px}.theme-pick input{width:28px;height:28px;border:0;background:none;padding:0}
+.header{background:var(--teacher-gradient)!important}
+</style>
+</head>
 <body data-lang="ar"><div id="schoolAuthCover"><div>جارٍ التحقق من حساب المعلم المدرسي…<p><a href="teacher-home.html">العودة إلى تسجيل الدخول</a></p></div></div>
 <div id="appLock" class="app-lock" aria-hidden="false">
   <div class="app-lock-card">
@@ -624,7 +638,55 @@ function updateHeaderSub(){const d=new Date();const dayName=days()[d.getDay()];c
 function go(s){document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));document.getElementById('sc-'+s).classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.s===s));document.getElementById('viewPills').style.display=s==='home'?'flex':'none';if(s==='home')renderHome();if(s==='classes')renderClasses();if(s==='att'){const d=document.getElementById('attDate');if(d&&!d.value)d.value=db.attDate||todayStr();fillAtt()}if(s==='live')renderLive();if(s==='grades'){fillGrade();loadGrades()}if(s==='students'){fillStu();loadStudents()}}
 function setView(v){db.view=v;save();document.querySelectorAll('#viewPills button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));renderHome()}
 function loadSample(){const c1=uid(),c2=uid();db.classes=[{id:c1,name:db.lang==='en'?'Grade 7 A':'سابع أ',subject:db.lang==='en'?'Math':'الرياضيات'},{id:c2,name:db.lang==='en'?'Grade 8 B':'ثامن ب',subject:db.lang==='en'?'Science':'العلوم'}];const n1=db.lang==='en'?['Ahmed Mohamed','Sara Ali','Khalid Yousef','Noora Saad','Fahad Abdullah','Reem Khalid']:['أحمد محمد','سارة علي','خالد يوسف','نورة سعد','فهد عبدالله','ريم خالد'];const n2=db.lang==='en'?['Yousef Ahmed','Maryam Fahad','Salman Turki']:['يوسف أحمد','مريم فهد','سلمان تركي'];db.students=[...n1.map(n=>({id:uid(),name:n,classId:c1})),...n2.map(n=>({id:uid(),name:n,classId:c2}))];const day=new Date().getDay();db.schedule=[{classId:c1,day,periodId:1,subject:db.classes[0].subject},{classId:c2,day,periodId:2,subject:db.classes[1].subject},{classId:c1,day,periodId:4,subject:db.classes[0].subject}];const a1=uid();db.assessments=[{id:a1,classId:c1,name:db.lang==='en'?'Quiz 1':'اختبار قصير 1',max:10,type:'quiz'}];db.students.filter(s=>s.classId===c1).forEach(s=>{db.grades[a1+'_'+s.id]=7+Math.floor(Math.random()*4)});if(!db.teacherName)db.teacherName=db.lang==='en'?'Teacher':'المعلم';db.onboarded=true;save();updateHeaderSub();toast(t('parseOk'));renderHome()}
+function applyTeacherTheme(){
+ const c=db.teacherTheme||{};
+ const valid=x=>/^#[0-9a-fA-F]{6}$/.test(x||'');
+ const primary=valid(c.primary)?c.primary:'#0f766e';
+ const secondary=valid(c.secondary)?c.secondary:'#14b8a6';
+ document.documentElement.style.setProperty('--p',primary);
+ document.documentElement.style.setProperty('--pm',secondary);
+ document.documentElement.style.setProperty('--pd',primary);
+ document.documentElement.style.setProperty('--pl',primary+'1c');
+ document.documentElement.style.setProperty('--bg',primary+'0a');
+ document.documentElement.style.setProperty('--sh','0 8px 26px '+primary+'20');
+ document.documentElement.style.setProperty('--teacher-gradient','linear-gradient(140deg,'+primary+','+secondary+')');
+}
+function setTeacherTheme(which,value){
+ if(!/^#[0-9a-fA-F]{6}$/.test(value))return;
+ db.teacherTheme=db.teacherTheme||{};
+ db.teacherTheme[which]=value;
+ save();applyTeacherTheme();
+}
+function teacherTodayCards(){
+ const now=new Date(),day=now.getDay(),di=day===0?0:day>=1&&day<=4?day:-1;
+ if(di<0)return '';
+ const items=(db.schedule||[]).filter(x=>Number(x.day)===di&&(!isRestSlot(x)||x.dutyPriority)).sort((a,b)=>Number(a.periodId)-Number(b.periodId));
+ if(!items.length)return '';
+ const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+ const notes=db.dailyPeriodNotes||{};
+ let html='<section class="today-lessons"><div class="today-title">'+(db.lang==='ar'?'حصص اليوم':'Today’s lessons')+' · '+today+'</div><div class="today-items">';
+ items.forEach(x=>{
+  const cls=db.classes.find(c=>c.id===x.classId);
+  const duty=x.dutyPriority||'';
+  const title=duty||String(cls?.name||'').replace(/\\s*\\/\\s*1\\s*$/,'');
+  const key=today+'_'+x.periodId;
+  html+='<button class="today-lesson" onclick="openDatedPeriodNote('+Number(x.day)+','+Number(x.periodId)+')"><strong>'+(db.lang==='ar'?'ح':'P')+escHTML(x.periodId)+' · '+escHTML(title)+'</strong><small>'+(notes[key]?'📝 ':'')+(db.lang==='ar'?'إضافة ملاحظة':'Add note')+'</small></button>';
+ });
+ return html+'</div></section>';
+}
+function openDatedPeriodNote(day,period){
+ const date=prompt(db.lang==='ar'?'تاريخ الملاحظة (سنة-شهر-يوم)':'Note date (YYYY-MM-DD)',todayStr());
+ if(date===null)return;
+ if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||Number.isNaN(new Date(date+'T12:00:00').getTime())){toast('تاريخ غير صحيح');return}
+ db.dailyPeriodNotes=db.dailyPeriodNotes||{};
+ const key=date+'_'+period;
+ const value=prompt((db.lang==='ar'?'ملاحظة الحصة ':'Period note ')+period+' · '+date,db.dailyPeriodNotes[key]||'');
+ if(value===null)return;
+ if(value.trim())db.dailyPeriodNotes[key]=value.trim();else delete db.dailyPeriodNotes[key];
+ save();renderHome();toast('✓');
+}
 function renderHome(){
+applyTeacherTheme();
 const body=document.getElementById('homeBody');
 updateHeaderSub();
 const teacher=db.teacherName||'';
@@ -644,10 +706,11 @@ if(teacher || db.scheduleImage || db.schedule.length){
     top+=`<div style="text-align:center"><img src="${db.scheduleImage}" alt="schedule" style="max-width:100%;max-height:420px;border-radius:10px;border:1px solid var(--bd)"></div>`;
   } else if(db.schedule.length){
     top+=buildScheduleTableHTML();
+    top+=teacherTodayCards();
   } else {
     top+=`<p style="text-align:center;font-size:.85rem;color:var(--mu);margin:8px 0">${db.lang==='ar'?'أضف بيانات الجدول من الإعدادات أو استوردها من ملف':'Add schedule data in Settings or import it from a file'}</p>`;
   }
-  top+=`</div>`;
+  top+=`<div class="theme-pick"><span>🎨 ${db.lang==='ar'?'ألوان التطبيق':'App colors'}</span><label>${db.lang==='ar'?'الأساسي':'Primary'} <input type="color" value="${db.teacherTheme?.primary||'#0f766e'}" onchange="setTeacherTheme('primary',this.value)"></label><label>${db.lang==='ar'?'الثاني':'Secondary'} <input type="color" value="${db.teacherTheme?.secondary||'#14b8a6'}" onchange="setTeacherTheme('secondary',this.value)"></label></div></div>`;
 }
 
 if(!db.onboarded && !db.classes.length && !db.schedule.length){
