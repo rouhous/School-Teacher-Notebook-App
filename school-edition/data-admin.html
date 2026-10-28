@@ -1,5 +1,127 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مركز البيانات المدرسية</title><style>body{margin:0;font:16px system-ui,Tahoma;background:linear-gradient(135deg,#e8f4ed,#fff8e7);color:#165549}main{max-width:800px;margin:25px auto;padding:16px}.card{background:white;border-radius:18px;padding:23px;margin:15px 0;border-top:4px solid #b9974b;box-shadow:0 5px 22px #174b3414}h1,h2{color:#075e50}label{display:block;font-weight:700;margin:16px 0 7px}select,input,button{font:inherit;padding:12px;border-radius:10px;border:1px solid #bfd1c9;max-width:100%;width:100%}button{background:#07695b;color:white;margin-top:16px;border:0;font-weight:700}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f7f5;padding:14px;border-radius:10px;max-height:220px;overflow:auto}a{color:#075e50}.notice{background:#fff7e3;padding:13px;border-radius:10px}#google{margin:15px 0}</style><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script></head><body><main><a href="founder-dashboard.html">لوحة المشرف</a><h1>مركز البيانات المدرسية</h1><p>استيراد مركزي للطلاب والجداول، مع معاينة السجلات قبل نشرها. لا يمكن للمعلم استخدام هذه الصفحة دون صلاحية مشرف.</p><section class="card"><h2>التحقق من المشرف</h2><div id="google"></div><p id="status">سجّل الدخول بحساب Google المشرف.</p></section><section class="card"><h2>استيراد PDF أو CSV</h2><label for="school">المدرسة</label><select id="school"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select><label for="kind">نوع البيانات</label><select id="kind"><option value="students">قوائم الطلاب</option><option value="timetable">حصص الجدول</option></select><p class="notice" id="format">الطلاب: student_code,class_id,display_name — معرّف الطالب، الصف، الاسم.</p><label for="file">ملف PDF أو CSV بترميز UTF-8</label><input type="file" id="file" accept=".csv,.pdf,application/pdf,text/csv"><p id="previewStatus"></p><label for="teacher">معرّف المعلم (لجدول PDF فردي)</label><input id="teacher" placeholder="مثال: B07"><label for="class">الصف (لقائمة الطلاب PDF)</label><input id="class" placeholder="مثال: 9A"><p class="notice">عند قراءة PDF، راجع النص المستخرج والسجلات قبل النشر. لا يُنشر أي سجل غير مكتمل أو غير موثوق تلقائيًا.</p><textarea id="pdfText" style="width:100%;min-height:130px" placeholder="النص المستخرج من PDF، قابل للتصحيح" hidden></textarea><button id="parsePdf" type="button" hidden>تحليل النص بعد التصحيح</button><pre id="preview"></pre><button id="publish" disabled>اعتماد ونشر البيانات</button><p class="notice">يُحدّث استيراد الطلاب السجلات الموجودة باستخدام المعرّف نفسه. استيراد الحصص يضيف سجلات جديدة، ويمنع تكرار حصة المعلم في اليوم والفترة نفسها؛ لا يستبدل الجدول كاملًا تلقائيًا.</p></section></main><script src="https://accounts.google.com/gsi/client" async defer></script><script>
-const $=id=>document.getElementById(id);let credential='',rows=[];\nasync function pdfText(file){if(!window.pdfjsLib)throw Error('تعذر تحميل قارئ PDF');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let out=[];for(let i=1;i<=doc.numPages;i++){const page=await doc.getPage(i),items=(await page.getTextContent()).items;out.push(items.map(x=>x.str).join('  '))}return out.join('\\n')}\nfunction parsePdfRows(){const text=$('pdfText').value,kind=$('kind').value;let output=[];if(kind==='students'){const cl=$('class').value.trim();if(!cl)throw Error('أدخل الصف قبل تحليل قائمة الطلاب');for(const line of text.split(/\\n/)){const m=line.match(/(?:^|\\s)([0-9]{4,14})\\s+([\\u0600-\\u06FF][\\u0600-\\u06FF\\s]{4,90})/);if(m)output.push({student_code:m[1],class_id:cl,display_name:m[2].trim()})}}else{throw Error('جداول PDF تحتاج مطابقة الخلايا والأيام بصريًا؛ استخدم CSV للجداول حاليًا لتجنب نشر حصص خاطئة.')}if(!output.length)throw Error('لم أتمكن من استخراج سجلات موثوقة. صحح النص أو استخدم CSV.');if(output.length>500)throw Error('الحد الأقصى 500 سجل');rows=output;$('preview').textContent=rows.slice(0,15).map(x=>JSON.stringify(x)).join('\\n');$('previewStatus').textContent='تم استخراج '+rows.length+' سجلًا للمراجعة. تأكد من تطابق الأسماء والأرقام قبل النشر.';$('publish').disabled=!credential}\n$('parsePdf').onclick=()=>{try{parsePdfRows()}catch(e){$('previewStatus').textContent=e.message}};
+const $=id=>document.getElementById(id);let credential='',rows=[];\nfunction normalizeArabicText(text){return String(text||'').normalize('NFKC').replace(/[\u0640\u064B-\u065F\u0670]/g,'').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'')}
+
+function pdfPageText(content){
+  const rows=[];const items=(content.items||[]).map((it,index)=>({str:(it.str||'').trim(),x:Number(it.transform?.[4]||0),y:Number(it.transform?.[5]||0),index})).filter(it=>it.str);
+  items.forEach(it=>{let row=rows.find(r=>Math.abs(r.y-it.y)<=2.5);if(!row){row={y:it.y,items:[]};rows.push(row)}row.items.push(it)});
+  return rows.sort((a,b)=>b.y-a.y).map(r=>{
+    const ordered=r.items.sort((a,b)=>a.index-b.index);let line='',prev=null;
+    ordered.forEach(it=>{if(line)line+=Math.abs(it.x-prev.x)>48?'\t':' ';line+=it.str;prev=it});
+    return line.replace(/ +/g,' ').trim();
+  }).filter(Boolean).join('\n');
+}
+
+function normalizeDigits(text){return String(text||'').replace(/[٠-٩۰-۹]/g,ch=>String('٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹'.indexOf(ch)%10))}
+function splitImportCells(line){
+  const s=String(line||'').trim();if(!s)return [];
+  if(/[\t|]/.test(s))return s.split(/[\t|]/).map(x=>x.trim()).filter(Boolean);
+  const cells=s.split(/\s{2,}/).map(x=>x.trim()).filter(Boolean);return cells.length>1?cells:[s];
+}
+
+function parseStudentsFromText(text){
+  const lines=normalizeArabicText(normalizeDigits(text)).split(/[\n\r]+/).map(l=>l.trim()).filter(Boolean);
+  const records=[];let header=null;
+  const fieldType=value=>{
+    const x=String(value||'').toLowerCase().replace(/\s+/g,' ').trim();
+    if(/هاتف|نقال|جوال|موبايل|phone|mobile|tel/.test(x))return'phone';
+    if(/منطقة\s*سكن|المنطقة\s*السكن|مدينة|المدينة|city|قرية|village/.test(x))return'city';
+    if(/رقم\s*مدرس|الرقم\s*المدرسي|هوية|مدني|student\s*(?:id|number)|id\s*no|رقم\s*الطالب/.test(x))return'studentNumber';
+    if(/^اسم$|الاسم|اسم\s*الطالب|student\s*name|^name$/.test(x))return'name';
+    if(/جنسية|nationality/.test(x))return'nationality';
+    if(/حالة\s*القيد|enrollment|status/.test(x))return'status';
+    if(/^م$|^#$|تسلسل|^no\.?$|serial/.test(x))return'serial';
+    return'';
+  };
+  for(const raw of lines){
+    if(!raw||/^(?:---\s*PAGE|page\s+\d+|قوائم\s*الطلاب|السنة\s*الدراسية|سلطنة|وزارة|مديرية|محافظة|رمز\s*المدرسة|ملخص|SUMMARY)/i.test(raw))continue;
+    // Prefer tab/pipe split; also handle single spaces carefully for Arabic school lists
+    let cells;
+    if(/[\t|]/.test(raw))cells=raw.split(/[\t|]/).map(x=>x.trim()).filter((x,i,a)=>x||i===0);
+    else if(/\s{2,}/.test(raw))cells=raw.split(/\s{2,}/).map(x=>x.trim()).filter(Boolean);
+    else cells=[raw];
+    // Drop empty leading cells
+    while(cells.length&&!cells[0])cells.shift();
+
+    const types=cells.map(fieldType);const found=types.filter(t=>t&&t!=='serial');
+    if((found.includes('name')&&(found.includes('studentNumber')||found.includes('phone')||found.includes('city')))||
+       (/الاسم/.test(raw)&&(/الرقم\s*المدرسي|هاتف|المنطقة/.test(raw)))){
+      header=types;
+      // if first col is serial marker keep it
+      continue;
+    }
+
+    let rec={name:'',phone:'',studentNumber:'',city:'',village:'',nationality:'',status:''};
+
+    if(header&&cells.length>=2){
+      // Align: if header starts with serial and first cell is a short number, map 1:1
+      let h=header.slice();let c=cells.slice();
+      if(h[0]==='serial'&&/^\d{1,3}$/.test(c[0])){/* keep */}
+      else if(h[0]==='serial'&&!/^\d{1,3}$/.test(c[0])){h=h.slice(1)}
+      else if(h[0]!=='serial'&&/^\d{1,3}$/.test(c[0])){c=c.slice(1)}
+      const n=Math.min(h.length,c.length);
+      for(let i=0;i<n;i++){
+        const k=h[i];const v=(c[i]||'').trim();
+        if(!k||k==='serial'||!v)continue;
+        if(k==='name')rec.name=v;
+        else if(k in rec)rec[k]=v;
+      }
+    }
+
+    // Fallback structured Omani row: [serial?] name id nationality status area phone
+    if(!rec.name||(!rec.studentNumber&&!rec.phone)){
+      let c=cells.slice();
+      if(c.length===1){
+        // try splitting long single line by digit runs
+        const m=c[0].match(/^(\d{1,3})?\s*(.+?)\s+(\d{10,15})\s+(\S+)\s+(\S+)\s+(.+?)\s+(\d{7,12})\s*$/);
+        if(m)c=[m[1],m[2],m[3],m[4],m[5],m[6],m[7]].filter(Boolean);
+      }
+      if(/^\d{1,3}$/.test(c[0]||''))c=c.slice(1);
+      if(c.length>=5){
+        // name is often the longest Arabic segment at start
+        const idIdx=c.findIndex(v=>/^\d{10,15}$/.test(v.replace(/\D/g,'')));
+        const phoneIdx=c.findIndex((v,i)=>i!==idIdx&&/^\d{7,12}$/.test(v.replace(/\D/g,'')));
+        if(idIdx>0){
+          rec.name=c.slice(0,idIdx).join(' ').trim();
+          rec.studentNumber=c[idIdx].replace(/\D/g,'');
+          if(phoneIdx>=0)rec.phone=c[phoneIdx].replace(/\D/g,'');
+          // area: last non-flag Arabic before phone
+          for(let i=c.length-1;i>idIdx;i--){
+            if(i===phoneIdx)continue;
+            const v=c[i];
+            if(/^(عماني|منقول|مستجد|منتظم)$/.test(v)){if(!rec.status&&/منقول|مستجد|منتظم/.test(v))rec.status=v;if(!rec.nationality&&/عماني/.test(v))rec.nationality=v;continue}
+            if(/[\u0600-\u06FF]/.test(v)&&v.length>=2){rec.city=v;break}
+          }
+        } else if(c.length>=4){
+          rec.name=c[0];
+          const digits=c.map(v=>v.replace(/\D/g,'')).filter(d=>d.length>=7);
+          if(digits[0]&&digits[0].length>=10)rec.studentNumber=digits[0];
+          if(digits[1])rec.phone=digits[1];
+          else if(digits[0]&&digits[0].length<=9)rec.phone=digits[0];
+        }
+      }
+    }
+
+    rec={
+      name:String(rec.name||'').replace(/^\d+[.\-)]?\s*/,'').trim().replace(/\s+/g,' '),
+      phone:String(rec.phone||'').replace(/\D/g,''),
+      studentNumber:String(rec.studentNumber||'').replace(/\D/g,''),
+      city:String(rec.city||'').trim(),
+      village:String(rec.village||'').trim()
+    };
+    if(rec.name.length>4&&rec.name.length<90&&/[\u0600-\u06FFa-zA-Z]/.test(rec.name)&&
+       !/(?:^الاسم$|اسم\s*الطالب|رقم\s*الهاتف|الرقم\s*المدرسي|المنطقة\s*السكن|حالة\s*القيد|الجنسية|student\s*name|phone|قوائم|السنة\s*الدراسية|الصف\s*:|المجموع|total|continuous|semester|grade\s*\d)/i.test(rec.name)){
+      records.push(rec);
+    }
+  }
+  const unique=[];const seen=new Set();
+  for(const r of records){
+    const k=(r.studentNumber&&r.studentNumber.length>=8)?('id:'+r.studentNumber):('n:'+r.name.toLocaleLowerCase());
+    if(!seen.has(k)){seen.add(k);unique.push(r)}
+  }
+  return unique.slice(0,500);
+}
+
+async function pdfText(file){if(!window.pdfjsLib)throw Error('تعذر تحميل قارئ PDF');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let out=[];for(let i=1;i<=doc.numPages;i++){const page=await doc.getPage(i),items=(await page.getTextContent()).items;out.push(pdfPageText({items}))}return out.join('\\n')}\nfunction parsePdfRows(){const text=$('pdfText').value,kind=$('kind').value;let output=[];if(kind==='students'){const cl=$('class').value.trim();if(!cl)throw Error('أدخل الصف قبل تحليل قائمة الطلاب');output=parseStudentsFromText(text).filter(x=>x.studentNumber&&x.name).map(x=>({student_code:x.studentNumber,class_id:cl,display_name:x.name}))}else{throw Error('جداول PDF تحتاج مطابقة الخلايا والأيام بصريًا؛ استخدم CSV للجداول حاليًا لتجنب نشر حصص خاطئة.')}if(!output.length)throw Error('لم أتمكن من استخراج سجلات موثوقة. صحح النص أو استخدم CSV.');if(output.length>500)throw Error('الحد الأقصى 500 سجل');rows=output;$('preview').textContent=rows.slice(0,15).map(x=>JSON.stringify(x)).join('\\n');$('previewStatus').textContent='تم استخراج '+rows.length+' سجلًا للمراجعة. تأكد من تطابق الأسماء والأرقام قبل النشر.';$('publish').disabled=!credential}\n$('parsePdf').onclick=()=>{try{parsePdfRows()}catch(e){$('previewStatus').textContent=e.message}};
 function parseCSV(s){s=s.replace(/^\uFEFF/,'');let out=[],row=[],field='',quoted=false;for(let i=0;i<s.length;i++){const c=s[i];if(quoted){if(c==='"'&&s[i+1]==='"'){field+='"';i++}else if(c==='"')quoted=false;else field+=c}else if(c==='"')quoted=true;else if(c===','){row.push(field);field=''}else if(c==='\n'){row.push(field.replace(/\r$/,''));if(row.some(x=>x.trim()))out.push(row);row=[];field=''}else field+=c}if(quoted)throw Error('علامة اقتباس غير مغلقة');row.push(field);if(row.some(x=>x.trim()))out.push(row);return out}
 function updateFormat(){$('format').textContent=$('kind').value==='students'?'الطلاب: student_code,class_id,display_name — معرّف الطالب، الصف، الاسم.':'الجدول: teacher_id,weekday,period,class_id,subject,duty_priority — الأيام من 0 (الأحد) إلى 4 (الخميس).';rows=[];$('publish').disabled=true;$('preview').textContent=''}$('kind').onchange=updateFormat;$('school').onchange=()=>{$('publish').disabled=true;rows=[];$('preview').textContent='أعد اختيار الملف بعد تغيير المدرسة.'};
 $('file').onchange=async()=>{rows=[];$('publish').disabled=true;try{const file=$('file').files[0];if(!file)return;if(file.size>100000)throw Error('الملف كبير؛ قسّمه إلى دفعات لا تتجاوز 500 سجل.');if(/\\.pdf$/i.test(file.name)||file.type==='application/pdf'){$('pdfText').hidden=false;$('parsePdf').hidden=false;$('pdfText').value=await pdfText(file);$('previewStatus').textContent='تم استخراج النص من PDF. راجعه ثم اضغط تحليل النص بعد التصحيح.';return} $('pdfText').hidden=true;$('parsePdf').hidden=true;const data=parseCSV(await file.text());const keys=$('kind').value==='students'?['student_code','class_id','display_name']:['teacher_id','weekday','period','class_id','subject','duty_priority'];const header=data.shift().map(x=>x.trim());if(keys.some(k=>!header.includes(k)))throw Error('الأعمدة المطلوبة غير موجودة: '+keys.join(', '));if(data.length<1||data.length>500)throw Error('الدفعة يجب أن تحتوي على 1 إلى 500 سجل');rows=data.map(line=>Object.fromEntries(keys.map(k=>[k,(line[header.indexOf(k)]||'').trim()])));$('preview').textContent=rows.slice(0,8).map(x=>JSON.stringify(x)).join('\n')+(rows.length>8?'\n...':'');$('previewStatus').textContent='تمت قراءة '+rows.length+' سجلًا. راجع المعاينة قبل النشر.';$('publish').disabled=!credential}catch(e){$('previewStatus').textContent='خطأ في الملف: '+e.message}};
