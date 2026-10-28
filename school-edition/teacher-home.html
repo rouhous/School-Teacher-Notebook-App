@@ -40,10 +40,12 @@ function importApprovedRoster(){
  const frame=$('notebook-frame');
  const generation=authGeneration;
  const snapshot=approvedRoster.map(x=>({...x}));
+ $('import-approved-roster').disabled=true;
  const send=()=>{if($('workspace').hidden||generation!==authGeneration||!activeCredential)return;try{
   frame.contentWindow.postMessage({type:'SCHOOL_ROSTER_IMPORT_V1',students:snapshot},location.origin);
   $('roster-import-status').textContent='راجع رسالة التأكيد داخل الدفتر قبل الاستيراد.';
- }catch(e){$('roster-import-status').textContent='تعذر إرسال القوائم إلى الدفتر.'}};
+  setTimeout(()=>{if(generation===authGeneration&&approvedRoster.length)$('import-approved-roster').disabled=false;},1800);
+ }catch(e){$('roster-import-status').textContent='تعذر إرسال القوائم إلى الدفتر.';if(generation===authGeneration)$('import-approved-roster').disabled=false;}};
  showModule('notebook');
  if(frame.contentDocument?.readyState==='complete')send();
  else frame.addEventListener('load',send,{once:true});
