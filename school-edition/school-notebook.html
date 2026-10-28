@@ -3762,6 +3762,9 @@ async function syncManaged(){
   const [table,roster]=await Promise.all([fetchApproved('school-teacher-timetable'),fetchApproved('school-teacher-students')]);
   if(!table?.approved)throw Error('الحساب غير معتمد لعرض الجدول');
   managedSchedule=Array.isArray(table.slots)?table.slots:[];
+  // Period times may only be changed by published supervisor data, never by a local guess.
+  const publishedPeriods=Array.isArray(table.periods)?table.periods:Array.isArray(table.timing)?table.timing:[];
+  if(publishedPeriods.length){const valid=publishedPeriods.filter(x=>x&&/^([01]\\d|2[0-3]):[0-5]\\d$/.test(String(x.time||''))&&Number.isInteger(Number(x.id)));if(valid.length){db.periods=valid.map(x=>({id:Number(x.id),nameAr:String(x.nameAr||'الحصة '+x.id),nameEn:String(x.nameEn||'Period '+x.id),time:String(x.time),endTime:x.endTime||undefined,type:x.type||undefined}));save();}}
   managedRoster=Array.isArray(roster)?roster:[];
   loaded=true;
   // Approved rosters are authoritative; preserve all existing class/student-linked records.
