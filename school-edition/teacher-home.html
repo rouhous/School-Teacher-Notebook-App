@@ -22,7 +22,7 @@ main{max-width:800px}
 const notebookAccessObserver=new MutationObserver(updateNotebookAccess);
 window.addEventListener('DOMContentLoaded',()=>{const workspace=document.getElementById('workspace');if(workspace){notebookAccessObserver.observe(workspace,{attributes:true,attributeFilter:['hidden']});updateNotebookAccess();}});
 function loadFullNotebook(){const w=document.getElementById('workspace');if(!w||w.hidden)return;const wrap=document.getElementById('notebook-frame-wrap'),frame=document.getElementById('notebook-frame');wrap.hidden=false;if(!frame.getAttribute('src')){frame.addEventListener('load',sendApprovedSchoolData,{once:true});frame.setAttribute('src','school-notebook.html')}else sendApprovedSchoolData();}
-function openSchoolNotebook(){if(!activeCredential||$('workspace').hidden)return;location.href='school-notebook.html';}
+function openSchoolNotebook(){if(!activeCredential||$('workspace').hidden)return;showModule('notebook');loadFullNotebook();}
 function showModule(which){if(which==='notebook')loadFullNotebook();document.querySelectorAll('.module').forEach(x=>x.classList.toggle('active',x.id==='module-'+which));document.querySelectorAll('#navigation button').forEach(x=>x.classList.toggle('active',x.dataset.target===which));window.scrollTo({top:0,behavior:'smooth'})}</script><script src="./session-auth.js"></script><script>
 const $=id=>document.getElementById(id);
 let approvedRoster=[];let approvedSlots=[];let authGeneration=0;let activeCredential=null;let rosterRequestId=0;let timetableRequestId=0;let authExpiryTimer=null;let lastRefreshAt=0;let notebookImportInProgress=false;
