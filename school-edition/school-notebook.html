@@ -3708,7 +3708,7 @@ button[onclick*="openM('addClass'"],button[onclick*="openM('importSched'"],butto
 <script id="school-managed-integration">
 (function(){
 const originalOpenM=window.openM;
-const forbidden=new Set(['addClass','editClass','addStudent','editStudent','importSched','importStudents','editPeriods','schedGrid','schedImage','schedImport','addPeriod']);
+const forbidden=new Set(['addClass','editClass','addStudent','editStudent','addStu','editStu','editSchedule','importSched','importStu','importStudents','editPeriods','schedGrid','schedImage','schedImport','addPeriod']);
 const schoolApi='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
 let managedSchedule=[],managedRoster=[],loaded=false;
 function statusMessage(message){const node=document.getElementById('school-managed-status');if(node)node.textContent=message;}
@@ -3765,7 +3765,7 @@ async function syncManaged(){
   managedRoster=Array.isArray(roster)?roster:[];
   loaded=true;
   // School-controlled rosters: do not import old local class lists.
-  if(!managedRoster.length){replaceHome();return;}const previousClasses=db.classes.slice(),previousStudents=db.students.slice();db.classes=[];db.students=[];
+  if(!managedRoster.length){db.classes=[];db.students=[];db.onboarded=true;save();replaceHome();return;}const previousClasses=db.classes.slice(),previousStudents=db.students.slice();db.classes=[];db.students=[];
   const ids=new Map();
   for(const st of managedRoster){
    if(!st||!st.classId||!st.name)continue;
