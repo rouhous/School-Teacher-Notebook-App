@@ -1,14 +1,11 @@
 {
-  "id": "/School-Teacher-Notebook-App/",
-  "name": "دفتر المعلم المدرسي - مدرسة وادي الحواسنة",
-  "short_name": "دفتر المعلم المدرسي",
-  "description": "النسخة المدرسية لدفتر المعلم",
-  "start_url": "/School-Teacher-Notebook-App/",
+  "id": "/School-Teacher-Notebook-App/school-notebook-2026",
+  "name": "دفتر المعلم المدرسي | وادي الحواسنة",
+  "short_name": "دفتر المدرسة",
+  "description": "دفتر المعلم المدرسي - النسخة المستقلة",
+  "start_url": "/School-Teacher-Notebook-App/index.html?source=pwa",
   "scope": "/School-Teacher-Notebook-App/",
   "display": "standalone",
-  "display_override": [
-    "standalone"
-  ],
   "background_color": "#fffdf7",
   "theme_color": "#075b47",
   "lang": "ar",
@@ -18,18 +15,6 @@
       "src": "./school-edition/app-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "https://rouhous.github.io/Teacher-notebook/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://rouhous.github.io/Teacher-notebook/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
       "purpose": "any"
     }
   ]
