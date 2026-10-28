@@ -787,8 +787,8 @@ function buildScheduleTableHTML(){
   });
   h+=`</tr></thead><tbody>`;
   dayIdxs.forEach(di=>{
-    const shortDay=(dnames[di]||'').slice(0,3);
-    h+=`<tr><td class="day-col">${escHTML(shortDay)}</td>`;
+    const shortDay=({'الأحد':'أحد','الاثنين':'اثنين','الثلاثاء':'ثلاثاء','الأربعاء':'أربعاء','الخميس':'خميس','Sunday':'Sun','Monday':'Mon','Tuesday':'Tue','Wednesday':'Wed','Thursday':'Thu'}[dnames[di]]||dnames[di]||'').replace(/^ال(?=[اأإبتثخ])/,'');
+    h+=`<tr><td class="day-col" style="font-size:clamp(9px,2.3vw,12px);white-space:nowrap;padding-inline:2px">${escHTML(shortDay)}</td>`;
     pers.forEach(p=>{
       if(isBreakPeriod(p)){
         h+=`<td class="sc-break">${escHTML(t('breakPeriod'))}</td>`;
@@ -806,8 +806,10 @@ function buildScheduleTableHTML(){
       const s0=classCells[0];
       const cls=db.classes.find(c=>c.id===s0.classId);
       const subj=(s0.subject||cls?.subject||'').slice(0,12);
-      const cname=(cls?.name||'').slice(0,10);
-      h+=`<td class="sched-cell" onclick="openPeriodCellMenu(${di},${p.id},'${escHTML(s0.classId||'')}')"><div class="sc-cls">${escHTML(cname)}</div><div class="sc-subj">${escHTML(subj)}</div>${flags?`<div style="font-size:.55rem">${flags}</div>`:''}</td>`;
+      const activeSubjects=new Set((db.schedule||[]).filter(x=>!isRestSlot(x)&&x.type!=='break').map(x=>String(x.subject||db.classes.find(c=>c.id===x.classId)?.subject||'').trim()).filter(Boolean));
+      const showSubject=activeSubjects.size>1;
+      const cname=String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'').slice(0,10);
+      h+=`<td class="sched-cell" onclick="openPeriodCellMenu(${di},${p.id},'${escHTML(s0.classId||'')}')"><div class="sc-cls">${escHTML(cname)}</div>${showSubject?`<div class="sc-subj">${escHTML(subj)}</div>`:''}${flags?`<div style="font-size:.55rem">${flags}</div>`:''}</td>`;
     });
     h+=`</tr>`;
   });
@@ -3888,9 +3890,9 @@ window.addEventListener('online',syncManaged);
 // Show the published A/B/C/D reserve priority in empty timetable slots.
 // A confirmed cover assignment is shown as a reserve lesson, not a free period.
 function schoolDutyLabel(day,period){
- const slot=(db.schedule||[]).find(s=>Number(s.day)===Number(day)&&Number(s.periodId)===Number(period)&&s.dutyPriority);
+ const slot=(db.schedule||[]).find(s=>Number(s.day)===Number(day)&&Number(s.periodId)===Number(period)&&(s.dutyPriority||(!s.classId&&/^[ABCD]$/i.test(String(s.subject||'')))));
  if(!slot)return '';
- const code=String(slot.dutyPriority||'').toUpperCase();
+ const code=String(slot.dutyPriority||slot.subject||'').trim().toUpperCase();
  if(!/^[ABCD]$/.test(code))return '';
  return slot.coverApproved===true?'حصة احتياط · '+code:'احتياط '+code;
 }
