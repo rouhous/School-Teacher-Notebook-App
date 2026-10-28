@@ -1,0 +1,13 @@
+/* Shared school identity — matches approved green/gold landing page */
+:root{--school-green:#075b49;--school-gold:#b99246;--school-cream:#fcf9ee}
+body{background:radial-gradient(ellipse at 50% 0%,#fffaf0 0%,#f7f5e9 55%,#edf4ed 100%)!important;color:#174c40}
+h1,h2,h3{color:#075b49}
+button,.action,.btn{transition:box-shadow .15s ease,transform .15s ease}
+button:not(:disabled):hover,.action:hover,.btn:hover{box-shadow:0 5px 16px #075b4930}
+button:not(:disabled):active,.action:active,.btn:active{transform:scale(.99)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #b99246;outline-offset:2px}
+.card,section,header,.panel{border-color:#e8d9b5}
+input,select,textarea{accent-color:#075b49}
+a{color:#075b49}
+@media(prefers-reduced-motion:reduce){button,.action,.btn{transition:none}}
+@media(max-width:560px){button,a.action{min-height:44px}table{display:block;overflow-x:auto;max-width:100%}}
