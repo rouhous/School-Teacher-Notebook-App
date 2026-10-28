@@ -1029,39 +1029,7 @@ function exportAttReport(){
   <p><b>${escHTML(cls?.name||'')}</b> · ${escHTML(periodName(per)||'')} (${escHTML(per?.time||'')}) · ${escHTML(ds)}</p>
   <div class="sum"><span>${t('presentCount')}: ${p}</span><span>${t('absentCount')}: ${a}</span><span>${t('lateCount')}: ${l}</span><span>${t('excusedCount')}: ${e}</span></div>
   <table><thead><tr><th>#</th><th>${t('studentName')}</th><th>${t('studentNumber')}</th><th>${t('attendance')}</th></tr></thead><tbody>${rows}</tbody></table>
-  <script>setTimeout(()=>window.print(),400)<\/script><script id="school-approved-roster-bridge">
-window.addEventListener('message',function(event){
- if(event.origin!==location.origin||event.source!==window.parent||event.data?.type!=='SCHOOL_ROSTER_IMPORT_V1')return;
- const items=event.data.students;
- if(!Array.isArray(items)||items.length>3000||!items.every(x=>x&&typeof x.name==='string'&&typeof x.classId==='string'&&typeof x.schoolId==='string'&&x.name.length<=160&&x.classId.length<=80&&x.schoolId.length<=80))return;
- const rows=items.filter(x=>x.name.trim()&&x.classId.trim()&&x.schoolId.trim());
- if(!rows.length)return;
- const classKey=x=>x.schoolId.trim()+' / '+x.classId.trim();
- const classes=[...new Set(rows.map(classKey))];
- if(!confirm('استيراد '+rows.length+' طالبًا إلى الدفتر المحلي؟ ستُفصل صفوف المدارس المختلفة ولن تُحذف البيانات الحالية.'))return;
- try{
-  const nextClasses=db.classes.map(x=>({...x}));const nextStudents=db.students.map(x=>({...x}));
-  const existingClasses=new Map(nextClasses.map(c=>[String(c.name).trim(),c.id]));
-  let addedClasses=0,addedStudents=0;
-  for(const name of classes){if(!existingClasses.has(name)){const id=uid();nextClasses.push({id,name,subject:''});existingClasses.set(name,id);addedClasses++}}
-  const existingCodes=new Set(nextStudents.filter(st=>String(st.studentNumber||'').trim()).map(st=>String(st.classId)+'|'+String(st.studentNumber).trim()));
-  const existingNames=new Set(nextStudents.map(st=>String(st.classId)+'|'+String(st.name||'').trim()));
-  for(const st of rows){
-   const classId=existingClasses.get(classKey(st));if(!classId)continue;
-   const number=String(st.studentCode||'').trim().slice(0,80),name=st.name.trim();
-   const codeKey=classId+'|'+number,nameKey=classId+'|'+name;
-   if((number&&existingCodes.has(codeKey))||existingNames.has(nameKey))continue;
-   nextStudents.push({id:uid(),name,classId,phone:'',studentNumber:number,city:'',village:''});
-   if(number)existingCodes.add(codeKey);existingNames.add(nameKey);addedStudents++;
-  }
-  const next={...db,classes:nextClasses,students:nextStudents,onboarded:true};
-  localStorage.setItem(schoolNotebookKey,JSON.stringify(next));
-  db=next;if(window.cloudMarkDirty)cloudMarkDirty();
-  renderHome();if(typeof renderClasses==='function')renderClasses();
-  alert('تمت إضافة '+addedClasses+' صفوف و'+addedStudents+' طلاب محليًا. لم تُفعّل المزامنة المدرسية بعد.');
- }catch(e){alert('تعذر إتمام الاستيراد. تحقق من البيانات والحفظ المحلي.')}
-});
-</script></body></html>`);
+  <script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
   w.document.close();
 }
 function sendAttendanceToNoorExtension(){
