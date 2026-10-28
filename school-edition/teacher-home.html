@@ -28,13 +28,15 @@ let approvedRoster=[];let authGeneration=0;let activeCredential=null;let rosterR
 function switchTeacherAccount(){authGeneration++;rosterRequestId++;timetableRequestId++;activeCredential=null;approvedRoster=[];const notebookFrame=$('notebook-frame');notebookFrame.removeAttribute('src');$('notebook-frame-wrap').hidden=true;$('workspace').hidden=true;$('navigation').hidden=true;$('notapproved').hidden=false;$('import-approved-roster').disabled=true;$('roster-import-status').textContent='يلزم تسجيل الدخول بحساب معتمد.';try{schoolAuthClear();if(window.google?.accounts?.id){google.accounts.id.disableAutoSelect();}}catch(e){}$('status').textContent='اختر حساب Google آخر لتسجيل الدخول.';initializeLogin();}
 function refreshSchoolData(){if(!activeCredential||$('workspace').hidden)return;$('school-refresh-status').textContent='جارٍ جلب أحدث البيانات المعتمدة...';loadTimetable(activeCredential,authGeneration);loadStudents(activeCredential,authGeneration);$('school-refresh-status').textContent='تم إرسال طلب تحديث البيانات. ستظهر النتائج في الأقسام أعلاه.';}
 function importApprovedRoster(){
- if($('workspace').hidden||!approvedRoster.length)return;
- showModule('notebook');
+ if($('workspace').hidden||!approvedRoster.length||!activeCredential)return;
  const frame=$('notebook-frame');
- const send=()=>{if($('workspace').hidden||!approvedRoster.length)return;try{
-  frame.contentWindow.postMessage({type:'SCHOOL_ROSTER_IMPORT_V1',students:approvedRoster},location.origin);
+ const generation=authGeneration;
+ const snapshot=approvedRoster.map(x=>({...x}));
+ const send=()=>{if($('workspace').hidden||generation!==authGeneration||!activeCredential)return;try{
+  frame.contentWindow.postMessage({type:'SCHOOL_ROSTER_IMPORT_V1',students:snapshot},location.origin);
   $('roster-import-status').textContent='راجع رسالة التأكيد داخل الدفتر قبل الاستيراد.';
  }catch(e){$('roster-import-status').textContent='تعذر إرسال القوائم إلى الدفتر.'}};
+ showModule('notebook');
  if(frame.contentDocument?.readyState==='complete')send();
  else frame.addEventListener('load',send,{once:true});
 }
