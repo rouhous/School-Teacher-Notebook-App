@@ -921,10 +921,10 @@ function buildScheduleTableHTML(){
   const matches=(db.schedule||[]).filter(x=>Number(x.day)===di&&Number(x.periodId)===Number(p.id));
   const x=matches.find(x=>!isRestSlot(x)&&x.type!=='break');
   const flags=(db.periodAlarms?.[di+'_'+p.id]?'🔔':'')+(db.periodNotes?.[di+'_'+p.id]?'📝':'');
-  if(!x)return '<td class="sched-cell"'+attr+' onclick="showLessonNoteEditor('+di+','+p.id+')"><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
+  if(!x)return '<td class="sched-cell"'+attr+' ><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
   const cls=db.classes.find(c=>c.id===x.classId),name=String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'').slice(0,10);
   const sub=String(x.subject||cls?.subject||'').slice(0,12);
-  return '<td class="sched-cell"'+attr+' onclick="showLessonNoteEditor('+di+','+p.id+')"><div class="sc-cls">'+escHTML(name)+'</div>'+(subjects.size>1?'<div class="sc-subj">'+escHTML(sub)+'</div>':'')+(flags?'<small>'+flags+'</small>':'')+'</td>';
+  return '<td class="sched-cell"'+attr+' ><div class="sc-cls">'+escHTML(name)+'</div>'+(subjects.size>1?'<div class="sc-subj">'+escHTML(sub)+'</div>':'')+(flags?'<small>'+flags+'</small>':'')+'</td>';
  };
  let h='<table class="sched-compact sched-vertical"><thead><tr><th class="period-col">'+(db.lang==='ar'?'الحصة':'Period')+'</th>';
  daysIdx.forEach(di=>h+='<th class="day-col">'+escHTML(dayLabel(di))+'</th>');
@@ -1158,7 +1158,19 @@ function exportAttReport(){
   <p><b>${escHTML(cls?.name||'')}</b> · ${escHTML(periodName(per)||'')} (${escHTML(per?.time||'')}) · ${escHTML(ds)}</p>
   <div class="sum"><span>${t('presentCount')}: ${p}</span><span>${t('absentCount')}: ${a}</span><span>${t('lateCount')}: ${l}</span><span>${t('excusedCount')}: ${e}</span></div>
   <table><thead><tr><th>#</th><th>${t('studentName')}</th><th>${t('studentNumber')}</th><th>${t('attendance')}</th></tr></thead><tbody>${rows}</tbody></table>
-  <script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
+  <script>setTimeout(()=>window.print(),400)<\/script><script id="period-note-click-repair-20261029">
+/* Delegated handler survives timetable rerenders and works on touch devices. */
+document.addEventListener('click',function(event){
+ const cell=event.target.closest?.('.sched-compact td.sched-cell[data-day][data-period]');
+ if(!cell)return;
+ event.preventDefault();
+ event.stopPropagation();
+ const day=Number(cell.dataset.day),period=Number(cell.dataset.period);
+ if(!Number.isInteger(day)||!Number.isFinite(period))return;
+ if(typeof showLessonNoteEditor==='function')showLessonNoteEditor(day,period);
+ else console.error('Period note editor is not available');
+},true);
+</script></body></html>`);
   w.document.close();
 }
 function sendAttendanceToNoorExtension(){
