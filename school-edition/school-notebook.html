@@ -3705,7 +3705,9 @@ scheduleAlarmChecker();
 .school-managed-notice{padding:14px;border:1px solid #b7d9d0;border-radius:14px;background:#effaf6;color:#075d4e;margin:12px 0}
 button[onclick*="openM('addClass'"],button[onclick*="openM('importSched'"],button[onclick*="openM('importStudents'"],button[onclick*="loadSample()"],button[onclick*="openM('editPeriods'"],button[onclick*="openM('addStudent'"]{display:none!important}
 </style>
-<script id="school-managed-integration">
+<style id="school-accessibility-managed">
+button[onclick*="openM('addStu'"],button[onclick*="openM('editStu'"],button[onclick*="openM('editClass'"],button[onclick*="openM('importStu'"],button[onclick*="openM('editSchedule'"],button[onclick*="openM('schedGrid'"]{display:none!important}
+</style><script id="school-managed-integration">
 (function(){
 const originalOpenM=window.openM;
 const forbidden=new Set(['addClass','editClass','addStudent','editStudent','addStu','editStu','editSchedule','importSched','importStu','importStudents','editPeriods','schedGrid','schedImage','schedImport','addPeriod']);
