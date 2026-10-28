@@ -1172,7 +1172,7 @@ function loadGrades(){
   h+='<div id="assessManagePanel" style="display:none">';
   assesses.forEach(a=>{
     const cat=isFinalType(a.type)||classifyAssessment(a.name)==='exam'?t('catFinal'):(classifyAssessment(a.name)==='total'?t('grandTotal'):t('catContinuous'));
-    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:.88rem"><span><strong>'+escHTML(a.name)+'</strong> <span class="badge b-teal">'+cat+'</span> <small style="color:var(--mu)">/'+a.max+'</small></span><button class="btn btn-danger btn-sm" onclick="delAssess(\''+a.id+'\')">×</button></div>';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:.88rem"><span><strong>'+escHTML(a.name)+'</strong> <span class="badge b-teal">'+cat+'</span> <small style="color:var(--mu)">/'+a.max+'</small></span>'+(a.official?'<span title="تقييم معتمد">🔒</span>':'<button class="btn btn-ghost btn-sm" onclick="hideCustomAssessment(\''+a.id+'\')">إخفاء</button><button class="btn btn-danger btn-sm" onclick="delAssess(\''+a.id+'\')">×</button>')+'</div>';
   });
   h+='<button class="btn btn-primary btn-block btn-sm" style="margin-top:8px" onclick="openM(\'addAssess\')">'+t('addAssess')+'</button></div>';
   h+='<div id="assessSummary" style="font-size:.8rem;color:var(--mu)">'+assesses.map(a=>escHTML(a.name)+' /'+a.max).join(' · ')+'</div>';
