@@ -301,7 +301,7 @@ const savedSupervisorCredential=schoolAuthRestore();if(savedSupervisorCredential
 (function(){
 const status=document.getElementById('status'),slot=document.getElementById('google'),quick=document.getElementById('googleQuickEntry');
 if(!status||!slot)return;
-quick.style.display='inline-block';
+quick.style.display='none';
 quick.textContent='تسجيل الدخول بحساب Google';
 quick.onclick=function(){if(window.google?.accounts?.id){google.accounts.id.prompt();status.textContent='إذا لم تظهر نافذة اختيار الحساب، استخدم زر Google أسفل هذا الزر.'}else{status.textContent='خدمة Google غير متاحة حاليًا. افتح الرابط في Chrome.'}};
 function signin(response){
@@ -314,8 +314,8 @@ let tries=0;const t=setInterval(function(){
 if(window.google?.accounts?.id){
 clearInterval(t);
 try{google.accounts.id.initialize({client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:signin,auto_select:false});
+if(typeof schoolAuthRestore==='function'){const saved=schoolAuthRestore();if(saved){signin({credential:saved});return;}}
 google.accounts.id.renderButton(slot,{type:'standard',theme:'outline',size:'large',width:240});
-if(typeof schoolAuthRestore==='function'){const saved=schoolAuthRestore();if(saved)signin({credential:saved})}
 }catch(e){status.textContent='خطأ في تهيئة Google: '+e.message}
 }else if(++tries>=100){clearInterval(t);status.textContent='تعذر تحميل Google. جرّب Chrome أو تحقق من اتصال الإنترنت.'}
 },200);
