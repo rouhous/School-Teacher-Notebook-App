@@ -265,9 +265,7 @@ footer{position:relative!important;z-index:2!important;background:transparent!im
 @media(max-width:800px){
  .site.reference-ready{background:radial-gradient(ellipse at top,#fffdf6,#f5e9cd)!important}
 }
-</style><script>
-(function(){if(innerWidth<801)return;var test=new Image();test.onload=function(){document.addEventListener('DOMContentLoaded',function(){document.querySelector('.site')?.classList.add('reference-ready')})};test.src='assets/school-home-reference-clean.webp';})();
-</script><style id="school-mobile-reference-artwork">
+</style><style id="school-mobile-reference-artwork">
 @media(max-width:800px){
  .site.mobile-reference-ready{display:flex!important;flex-direction:column!important;justify-content:flex-start!important;min-height:100svh!important;height:100svh!important;overflow:hidden!important;background:#fbf4e6 url('assets/school-home-reference-clean1.png') center/100% 100% no-repeat!important}
  .site.mobile-reference-ready:before,.site.mobile-reference-ready:after{display:none!important}
@@ -289,9 +287,7 @@ footer{position:relative!important;z-index:2!important;background:transparent!im
  .site.mobile-reference-ready .hero p{font-size:.7rem!important}
  .site.mobile-reference-ready .panel{padding:7px!important}
 }
-</style><script>
-(function(){if(innerWidth>800)return;var i=new Image();i.onload=function(){document.addEventListener('DOMContentLoaded',function(){document.querySelector('.site')?.classList.add('mobile-reference-ready')})};i.src='assets/school-home-reference-clean1.png';})();
-</script><style id="reference-images-final-live-20261029">
+</style><style id="reference-images-final-live-20261029">
 @media(max-width:800px){
  .site.mobile-reference-ready{display:block!important;position:relative!important;min-height:100svh!important;height:100svh!important;overflow:hidden!important;background-image:url('assets/school-home-reference-clean1.png')!important;background-size:100% 100%!important;background-position:center!important}
  .site.mobile-reference-ready .hero,.site.mobile-reference-ready .masthead,.site.mobile-reference-ready footer,.site.mobile-reference-ready .features,.site.mobile-reference-ready .access{display:none!important}
@@ -312,7 +308,25 @@ footer{position:relative!important;z-index:2!important;background:transparent!im
 @media(min-width:801px){
  .site.reference-ready .content{grid-column:2!important;grid-row:1!important}
 }
-</style></head><body><div class="site">
+</style><style id="school-reference-override-fix-20261029">
+/* Permanent responsive artwork, independent of image-load timing. */
+@media(max-width:800px){
+ html,body{margin:0!important;overflow-x:hidden!important}
+ body{background:#f6efdc!important}
+ .site.mobile-reference-ready{display:block!important;position:relative!important;width:100%!important;height:100svh!important;min-height:100svh!important;overflow:hidden!important;background:#f8f0dd url('./assets/school-home-reference-clean1.png?v=20261029b') center center/100% 100% no-repeat!important}
+ .site.mobile-reference-ready:before,.site.mobile-reference-ready:after{display:none!important}
+ .site.mobile-reference-ready .masthead,.site.mobile-reference-ready .hero,.site.mobile-reference-ready .features,.site.mobile-reference-ready .access,.site.mobile-reference-ready footer{display:none!important}
+ .site.mobile-reference-ready .content{position:absolute!important;display:block!important;z-index:20!important;top:43%!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:76%!important;max-width:430px!important;margin:0!important;padding:0!important;min-height:0!important}
+ .site.mobile-reference-ready .panel{display:block!important;background:#fffaf3f2!important;border:1px solid #e4d4b8!important;box-shadow:0 8px 24px #123a2d2a!important;border-radius:19px!important;padding:clamp(7px,1.2svh,13px)!important}
+ .site.mobile-reference-ready .panel h2{font-size:clamp(.86rem,3.4vw,1.1rem)!important;padding:7px 4px!important;margin:0 0 6px!important}
+ .site.mobile-reference-ready .hint{display:none!important}
+}
+@media(min-width:801px){
+ .site.reference-ready{background:#f8f0dc url('./assets/school-home-reference-clean.webp?v=20261029b') center center/100% 100% no-repeat!important}
+ .site.reference-ready .masthead,.site.reference-ready .hero,.site.reference-ready .features,.site.reference-ready .access,.site.reference-ready footer{display:none!important}
+ .site.reference-ready .content{grid-column:2!important;grid-row:1!important}
+}
+</style></head><body><div class="site reference-ready mobile-reference-ready">
 <header class="masthead"><div class="official-banner-wrap"><img src="assets/official_school_banner.jpg" alt="شعارات رؤية عُمان 2040 ومدرسة وادي الحواسنة ووزارة التربية والتعليم" loading="eager" decoding="async"></div></header>
 <section class="hero"><div class="school-scene" aria-hidden="true"></div><div class="school-floating-icons" aria-hidden="true"><span>♧</span><span>☼</span><span>▣</span></div><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
 <main class="content"><section class="panel" aria-labelledby="login-heading"><h2 id="login-heading">تسجيل الدخول / إنشاء حساب جديد</h2><label class="field" for="school"><span>المدرسة</span><select id="school"><option value="">اختر المدرسة أولًا</option><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><div id="teacher-google"></div><p id="teacher-status" role="status" aria-live="polite"></p><div class="actions"><a class="register" id="register" href="school-edition/teacher-registration.html">إنشاء حساب معلم جديد</a><button type="button" id="supervisor-pencil" aria-label="دخول المشرف" title="دخول المشرف">✎</button></div><p class="hint">الدخول الآمن باستخدام Google. لا نطلب كلمة المرور داخل هذه الصفحة.</p></section>
