@@ -381,7 +381,7 @@ footer{z-index:1!important}
 }
 </style><script>
 (function(){
- var url=innerWidth>800?'assets/school-home-desktop.webp':'assets/school-home-mobile.webp';
+ if(innerWidth<=800)return; var url='assets/school-home-desktop.webp';
  var img=new Image();img.onload=function(){document.addEventListener('DOMContentLoaded',function(){document.querySelector('.site')?.classList.add('has-school-art')})};img.src=url;
 })();
 </script><style id="school-art-live-overlay-fix">
@@ -404,6 +404,27 @@ footer{z-index:1!important}
  .site.has-school-art{min-height:100vh!important;grid-template-rows:0 minmax(0,1fr) 0!important}
  .site.has-school-art .masthead,.site.has-school-art .hero,.site.has-school-art footer{display:none!important}
  .site.has-school-art .content{grid-column:2!important;grid-row:2!important;align-self:center!important}
+ .site.has-school-art .features,.site.has-school-art .access{display:none!important}
+}
+</style><style id="school-home-correction-20261029">
+/* Phone returns to its original interactive layout without image background. */
+@media(max-width:800px){
+ .site.has-school-art{background-image:none!important;background:linear-gradient(145deg,#fffdf6,#f6eed8)!important;min-height:100svh!important;height:auto!important;overflow:visible!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto auto auto!important;align-content:space-between!important}
+ .site.has-school-art .masthead,.site.has-school-art .hero,.site.has-school-art footer,.site.has-school-art .features{display:initial!important;visibility:visible!important}
+ .site.has-school-art .masthead{display:block!important;grid-row:1!important}
+ .site.has-school-art .hero{display:block!important;grid-row:2!important;min-height:clamp(150px,25svh,245px)!important}
+ .site.has-school-art .content{display:flex!important;grid-row:3!important;justify-content:flex-start!important;padding:4px 9px!important}
+ .site.has-school-art .features{display:grid!important}
+ .site.has-school-art .access{display:block!important}
+ .site.has-school-art footer{display:block!important;grid-row:4!important}
+}
+@media(min-width:801px){
+ .site.has-school-art{grid-template-columns:1fr 1fr!important;grid-template-rows:0 minmax(0,1fr) 0!important}
+ .site.has-school-art .content{grid-column:2!important;grid-row:2!important;align-self:center!important;justify-self:center!important;position:relative!important;width:100%!important;max-width:min(580px,46vw)!important;padding:18px!important}
+ /* Cover the baked-in registration form in the image before showing the real one. */
+ .site.has-school-art .content:before{content:""!important;display:block!important;position:absolute!important;inset:-22px -25px!important;z-index:-1!important;border-radius:32px!important;background:linear-gradient(140deg,#faf8f2 0%,#f8f5eb 100%)!important;box-shadow:0 12px 38px #23372d27!important}
+ .site.has-school-art .panel{width:100%!important;max-width:none!important;background:#fffdf9!important;border:1px solid #d4bc81!important;box-shadow:none!important;padding:clamp(15px,2vw,27px)!important}
+ .site.has-school-art .panel h2{margin-bottom:18px!important}
  .site.has-school-art .features,.site.has-school-art .access{display:none!important}
 }
 </style></head><body><div class="site">
