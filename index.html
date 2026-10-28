@@ -223,6 +223,26 @@ footer{padding:clamp(7px,1.1svh,15px) 12px!important;margin-top:clamp(5px,1svh,1
  .features{padding:4px!important}
  .feature .symbol{width:32px!important;height:32px!important}
 }
+</style><style id="school-reference-correction-v3">
+/* RTL grid column 1 is the right-hand column. */
+@media(min-width:801px){
+ .site{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;column-gap:clamp(20px,4vw,70px)!important}
+ .hero{grid-column:1!important;grid-row:2!important;justify-self:center!important;text-align:right!important;position:relative!important;z-index:1}
+ .content{grid-column:2!important;grid-row:2!important;justify-self:center!important;position:relative!important;z-index:2}
+ .hero .eyebrow,.hero h1,.hero p{text-align:right!important}
+ .hero .rule{justify-content:flex-start!important}
+ .hero h1{white-space:normal!important;max-width:100%!important}
+}
+.masthead{position:relative!important;background:linear-gradient(160deg,#0c7057 0%,#fef9e9 15%,#fef9e9 85%,#0c7057 100%)!important;border-top:7px solid #0a7055!important;border-bottom:5px solid #c7a355!important}
+.masthead:after{content:"";position:absolute;bottom:0;left:0;right:0;height:5px;background:linear-gradient(90deg,#0d7359,#c6a05a,#0d7359)}
+.official-banner-wrap{background:transparent!important}
+.hero .ambient{display:block!important;pointer-events:none;position:absolute!important;z-index:-1!important;color:#c3a05b!important;opacity:.22!important}
+.hero .ambient.left{left:7%!important;bottom:7%!important}
+.hero .ambient.right{right:8%!important;top:9%!important}
+.hero:after{content:"▤   ✧   ◇";position:absolute;top:12%;left:15%;color:#c1a468;opacity:.23;font-size:clamp(22px,3vw,45px);pointer-events:none}
+.site:after{content:"";position:fixed;bottom:0;left:0;right:0;height:clamp(35px,7svh,85px);z-index:0;pointer-events:none;background:linear-gradient(172deg,transparent 0 39%,#caa75d 40% 45%,#0a7056 46% 74%,#caa75d 75% 81%,#0a7056 82% 100%);opacity:.9}
+footer{position:relative;z-index:1}
+@media(max-width:800px){.site:after{position:absolute;height:45px}.hero{text-align:center!important}.hero:after{opacity:.1}.hero .ambient{opacity:.13!important}}
 </style></head><body><div class="site">
 <header class="masthead"><div class="official-banner-wrap"><img src="assets/official_school_banner.jpg" alt="شعارات رؤية عُمان 2040 ومدرسة وادي الحواسنة ووزارة التربية والتعليم" loading="eager" decoding="async"></div></header>
 <section class="hero"><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
