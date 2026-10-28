@@ -5,33 +5,28 @@
 </style></head><body>
 <header><div class="top"><div class="seal">رؤية عُمان<br>2040</div><div class="brand">مدرسة وادي الحواسنة<br><small>إبداع · تميز · إتقان</small></div><div class="seal">وزارة التربية والتعليم<br><small>سلطنة عُمان</small></div></div></header><div class="goldline"></div>
 <section class="hero"><div class="intro"><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم<br>المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="ornament">📖</div></div><div class="illustration" aria-hidden="true">📚</div></section>
-<main><section class="panel"><h2>♙ تسجيل الدخول / إنشاء حساب جديد</h2><label class="field" for="school"><span>اختر المدرسة</span><select id="school"><option value="">اختر المدرسة أولًا</option><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><button class="action primary" type="button" id="teacherLogin" style="width:100%;cursor:pointer;font:inherit;font-weight:800">تسجيل دخول المعلم باستخدام Google</button><div id="teacher-google" style="display:none;justify-content:center;margin:14px 0"></div><p id="teacher-status" role="status" style="text-align:center"></p><a class="action secondary" id="register" href="school-edition/teacher-registration.html">إنشاء حساب معلم جديد</a><button type="button" id="supervisor-pencil" aria-label="دخول المشرف" title="دخول المشرف" style="border:1px solid #c7a665;background:#fff9e9;color:#07594b;border-radius:12px;min-width:48px;min-height:48px;font-size:23px;cursor:pointer">✎</button><p class="hint">تسجيل الدخول الآمن يتم عبر Google، ولا نطلب كلمة مرور Google داخل هذه الصفحة. يعتمد المشرف حسابات المعلمين قبل تفعيلها.</p></section>
+<main><section class="panel"><h2>♙ تسجيل الدخول / إنشاء حساب جديد</h2><label class="field" for="school"><span>اختر المدرسة</span><select id="school"><option value="">اختر المدرسة أولًا</option><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><div id="teacher-google" style="display:flex;justify-content:center;min-height:55px;margin:10px 0"></div><p id="teacher-status" role="status" style="text-align:center"></p><a class="action secondary" id="register" href="school-edition/teacher-registration.html">إنشاء حساب معلم جديد</a><button type="button" id="supervisor-pencil" aria-label="دخول المشرف" title="دخول المشرف" style="border:1px solid #c7a665;background:#fff9e9;color:#07594b;border-radius:12px;min-width:48px;min-height:48px;font-size:23px;cursor:pointer">✎</button><p class="hint">تسجيل الدخول الآمن يتم عبر Google، ولا نطلب كلمة مرور Google داخل هذه الصفحة. يعتمد المشرف حسابات المعلمين قبل تفعيلها.</p></section>
 <div class="features"><div class="feature"><span class="symbol">📋</span><strong>تسهيل عملك</strong><small>وتوفير وقتك</small></div><div class="feature"><span class="symbol">👥</span><strong>متابعة الطلاب</strong><small>وتنظيم الأداء</small></div><div class="feature"><span class="symbol">🗓️</span><strong>إدارة الحصص</strong><small>والواجبات والغياب</small></div><div class="feature"><span class="symbol">☁️</span><strong>حفظ سحابي</strong><small>وفق إعدادات الحساب والصلاحيات</small></div></div>
 <p class="access">الدفتر القديم مستقل، والنسخة المدرسية الجديدة قيد دمج الصلاحيات والحفظ السحابي. يرجى عدم إدخال بيانات طلاب حقيقية أثناء الاختبار.</p></main><footer><div>مدرسة وادي الحواسنة<br>العام الدراسي 2026–2027</div></footer>
 <script>const school=document.getElementById('school');school.value=sessionStorage.getItem('school-notebook-selected-school')||'';school.addEventListener('change',()=>{sessionStorage.setItem('school-notebook-selected-school',school.value)});document.getElementById('register').addEventListener('click',()=>sessionStorage.setItem('school-notebook-selected-school',school.value));</script><dialog id="supervisor-dialog" aria-labelledby="supervisor-heading" style="border:1px solid #d9bf83;border-radius:22px;box-shadow:0 24px 80px #082f2560;padding:26px;width:min(92vw,420px);color:#07594b;background:#fffdf7;text-align:center"><button type="button" id="supervisor-close" aria-label="إغلاق" style="float:left;background:transparent;border:0;font-size:25px;cursor:pointer">×</button><h2 id="supervisor-heading">دخول المشرف</h2><p>سجّل الدخول بحساب Google المعتمد للمشرف. لا تُطلب كلمة مرور Google هنا.</p><div id="supervisor-google" style="display:flex;justify-content:center;min-height:50px"></div><p id="supervisor-status" role="status" style="font-size:.9rem;color:#536c61"></p></dialog><script src="school-edition/session-auth.js"></script><script>
 (function(){
- const btn=document.getElementById('teacherLogin'),holder=document.getElementById('teacher-google'),status=document.getElementById('teacher-status');
- let initialized=false;
+ const holder=document.getElementById('teacher-google'),status=document.getElementById('teacher-status');
  async function verifiedTeacher(response){
-  status.textContent='جارٍ التحقق من اعتماد المعلم...';
+  status.textContent='جارٍ التحقق من اعتماد حساب المعلم...';
   try{
+   if(!response?.credential)throw Error('لم يكتمل تسجيل Google.');
    const r=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:response.credential})});
-   const j=await r.json();if(!r.ok||!j.ok||!j.data?.approved)throw Error('حسابك غير معتمد بعد. يرجى التواصل مع المشرف.');
-   schoolAuthSave(response.credential);location.href='school-edition/school-notebook.html';
-  }catch(e){status.textContent=e.message||'تعذر تسجيل الدخول.';btn.disabled=false;}
+   const j=await r.json();if(!r.ok||!j.ok||!j.data?.approved)throw Error('الحساب غير معتمد كمعلم. يرجى مراجعة المشرف.');
+   schoolAuthSave(response.credential);location.replace('school-edition/school-notebook.html');
+  }catch(e){status.textContent=e.message||'تعذر التحقق من حساب المعلم.';}
  }
- btn.addEventListener('click',()=>{
-  const existing=schoolAuthRestore();
-  if(existing){verifiedTeacher({credential:existing});return;}
-  holder.style.display='flex';btn.disabled=true;
-  const ready=()=>{
-   if(!window.google?.accounts?.id){status.textContent='تعذر تحميل Google.';btn.disabled=false;return;}
-   google.accounts.id.initialize({client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:verifiedTeacher});
-   google.accounts.id.renderButton(holder,{theme:'outline',size:'large',width:280});
-   status.textContent='اختر حساب Google المعتمد.';google.accounts.id.prompt();
-  };
-  if(window.google?.accounts?.id)ready();
-  else{const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;sc.onload=ready;sc.onerror=()=>{btn.disabled=false;status.textContent='تعذر الاتصال بخدمة Google.'};document.head.append(sc)}
- });
+ function render(){
+  if(!window.google?.accounts?.id){status.textContent='تعذر تحميل خدمة Google. أعد تحميل الصفحة.';return;}
+  google.accounts.id.initialize({client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:verifiedTeacher});
+  google.accounts.id.renderButton(holder,{type:'standard',theme:'filled_blue',size:'large',text:'signin_with',shape:'rectangular',width:300});
+  status.textContent='';
+ }
+ if(window.google?.accounts?.id)render();
+ else{const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;sc.defer=true;sc.onload=render;sc.onerror=()=>{status.textContent='تعذر الاتصال بخدمة Google.'};document.head.append(sc);}
 })();
 </script><script>(function(){const dialog=document.getElementById('supervisor-dialog'),status=document.getElementById('supervisor-status');let initialized=false;function start(){if(initialized)return;initialized=true;const ready=()=>{if(!window.google?.accounts?.id){status.textContent='تعذر تحميل Google. حاول مجددًا.';initialized=false;return}google.accounts.id.initialize({client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:r=>{schoolAuthSave(r.credential);location.href='school-edition/founder-dashboard.html'}});google.accounts.id.renderButton(document.getElementById('supervisor-google'),{theme:'outline',size:'large',width:260});status.textContent='سيتم التحقق من صلاحية المشرف في الصفحة التالية.'};if(window.google?.accounts?.id){ready();return}const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;script.onload=ready;script.onerror=()=>{status.textContent='تعذر الاتصال بخدمة Google.';initialized=false};document.head.appendChild(script)}document.getElementById('supervisor-pencil').addEventListener('click',()=>{if(schoolAuthRestore()){location.href='school-edition/founder-dashboard.html';return}dialog.showModal();start()});document.getElementById('supervisor-close').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()})})();</script></body></html>
