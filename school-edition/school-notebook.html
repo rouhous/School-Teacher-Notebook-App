@@ -847,7 +847,7 @@ function buildScheduleTableHTML(){
   const x=matches.find(x=>!isRestSlot(x)&&x.type!=='break');
   const flags=(db.periodAlarms?.[di+'_'+p.id]?'🔔':'')+(db.periodNotes?.[di+'_'+p.id]?'📝':'');
   if(!x)return '<td class="sched-cell" onclick="openPeriodCellMenu('+di+','+p.id+',null)"><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
-  const cls=db.classes.find(c=>c.id===x.classId),name=String(cls?.name||'').replace(/\\s*\\/\\s*1\\s*$/,'').slice(0,10);
+  const cls=db.classes.find(c=>c.id===x.classId),name=String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'').slice(0,10);
   const sub=String(x.subject||cls?.subject||'').slice(0,12);
   return '<td class="sched-cell" onclick="openPeriodCellMenu('+di+','+p.id+',\''+escHTML(x.classId||'')+'\')"><div class="sc-cls">'+escHTML(name)+'</div>'+(subjects.size>1?'<div class="sc-subj">'+escHTML(sub)+'</div>':'')+(flags?'<small>'+flags+'</small>':'')+'</td>';
  };
@@ -855,7 +855,7 @@ function buildScheduleTableHTML(){
  daysIdx.forEach(di=>h+='<th class="day-col">'+escHTML(dayLabel(di))+'</th>');
  h+='</tr></thead><tbody>';
  periods.forEach(p=>{
-  const short=(periodName(p)||'').replace(/الحصة\\s*/,'ح').replace(/Period\\s*/i,'P');
+  const short=(periodName(p)||'').replace(/الحصة\s*/,'ح').replace(/Period\s*/i,'P');
   h+='<tr><th class="period-col">'+escHTML(short)+'<small>'+escHTML(p.time||'')+'</small></th>';
   daysIdx.forEach(di=>h+=cell(di,p));
   h+='</tr>';
