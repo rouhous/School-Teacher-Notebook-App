@@ -3725,11 +3725,27 @@ function replaceHome(){
 }
 window.renderHome=replaceHome;
 window.loadSample=function(){toast('البيانات التجريبية غير متاحة في النسخة المدرسية.')};
+window.saveSchoolAlarmSettings=function(){
+ db.alarmEnabled=document.getElementById('schoolAlarmEnabled').checked;
+ db.alarmBeforeMin=Math.max(0,Math.min(60,Number(document.getElementById('schoolAlarmBefore').value)||0));
+ db.alarmBeforeEndMin=Math.max(0,Math.min(30,Number(document.getElementById('schoolAlarmEnd').value)||0));
+ save();closeM();toast('تم حفظ إعدادات المنبه');
+};
 window.openM=function(type,data){
  if(forbidden.has(type)){toast('إدارة الصفوف والطلاب والجداول من صلاحيات المشرف فقط.');return;}
  if(type==='settings'){
   const box=document.getElementById('modalBox');
-  box.innerHTML='<div class="modal-head"><h3>إعدادات التنبيهات</h3><button class="modal-x" onclick="closeM()">×</button></div><div class="school-managed-notice">تتم إدارة الجدول وأوقات الحصص والصفوف مركزيًا بواسطة المشرف.</div><p>لضبط التنبيهات استخدم إعدادات المنبه الموجودة في الدفتر. النسخ الاحتياطي المحلي متاح من قسم حماية البيانات.</p><button class="btn btn-primary btn-block" onclick="closeM()">إغلاق</button>';
+  box.innerHTML=`<div class="modal-head"><h3>إعدادات المنبه والنسخ المحلي</h3><button class="modal-x" onclick="closeM()">×</button></div>
+  <div class="school-managed-notice">الجدول وأوقات الحصص والصفوف والطلاب تُدار من المشرف فقط.</div>
+  <div class="form-group"><label><input id="schoolAlarmEnabled" type="checkbox" ${db.alarmEnabled!==false?'checked':''}> تفعيل تنبيهات الحصص</label></div>
+  <div class="form-group"><label>التنبيه قبل بداية الحصة (دقائق)</label><input id="schoolAlarmBefore" type="number" min="0" max="60" value="${Number(db.alarmBeforeMin??5)}"></div>
+  <div class="form-group"><label>التنبيه قبل نهاية الحصة (دقائق)</label><input id="schoolAlarmEnd" type="number" min="0" max="30" value="${Number(db.alarmBeforeEndMin??5)}"></div>
+  <button class="btn btn-outline btn-block" onclick="requestNotifPermission()">🔔 السماح بإشعارات المتصفح</button>
+  <button class="btn btn-primary btn-block" onclick="saveSchoolAlarmSettings()">حفظ إعدادات المنبه</button>
+  <hr><h4>النسخ الاحتياطي المحلي</h4>
+  <button class="btn btn-outline btn-block" onclick="exportBackup()">⬇️ تصدير نسخة احتياطية</button>
+  <label class="btn btn-ghost btn-block" style="display:block;text-align:center">⬆️ استيراد نسخة احتياطية محلية<input type="file" accept="application/json,.json" style="display:none" onchange="importBackup(this)"></label>`;
+
   document.getElementById('modalBg')?.classList.add('open');
   return;
  }
