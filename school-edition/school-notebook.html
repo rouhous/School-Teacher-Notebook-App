@@ -3797,6 +3797,17 @@ async function syncManaged(){
   replaceHome();
  }catch(e){loaded=true;managedSchedule=[];replaceHome();const body=document.getElementById('homeBody');body.insertAdjacentHTML('afterbegin','<div class="school-managed-notice">تعذر جلب البيانات المعتمدة. لم يتم تعديل القوائم المحلية. حاول إعادة فتح التطبيق بعد التحقق من الاتصال.</div>');}
 }
+// Automatically refresh supervisor-approved rosters and timetables while the notebook is in use.
+let schoolSyncRunning=false;
+const schoolSyncOriginal=syncManaged;
+syncManaged=async function(){
+ if(schoolSyncRunning||!navigator.onLine)return;
+ schoolSyncRunning=true;
+ try{await schoolSyncOriginal()}finally{schoolSyncRunning=false}
+};
 setTimeout(syncManaged,250);
+setInterval(()=>{if(document.visibilityState==='visible')syncManaged()},120000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncManaged()});
+window.addEventListener('online',syncManaged);
 })();
 </script></body></html>
