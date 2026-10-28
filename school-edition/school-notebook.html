@@ -4002,17 +4002,26 @@ function schoolDutyLabel(day,period){
  if(!/^[ABCD]$/.test(code))return '';
  return code;
 }
-// Browser back should never silently discard the teacher's session.
+// Keep the teacher in the notebook unless exit is explicitly confirmed.
 (function protectTeacherBack(){
  if(!window.history||!window.history.pushState)return;
  const guard={teacherNotebookGuard:true};
- history.pushState(guard,'',location.href);
+ function armGuard(){history.pushState(guard,'',location.href)}
+ armGuard();
+ let asking=false;
  window.addEventListener('popstate',function(){
-  const leave=window.confirm('هل تريد الخروج من دفتر المعلم؟');
-  if(!leave){history.pushState(guard,'',location.href);return;}
-  // Exit only on explicit confirmation; do not sign out or clear credentials.
-  location.replace('../');
+  if(asking)return;
+  asking=true;
+  // Re-arm first so cancelling does not leave the teacher on an unprotected history entry.
+  armGuard();
+  const leave=window.confirm('هل تريد الخروج من دفتر المعلم والعودة إلى الصفحة الرئيسية؟');
+  asking=false;
+  if(!leave)return;
+  // Keep the saved Google session; leaving the notebook is not signing out.
+  window.location.assign('../');
+ });
+ window.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&document.getElementById('modalBg')?.classList.contains('open')){closeM();e.preventDefault()}
  });
 })();
-
 </script></body></html>
