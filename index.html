@@ -74,7 +74,54 @@ dialog{border:1px solid #d9bf83;border-radius:22px;box-shadow:0 24px 80px #082f2
  footer{margin-top:12px}
 }
 @media(min-width:701px) and (max-width:1050px){.logos{min-height:130px}.hero{padding:35px 18px 24px}.content{max-width:900px}}
-</style><style id="official-logo-sizes">.logo-unit .official-logo{display:block;object-fit:contain;object-position:center;width:100%;max-width:180px;height:112px}.logo-unit .official-logo[hidden],.logo-unit .logo-fallback[hidden]{display:none!important}@media(max-width:600px){.logo-unit .official-logo{height:83px;max-width:105px}.logos{min-height:115px;gap:8px;padding:13px 9px}}@media(max-width:380px){.logo-unit .official-logo{height:70px}}</style></head><body><div class="site">
+</style><style id="official-logo-sizes">.logo-unit .official-logo{display:block;object-fit:contain;object-position:center;width:100%;max-width:180px;height:112px}.logo-unit .official-logo[hidden],.logo-unit .logo-fallback[hidden]{display:none!important}@media(max-width:600px){.logo-unit .official-logo{height:83px;max-width:105px}.logos{min-height:115px;gap:8px;padding:13px 9px}}@media(max-width:380px){.logo-unit .official-logo{height:70px}}</style><style id="compact-viewport-mobile-v2">
+@media(max-width:700px){
+  html,body{min-height:100%;overflow-x:hidden}
+  .site{min-height:100svh}
+  .masthead{flex-shrink:0}
+  .logos{min-height:0!important;padding:6px 10px!important;gap:5px!important}
+  .logo-unit .official-logo{height:clamp(42px,8.5svh,72px)!important;max-width:100%!important}
+  .logo-unit .logo-fallback{min-height:0!important;font-size:clamp(.6rem,2.4vw,.78rem)!important}
+  .hero{min-height:0!important;padding:clamp(9px,1.5svh,16px) 12px 8px!important}
+  .hero .eyebrow{font-size:clamp(.98rem,3.8vw,1.2rem)!important}
+  .hero h1{font-size:clamp(1.45rem,6.1vw,2.1rem)!important;line-height:1.28!important;margin:3px 0 5px!important}
+  .hero p{font-size:clamp(.73rem,2.9vw,.86rem)!important;line-height:1.5!important}
+  .hero .rule{margin:5px auto 0!important;font-size:.85rem}
+  .hero .rule:before,.hero .rule:after{width:35px!important}
+  .content{padding:0 10px!important;display:flex;flex-direction:column;justify-content:center}
+  .panel{padding:10px 12px!important;margin:0 auto 10px!important;border-radius:16px!important}
+  .panel h2{font-size:clamp(.86rem,3.5vw,1.05rem)!important;padding:9px 7px!important;margin-bottom:9px!important;border-radius:11px!important}
+  .field{margin-bottom:4px!important}
+  .field span{margin-bottom:3px!important;font-size:.75rem!important}
+  .field select{height:39px!important;border-radius:9px!important;font-size:.85rem!important}
+  #teacher-google{min-height:43px!important;margin:4px auto!important}
+  #teacher-status{min-height:0!important;margin:2px 0!important;font-size:.73rem!important}
+  .actions{padding-top:6px!important}
+  .register{font-size:.8rem!important;padding:5px 0!important}
+  #supervisor-pencil{width:34px!important;height:34px!important;border-radius:9px!important}
+  .hint{font-size:.68rem!important;line-height:1.3!important;margin:4px auto 0!important}
+  .features{max-width:480px!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:3px!important;padding:6px 4px!important;margin:0 auto 5px!important;border-radius:14px!important}
+  .feature{padding:5px 1px!important;border-radius:9px!important}
+  .feature .symbol{width:31px!important;height:31px!important;margin-bottom:3px!important}
+  .feature svg{width:17px!important;height:17px!important}
+  .feature strong{font-size:clamp(.56rem,2.15vw,.71rem)!important}
+  .feature small{font-size:clamp(.49rem,1.9vw,.62rem)!important;line-height:1.25!important}
+  .access{font-size:.61rem!important;line-height:1.3!important;margin:3px auto 6px!important}
+  footer{margin-top:0!important;padding:7px 10px!important;font-size:.69rem!important;line-height:1.5!important;border-top-width:4px!important}
+}
+@media(max-width:700px) and (max-height:680px){
+ .logo-unit .official-logo{height:42px!important}
+ .hero{padding:5px 10px!important}
+ .hero .eyebrow{font-size:.95rem!important}
+ .hero h1{font-size:1.4rem!important}
+ .hero p{font-size:.73rem!important}
+ .panel{padding:7px 10px!important;margin-bottom:6px!important}
+ .panel h2{padding:7px!important;margin-bottom:5px!important}
+ .features{padding:3px!important}
+ .feature .symbol{width:25px!important;height:25px!important}
+ .access{display:none!important}
+}
+</style></head><body><div class="site">
 <header class="masthead"><div class="logos">
 <div class="logo-unit" aria-label="وزارة التربية والتعليم"><img class="official-logo" src="assets/official_logo_ministry.png" alt="شعار وزارة التربية والتعليم" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><div class="logo-fallback" hidden>وزارة التربية والتعليم<small>سلطنة عُمان</small></div></div>
 <div class="logo-unit" aria-label="مدرسة وادي الحواسنة"><img class="official-logo" src="assets/official_logo_school.png" alt="شعار مدرسة وادي الحواسنة" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><div class="logo-fallback" hidden>مدرسة وادي الحواسنة<small>إبداع · تميز · إتقان</small></div></div>
