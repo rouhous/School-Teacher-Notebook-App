@@ -689,7 +689,7 @@ function teacherTodayCards(){
   const duty=x.dutyPriority||'';
   const title=duty||String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'');
   const key=today+'_'+x.periodId;
-  html+='<button class="today-lesson" data-day="'+Number(x.day)+'" data-period="'+Number(x.periodId)+'" onclick="openDatedPeriodNote('+Number(x.day)+','+Number(x.periodId)+')"><strong>'+(db.lang==='ar'?'ح':'P')+escHTML(x.periodId)+' · '+escHTML(title)+'</strong><small>'+(notes[key]?'📝 ':'')+(db.lang==='ar'?'إضافة ملاحظة':'Add note')+'</small></button>';
+  html+='<button class="today-lesson" data-day="'+Number(x.day)+'" data-period="'+Number(x.periodId)+'" onclick="showLessonNoteEditor('+Number(x.day)+','+Number(x.periodId)+')"><strong>'+(db.lang==='ar'?'ح':'P')+escHTML(x.periodId)+' · '+escHTML(title)+'</strong><small>'+(notes[key]?'📝 ':'')+(db.lang==='ar'?'إضافة ملاحظة':'Add note')+'</small></button>';
  });
  return html+'</div></section>';
 }
@@ -884,6 +884,33 @@ function scheduleVisualLessonRefresh(){
  window._lessonVisualInterval=setInterval(updateActiveLessonVisual,15000);
  updateActiveLessonVisual();
 }
+function resetTeacherTheme(){
+ db.teacherTheme={primary:'#0f766e',secondary:'#14b8a6'};
+ save();applyTeacherTheme();
+ document.querySelectorAll('.theme-settings input[type="color"]').forEach((input,i)=>{input.value=i===0?'#0f766e':'#14b8a6'});
+ toast('تمت استعادة الألوان الافتراضية');
+}
+function showLessonNoteEditor(day,period){
+ const per=(db.periods||[]).find(p=>Number(p.id)===Number(period));
+ const existing=document.getElementById('lessonNoteOverlay');if(existing)existing.remove();
+ const bg=document.createElement('div');bg.id='lessonNoteOverlay';
+ bg.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#001d1dbb;display:flex;align-items:center;justify-content:center;padding:16px';
+ bg.innerHTML='<section style="background:white;color:#134e4a;border-radius:20px;padding:20px;width:min(100%,460px);box-shadow:0 20px 55px #0004" dir="rtl"><h3 style="margin:0 0 14px">📝 ملاحظة · '+escHTML(days()[day]||'')+' · '+escHTML(periodName(per)||'')+'</h3><label style="display:block;margin-bottom:6px">التاريخ</label><input id="lessonNoteDate" type="date" style="width:100%;padding:12px;border:1px solid #b6cbc5;border-radius:10px;margin-bottom:12px"><label style="display:block;margin-bottom:6px">الملاحظة</label><textarea id="lessonNoteText" rows="5" placeholder="اكتب ملاحظتك هنا..." style="width:100%;padding:12px;border:1px solid #b6cbc5;border-radius:10px;resize:vertical"></textarea><div style="display:flex;gap:8px;margin-top:14px"><button id="lessonNoteSave" type="button" style="flex:1;background:var(--p);color:white;border:0;border-radius:10px;padding:12px">حفظ</button><button id="lessonNoteCancel" type="button" style="flex:1;background:#e5e7eb;border:0;border-radius:10px;padding:12px">إلغاء</button></div></section>';
+ document.body.appendChild(bg);
+ const dateInput=bg.querySelector('#lessonNoteDate'),note=bg.querySelector('#lessonNoteText');
+ dateInput.value=todayStr();
+ const key=()=>dateInput.value+'_'+day+'_'+period;
+ const load=()=>{note.value=(db.dailyPeriodNotes||{})[key()]||''};
+ dateInput.addEventListener('change',load);load();
+ bg.querySelector('#lessonNoteCancel').onclick=()=>bg.remove();
+ bg.onclick=e=>{if(e.target===bg)bg.remove()};
+ bg.querySelector('#lessonNoteSave').onclick=()=>{
+  if(!dateInput.value){toast('يرجى تحديد التاريخ');return}
+  db.dailyPeriodNotes=db.dailyPeriodNotes||{};
+  if(note.value.trim())db.dailyPeriodNotes[key()]=note.value.trim();else delete db.dailyPeriodNotes[key()];
+  save();bg.remove();toast('تم حفظ الملاحظة');renderHome();
+ };
+}
 function buildScheduleTableHTML(){
  const daysIdx=[0,1,2,3,4],dn=days(),periods=[...db.periods].sort((a,b)=>a.id-b.id);
  const dayLabel=i=>({'الأحد':'أحد','الاثنين':'اثنين','الثلاثاء':'ثلاثاء','الأربعاء':'أربعاء','الخميس':'خميس'}[dn[i]]||dn[i]||'');
@@ -894,10 +921,10 @@ function buildScheduleTableHTML(){
   const matches=(db.schedule||[]).filter(x=>Number(x.day)===di&&Number(x.periodId)===Number(p.id));
   const x=matches.find(x=>!isRestSlot(x)&&x.type!=='break');
   const flags=(db.periodAlarms?.[di+'_'+p.id]?'🔔':'')+(db.periodNotes?.[di+'_'+p.id]?'📝':'');
-  if(!x)return '<td class="sched-cell"'+attr+' onclick="openPeriodCellMenu('+di+','+p.id+',null)"><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
+  if(!x)return '<td class="sched-cell"'+attr+' onclick="showLessonNoteEditor('+di+','+p.id+')"><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
   const cls=db.classes.find(c=>c.id===x.classId),name=String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'').slice(0,10);
   const sub=String(x.subject||cls?.subject||'').slice(0,12);
-  return '<td class="sched-cell"'+attr+' onclick="openPeriodCellMenu('+di+','+p.id+',\''+escHTML(x.classId||'')+'\')"><div class="sc-cls">'+escHTML(name)+'</div>'+(subjects.size>1?'<div class="sc-subj">'+escHTML(sub)+'</div>':'')+(flags?'<small>'+flags+'</small>':'')+'</td>';
+  return '<td class="sched-cell"'+attr+' onclick="showLessonNoteEditor('+di+','+p.id+')"><div class="sc-cls">'+escHTML(name)+'</div>'+(subjects.size>1?'<div class="sc-subj">'+escHTML(sub)+'</div>':'')+(flags?'<small>'+flags+'</small>':'')+'</td>';
  };
  let h='<table class="sched-compact sched-vertical"><thead><tr><th class="period-col">'+(db.lang==='ar'?'الحصة':'Period')+'</th>';
  daysIdx.forEach(di=>h+='<th class="day-col">'+escHTML(dayLabel(di))+'</th>');
@@ -3890,7 +3917,7 @@ window.openM=function(type,data){
     <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px">
       <label>اللون الأساسي <input type="color" value="${db.teacherTheme?.primary||'#0f766e'}" onchange="setTeacherTheme('primary',this.value)"></label>
       <label>اللون الثاني <input type="color" value="${db.teacherTheme?.secondary||'#14b8a6'}" onchange="setTeacherTheme('secondary',this.value)"></label>
-    </div><small>تُحفظ الألوان فور اختيارها.</small>
+    </div><button type="button" class="btn btn-outline btn-block" style="margin-top:10px" onclick="resetTeacherTheme()">↺ استعادة الألوان الافتراضية</button><small>تُحفظ الألوان فور اختيارها.</small>
   </div>
   <div class="form-group"><label><input id="schoolAlarmEnabled" type="checkbox" ${db.alarmEnabled!==false?'checked':''}> تفعيل تنبيهات الحصص</label></div>
   <div class="form-group"><label>التنبيه قبل بداية الحصة (دقائق)</label><input id="schoolAlarmBefore" type="number" min="0" max="60" value="${Number(db.alarmBeforeMin??5)}"></div>
