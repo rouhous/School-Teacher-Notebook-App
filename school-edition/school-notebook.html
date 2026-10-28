@@ -3715,11 +3715,11 @@ const schoolApi='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
 let managedSchedule=[],managedRoster=[],loaded=false;
 function statusMessage(message){const node=document.getElementById('school-managed-status');if(node)node.textContent=message;}
 function managedHTML(){
- const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
- if(!loaded)return '<div class="school-managed-notice" id="school-managed-status">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
- if(!managedSchedule.length)return '<div class="school-managed-notice">لم تنشر إدارة المدرسة جدولًا معتمدًا لهذا الحساب بعد. لا يمكن إضافة جدول يدويًا.</div>';
- const rows=managedSchedule.slice().sort((a,b)=>Number(a.weekday)-Number(b.weekday)||Number(a.period)-Number(b.period));
- return '<div class="card" id="school-managed-schedule"><h3>الجدول المعتمد من إدارة المدرسة</h3><div style="overflow:auto"><table class="sched-compact"><thead><tr><th>اليوم</th><th>الحصة</th><th>الصف</th><th>المادة</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+escHTML(days[x.weekday]||String(x.weekday))+'</td><td>'+escHTML(String(x.period||''))+'</td><td>'+escHTML(String(x.classId||'احتياط'))+'</td><td>'+escHTML(String(x.subject||x.dutyPriority||''))+'</td></tr>').join('')+'</tbody></table></div></div>';
+ if(!loaded)return '<div class="school-managed-notice">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
+ if(!managedSchedule.length)return '<div class="school-managed-notice">لم يتوفر جدول منشور لهذا الحساب. لن يتم تعديل بياناتك المحلية.</div>';
+ // Reuse the ORIGINAL notebook's weekly timetable, rather than a separate school-only list.
+ const weekly=buildScheduleTableHTML().replace(/\\s+onclick="[^"]*"/g,'');
+ return '<div class="card" id="school-managed-schedule"><h3 style="text-align:center;margin-bottom:12px">الجدول الأسبوعي المعتمد</h3><div style="width:100%;overflow-x:auto">'+weekly+'</div></div>';
 }
 function replaceHome(){
  const body=document.getElementById('homeBody');if(!body)return;
@@ -3764,6 +3764,23 @@ async function syncManaged(){
   const [table,roster]=await Promise.all([fetchApproved('school-teacher-timetable'),fetchApproved('school-teacher-students')]);
   if(!table?.approved)throw Error('الحساب غير معتمد لعرض الجدول');
   managedSchedule=Array.isArray(table.slots)?table.slots:[];
+  // Translate the supervisor's published slots into the ORIGINAL notebook schedule model.
+  // Keep identifiers stable so attendance and grades remain linked to their students.
+  const existingClasses=Array.isArray(db.classes)?db.classes:[];
+  const scheduleClasses=new Map(existingClasses.map(c=>[String(c.name),c]));
+  for(const slot of managedSchedule){
+    if(!slot||!slot.classId)continue;
+    const name=String(slot.classId);
+    if(!scheduleClasses.has(name))scheduleClasses.set(name,{id:'school-class-'+String(slot.schoolId||'')+'-'+name,name,subject:String(slot.subject||'')});
+  }
+  db.classes=[...scheduleClasses.values()];
+  db.schedule=managedSchedule.filter(x=>x&&Number.isInteger(Number(x.weekday))&&Number.isInteger(Number(x.period))).map(x=>{
+    const cls=scheduleClasses.get(String(x.classId||''));
+    return {day:Number(x.weekday),periodId:Number(x.period),classId:cls?.id||'',subject:String(x.subject||x.dutyPriority||''),type:cls?'lesson':'rest'};
+  });
+  db.scheduleView='data';
+  db.onboarded=true;
+
   // Period times may only be changed by published supervisor data, never by a local guess.
   const publishedPeriods=Array.isArray(table.periods)?table.periods:Array.isArray(table.timing)?table.timing:[];
   if(publishedPeriods.length){const valid=publishedPeriods.filter(x=>x&&/^([01]\d|2[0-3]):[0-5]\d$/.test(String(x.time||''))&&Number.isInteger(Number(x.id)));if(valid.length){db.periods=valid.map(x=>({id:Number(x.id),nameAr:String(x.nameAr||'الحصة '+x.id),nameEn:String(x.nameEn||'Period '+x.id),time:String(x.time),endTime:x.endTime||undefined,type:x.type||undefined}));save();}}
