@@ -321,7 +321,17 @@ select{max-width:100%;touch-action:auto}
 .sched-vertical .period-col{font-size:10px!important}
 .sched-vertical .period-col small{font-size:8px!important}
 </style>
-</head>
+<style id="active-lesson-visual">
+.sched-vertical td.lesson-active-now,.sched-vertical td.sched-cell.lesson-active-now{
+ background:linear-gradient(135deg,#fef08a,#fbbf24)!important;
+ color:#713f12!important;outline:2px solid #d97706!important;outline-offset:-2px;
+ box-shadow:0 0 0 2px #f59e0b55,0 4px 14px #d9770644!important;
+}
+.today-lesson.lesson-active-now{background:linear-gradient(135deg,#fef08a,#fbbf24)!important;outline:2px solid #d97706}
+.sched-vertical td.lesson-start-now,.today-lesson.lesson-start-now{animation:lessonGlow 1.4s ease-in-out infinite alternate}
+@keyframes lessonGlow{from{filter:brightness(1)}to{filter:brightness(1.13)}}
+@media(prefers-reduced-motion:reduce){.sched-vertical td.lesson-start-now,.today-lesson.lesson-start-now{animation:none}}
+</style></head>
 <body data-lang="ar"><div id="schoolAuthCover"><div>جارٍ التحقق من حساب المعلم المدرسي…<p><a href="teacher-home.html">العودة إلى تسجيل الدخول</a></p></div></div>
 <div id="appLock" class="app-lock" aria-hidden="false">
   <div class="app-lock-card">
@@ -679,7 +689,7 @@ function teacherTodayCards(){
   const duty=x.dutyPriority||'';
   const title=duty||String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'');
   const key=today+'_'+x.periodId;
-  html+='<button class="today-lesson" onclick="openDatedPeriodNote('+Number(x.day)+','+Number(x.periodId)+')"><strong>'+(db.lang==='ar'?'ح':'P')+escHTML(x.periodId)+' · '+escHTML(title)+'</strong><small>'+(notes[key]?'📝 ':'')+(db.lang==='ar'?'إضافة ملاحظة':'Add note')+'</small></button>';
+  html+='<button class="today-lesson" data-day="'+Number(x.day)+'" data-period="'+Number(x.periodId)+'" onclick="openDatedPeriodNote('+Number(x.day)+','+Number(x.periodId)+')"><strong>'+(db.lang==='ar'?'ح':'P')+escHTML(x.periodId)+' · '+escHTML(title)+'</strong><small>'+(notes[key]?'📝 ':'')+(db.lang==='ar'?'إضافة ملاحظة':'Add note')+'</small></button>';
  });
  return html+'</div></section>';
 }
@@ -716,6 +726,7 @@ if(teacher || db.scheduleImage || db.schedule.length){
   } else if(db.schedule.length){
     top+=buildScheduleTableHTML();
     top+=teacherTodayCards();
+    setTimeout(updateActiveLessonVisual,0);
   } else {
     top+=`<p style="text-align:center;font-size:.85rem;color:var(--mu);margin:8px 0">${db.lang==='ar'?'أضف بيانات الجدول من الإعدادات أو استوردها من ملف':'Add schedule data in Settings or import it from a file'}</p>`;
   }
@@ -846,19 +857,47 @@ function fillRestSlotsInSchedule(){
   db.schedule=filled;
 }
 function setScheduleView(view){db.scheduleView=view==='image'?'image':'data';save();renderHome()}
+function currentLessonVisualState(){
+ const now=new Date(),day=now.getDay(),minute=now.getHours()*60+now.getMinutes();
+ if(day>4)return null;
+ const ps=(db.periods||[]).filter(p=>p&&p.time&&!isBreakPeriod(p)).sort((a,b)=>Number(a.id)-Number(b.id));
+ for(let i=0;i<ps.length;i++){
+  const p=ps[i],parts=String(p.time).split(':').map(Number);
+  if(parts.length!==2||parts.some(n=>!Number.isFinite(n)))continue;
+  const start=parts[0]*60+parts[1],next=ps[i+1];
+  let end=periodEndMinutes(p);
+  if(next?.time){const np=next.time.split(':').map(Number);const nextStart=np[0]*60+np[1];if(nextStart>start)end=Math.min(end,nextStart)}
+  if(minute>=start&&minute<end)return {day:day,period:Number(p.id),atStart:minute===start};
+ }
+ return null;
+}
+function updateActiveLessonVisual(){
+ const active=currentLessonVisualState();
+ document.querySelectorAll('.sched-vertical td[data-day][data-period],.today-lesson[data-day][data-period]').forEach(el=>{
+  const on=!!active&&Number(el.dataset.day)===active.day&&Number(el.dataset.period)===active.period;
+  el.classList.toggle('lesson-active-now',on);
+  el.classList.toggle('lesson-start-now',on&&active.atStart);
+ });
+}
+function scheduleVisualLessonRefresh(){
+ if(window._lessonVisualInterval)clearInterval(window._lessonVisualInterval);
+ window._lessonVisualInterval=setInterval(updateActiveLessonVisual,15000);
+ updateActiveLessonVisual();
+}
 function buildScheduleTableHTML(){
  const daysIdx=[0,1,2,3,4],dn=days(),periods=[...db.periods].sort((a,b)=>a.id-b.id);
  const dayLabel=i=>({'الأحد':'أحد','الاثنين':'اثنين','الثلاثاء':'ثلاثاء','الأربعاء':'أربعاء','الخميس':'خميس'}[dn[i]]||dn[i]||'');
  const subjects=new Set((db.schedule||[]).filter(x=>!isRestSlot(x)&&x.type!=='break').map(x=>String(x.subject||db.classes.find(c=>c.id===x.classId)?.subject||'').trim()).filter(Boolean));
  const cell=(di,p)=>{
+  const attr=' data-day="'+di+'" data-period="'+p.id+'"';
   if(isBreakPeriod(p))return '<td class="sc-break">'+escHTML(t('breakPeriod'))+'</td>';
   const matches=(db.schedule||[]).filter(x=>Number(x.day)===di&&Number(x.periodId)===Number(p.id));
   const x=matches.find(x=>!isRestSlot(x)&&x.type!=='break');
   const flags=(db.periodAlarms?.[di+'_'+p.id]?'🔔':'')+(db.periodNotes?.[di+'_'+p.id]?'📝':'');
-  if(!x)return '<td class="sched-cell" onclick="openPeriodCellMenu('+di+','+p.id+',null)"><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
+  if(!x)return '<td class="sched-cell"'+attr+' onclick="openPeriodCellMenu('+di+','+p.id+',null)"><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
   const cls=db.classes.find(c=>c.id===x.classId),name=String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'').slice(0,10);
   const sub=String(x.subject||cls?.subject||'').slice(0,12);
-  return '<td class="sched-cell" onclick="openPeriodCellMenu('+di+','+p.id+',\''+escHTML(x.classId||'')+'\')"><div class="sc-cls">'+escHTML(name)+'</div>'+(subjects.size>1?'<div class="sc-subj">'+escHTML(sub)+'</div>':'')+(flags?'<small>'+flags+'</small>':'')+'</td>';
+  return '<td class="sched-cell"'+attr+' onclick="openPeriodCellMenu('+di+','+p.id+',\''+escHTML(x.classId||'')+'\')"><div class="sc-cls">'+escHTML(name)+'</div>'+(subjects.size>1?'<div class="sc-subj">'+escHTML(sub)+'</div>':'')+(flags?'<small>'+flags+'</small>':'')+'</td>';
  };
  let h='<table class="sched-compact sched-vertical"><thead><tr><th class="period-col">'+(db.lang==='ar'?'الحصة':'Period')+'</th>';
  daysIdx.forEach(di=>h+='<th class="day-col">'+escHTML(dayLabel(di))+'</th>');
@@ -3542,12 +3581,15 @@ function periodEndMinutes(per){
   return h*60+m+40; // default ~40 min lesson
 }
 function scheduleAlarmChecker(){
+  scheduleVisualLessonRefresh();
   if(_alarmTimer)clearInterval(_alarmTimer);
   _alarmTimer=setInterval(checkPeriodAlarms,20000);
   checkPeriodAlarms();
 }
 function checkPeriodAlarms(){
+  updateActiveLessonVisual();
   if(db.alarmEnabled===false)return;
+  // Visual highlighting works even without notification permission.
   if(!('Notification' in window)||Notification.permission!=='granted')return;
   const now=new Date();
   const dayIdx=now.getDay();
