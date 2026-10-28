@@ -89,6 +89,10 @@ function renderGoogle(){
   if(!schoolAuthRestore())google.accounts.id.prompt();
  }catch(e){loginFailed('تعذر تهيئة Google: '+(e?.message||'خطأ غير معروف'))}
 }
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState!=='visible'||!activeCredential)return;
+ if(!schoolAuthRestore()){switchTeacherAccount();$('status').textContent='انتهت جلسة تسجيل الدخول. يرجى تسجيل الدخول مجددًا.';}
+});
 const savedSchoolSession=schoolAuthRestore();
 if(savedSchoolSession){onGoogle({credential:savedSchoolSession});}
 initializeLogin();
