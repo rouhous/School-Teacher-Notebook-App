@@ -28,7 +28,7 @@
    if(!window.google?.accounts?.id){status.textContent='تعذر تحميل Google.';btn.disabled=false;return;}
    google.accounts.id.initialize({client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:verifiedTeacher});
    google.accounts.id.renderButton(holder,{theme:'outline',size:'large',width:280});
-   status.textContent='اختر حساب Google المعتمد.';
+   status.textContent='اختر حساب Google المعتمد.';google.accounts.id.prompt();
   };
   if(window.google?.accounts?.id)ready();
   else{const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;sc.onload=ready;sc.onerror=()=>{btn.disabled=false;status.textContent='تعذر الاتصال بخدمة Google.'};document.head.append(sc)}
