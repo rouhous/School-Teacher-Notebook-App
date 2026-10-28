@@ -292,7 +292,31 @@ $('loadPending').onclick=loadRosterReview;
 $('school').addEventListener('change',()=>{$('reviewClasses').replaceChildren();$('reviewMessage').textContent='اختر عرض القوائم للمراجعة للمدرسة المحددة.'});
 function onGoogle(r){if(!r?.credential)return;credential=r.credential;schoolAuthSave(credential);$('status').textContent='تم تسجيل الدخول. جارٍ جلب القوائم...';loadRosterReview();$('publish').disabled=!rows.length}
 const savedSupervisorCredential=schoolAuthRestore();if(savedSupervisorCredential)onGoogle({credential:savedSupervisorCredential});
-let n=0;const t=setInterval(()=>{if(window.google?.accounts?.id){clearInterval(t);google.accounts.id.initialize({auto_select:true,client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:onGoogle});google.accounts.id.renderButton($('google'),{theme:'outline',size:'medium',width:220});if(!savedSupervisorCredential)google.accounts.id.prompt()}else if(++n>80){clearInterval(t);$('status').textContent='تعذر ظهور تسجيل Google. افتح الصفحة في Chrome مباشرة، أو عطّل حظر ملفات تعريف الارتباط لهذه الصفحة.'}},250);
+// Google sign-in is initialized in a separate script so an import-parser error cannot hide the login button.
+
 </script><script>
 (function(){const b=document.getElementById('googleQuickEntry');if(!b)return;let tries=0;const timer=setInterval(()=>{if(window.google?.accounts?.id){clearInterval(timer);b.style.display='inline-block';b.onclick=()=>{try{google.accounts.id.prompt()}catch(e){b.textContent='استخدم زر Google لتسجيل الدخول'}}}else if(++tries>60)clearInterval(timer)},250)})();
+</script><script id="supervisor-login-rescue">
+(function(){
+const status=document.getElementById('status'),slot=document.getElementById('google'),quick=document.getElementById('googleQuickEntry');
+if(!status||!slot)return;
+quick.style.display='inline-block';
+quick.textContent='تسجيل الدخول بحساب Google';
+quick.onclick=function(){if(window.google?.accounts?.id){google.accounts.id.prompt();status.textContent='إذا لم تظهر نافذة اختيار الحساب، استخدم زر Google أسفل هذا الزر.'}else{status.textContent='خدمة Google غير متاحة حاليًا. افتح الرابط في Chrome.'}};
+function signin(response){
+if(!response||!response.credential)return;
+try{schoolAuthSave(response.credential);status.textContent='تم استلام تسجيل Google. جارٍ عرض قوائم المراجعة...';
+if(typeof onGoogle==='function'){onGoogle(response)}else{status.textContent='تعذر تهيئة أدوات المراجعة. حدّث الصفحة.'}
+}catch(e){status.textContent='تعذر إكمال الدخول: '+e.message}
+}
+let tries=0;const t=setInterval(function(){
+if(window.google?.accounts?.id){
+clearInterval(t);
+try{google.accounts.id.initialize({client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:signin,auto_select:false});
+google.accounts.id.renderButton(slot,{type:'standard',theme:'outline',size:'large',width:240});
+if(typeof schoolAuthRestore==='function'){const saved=schoolAuthRestore();if(saved)signin({credential:saved})}
+}catch(e){status.textContent='خطأ في تهيئة Google: '+e.message}
+}else if(++tries>=100){clearInterval(t);status.textContent='تعذر تحميل Google. جرّب Chrome أو تحقق من اتصال الإنترنت.'}
+},200);
+})();
 </script></body></html>
