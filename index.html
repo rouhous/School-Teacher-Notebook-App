@@ -251,7 +251,23 @@ footer{position:relative!important;z-index:2!important;background:transparent!im
  .feature .symbol{width:26px!important;height:26px!important}
  footer{padding:8px!important}
 }
-</style></head><body><div class="site">
+</style><style id="reference-actual-artwork-20261029">
+/* Exact reference artwork, cleaned of baked-in login card; activates after upload. */
+@media(min-width:801px){
+ .site.reference-ready{background:#f8f0dc url('assets/school-home-reference-clean.webp') center center/100% 100% no-repeat!important;min-height:100svh!important;height:100svh!important;grid-template-columns:1fr 1fr!important;grid-template-rows:1fr!important;overflow:hidden!important}
+ .site.reference-ready:before,.site.reference-ready:after{display:none!important}
+ .site.reference-ready .masthead,.site.reference-ready .hero,.site.reference-ready .features,.site.reference-ready .access,.site.reference-ready footer{display:none!important}
+ .site.reference-ready .content{grid-column:2!important;grid-row:1!important;justify-self:center!important;align-self:center!important;width:min(90%,610px)!important;max-width:610px!important;padding:0!important;margin:0!important;display:block!important}
+ .site.reference-ready .panel{border-radius:24px!important;padding:clamp(17px,2.2vw,30px)!important;background:#fffaf1f2!important;box-shadow:0 8px 26px #263f3026!important;border:1px solid #e7d7b9!important}
+ .site.reference-ready .panel h2{background:linear-gradient(90deg,#08654b,#004932)!important;color:white!important;padding:14px!important}
+ .site.reference-ready .actions{display:flex!important;justify-content:space-between!important}
+}
+@media(max-width:800px){
+ .site.reference-ready{background:radial-gradient(ellipse at top,#fffdf6,#f5e9cd)!important}
+}
+</style><script>
+(function(){if(innerWidth<801)return;var test=new Image();test.onload=function(){document.addEventListener('DOMContentLoaded',function(){document.querySelector('.site')?.classList.add('reference-ready')})};test.src='assets/school-home-reference-clean.webp';})();
+</script></head><body><div class="site">
 <header class="masthead"><div class="official-banner-wrap"><img src="assets/official_school_banner.jpg" alt="شعارات رؤية عُمان 2040 ومدرسة وادي الحواسنة ووزارة التربية والتعليم" loading="eager" decoding="async"></div></header>
 <section class="hero"><div class="school-scene" aria-hidden="true"></div><div class="school-floating-icons" aria-hidden="true"><span>♧</span><span>☼</span><span>▣</span></div><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
 <main class="content"><section class="panel" aria-labelledby="login-heading"><h2 id="login-heading">تسجيل الدخول / إنشاء حساب جديد</h2><label class="field" for="school"><span>المدرسة</span><select id="school"><option value="">اختر المدرسة أولًا</option><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><div id="teacher-google"></div><p id="teacher-status" role="status" aria-live="polite"></p><div class="actions"><a class="register" id="register" href="school-edition/teacher-registration.html">إنشاء حساب معلم جديد</a><button type="button" id="supervisor-pencil" aria-label="دخول المشرف" title="دخول المشرف">✎</button></div><p class="hint">الدخول الآمن باستخدام Google. لا نطلب كلمة المرور داخل هذه الصفحة.</p></section>
