@@ -297,9 +297,64 @@ footer{background:linear-gradient(120deg,#08634d,#07523e)!important;color:#fff9e
  footer{flex:0 0 auto!important;padding:6px!important;font-size:.7rem!important;margin:0!important}
 }
 @media(max-width:800px) and (max-height:680px){.hero p{display:none!important}.features .feature small{display:none!important}.hero{padding:4px!important}.panel{padding:8px!important}.content{justify-content:flex-start!important}}
+</style><style id="school-home-final-visual-v4">
+/* Actual decorative assets, not a screenshot; all sign-in controls remain live. */
+html,body{margin:0!important}
+.site{background:linear-gradient(145deg,#fffdf6,#f6eed8)!important;position:relative!important}
+.masthead{border-top:7px solid #086b52!important;border-bottom:5px solid #c5a057!important;background:linear-gradient(170deg,#086b52 0 4%,#fdf9ed 4.3% 94%,#086b52 94.3%)!important}
+.official-banner-wrap{background:transparent!important}
+.official-banner-wrap img{object-fit:contain!important}
+.hero{isolation:isolate!important;overflow:visible!important}
+.school-scene{position:absolute;z-index:-1;pointer-events:none;background:url('assets/school-educational-scene.svg') no-repeat bottom left;background-size:contain;opacity:.92}
+.school-floating-icons{position:absolute;inset:0;pointer-events:none;z-index:-1;display:flex;justify-content:space-around;align-items:flex-start;color:#bca15c;opacity:.27;font-size:clamp(25px,3vw,46px)}
+.hero:before,.hero:after{content:none!important}
+.panel{background:#fffdf9f2!important}
+.site:after{position:absolute!important;bottom:0!important;left:0;right:0!important;z-index:0!important;height:24px!important;background:linear-gradient(175deg,transparent 0 22%,#c7a258 23% 31%,#086a50 32% 100%)!important}
+footer{z-index:1!important}
+@media(min-width:801px){
+ .site{display:grid!important;direction:rtl!important;grid-template-columns:1fr 1fr!important;grid-template-rows:auto minmax(0,1fr) auto!important}
+ .masthead{grid-column:1/-1!important;grid-row:1!important}
+ .hero{grid-column:1!important;grid-row:2!important;justify-self:stretch!important;text-align:right!important;padding:clamp(12px,3vh,30px) 5vw 16px 12px!important}
+ .hero .eyebrow,.hero h1,.hero p{text-align:right!important;position:relative;z-index:1}
+ .hero .eyebrow{font-size:clamp(1.5rem,2.7vw,2.6rem)!important}
+ .hero h1{font-size:clamp(2rem,3.5vw,3.7rem)!important;line-height:1.23!important}
+ .hero p{font-size:clamp(.9rem,1.3vw,1.2rem)!important}
+ .school-scene{width:80%;height:72%;left:-18%;bottom:-4%;opacity:.55}
+ .school-floating-icons{inset:3% 0 auto 0}
+ .content{grid-column:2!important;grid-row:2!important;justify-self:center!important;align-self:center!important;max-width:560px!important;padding:8px 2vw!important}
+ .panel{max-width:510px!important}
+ footer{grid-column:1/-1!important;grid-row:3!important}
+}
+@media(max-width:800px){
+ .site{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto auto auto!important;align-content:space-between!important;min-height:100svh!important}
+ .masthead{grid-row:1!important}
+ .official-banner-wrap img{max-height:clamp(72px,13svh,122px)!important}
+ .hero{grid-row:2!important;width:100%!important;min-height:clamp(150px,25svh,245px)!important;padding:clamp(8px,1.6svh,15px) 10px!important;margin:0!important;text-align:center!important}
+ .hero .eyebrow{font-size:clamp(1.05rem,4.2vw,1.4rem)!important}
+ .hero h1{font-size:clamp(1.6rem,6vw,2.25rem)!important;line-height:1.2!important}
+ .hero p{font-size:clamp(.73rem,2.6vw,.9rem)!important;line-height:1.4!important}
+ .school-scene{width:55%;height:80%;bottom:-8%;left:-5%;opacity:.55}
+ .school-floating-icons{inset:0 2%;opacity:.22}
+ .content{grid-row:3!important;flex:0 0 auto!important;min-height:0!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;max-width:540px!important;padding:4px 9px!important}
+ .panel{padding:10px 12px!important}
+ .panel h2{padding:8px!important;margin:0 0 7px!important}
+ .features{padding:5px!important;margin:0!important}
+ .feature{padding:4px 1px!important}
+ .access{margin:2px 0!important;font-size:.62rem!important}
+ footer{grid-row:4!important;margin:0!important;padding:7px!important}
+}
+@media(max-width:800px) and (max-height:750px){
+ .official-banner-wrap img{max-height:80px!important}
+ .hero{min-height:125px!important;padding:4px 8px!important}
+ .hero h1{font-size:1.45rem!important}
+ .hero p{font-size:.69rem!important}
+ .panel{padding:8px!important}
+ .feature .symbol{width:25px!important;height:25px!important}
+ .features{padding:3px!important}
+}
 </style></head><body><div class="site">
 <header class="masthead"><div class="official-banner-wrap"><img src="assets/official_school_banner.jpg" alt="شعارات رؤية عُمان 2040 ومدرسة وادي الحواسنة ووزارة التربية والتعليم" loading="eager" decoding="async"></div></header>
-<section class="hero"><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
+<section class="hero"><div class="school-scene" aria-hidden="true"></div><div class="school-floating-icons" aria-hidden="true"><span>♧</span><span>☼</span><span>▣</span></div><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
 <main class="content"><section class="panel" aria-labelledby="login-heading"><h2 id="login-heading">تسجيل الدخول / إنشاء حساب جديد</h2><label class="field" for="school"><span>المدرسة</span><select id="school"><option value="">اختر المدرسة أولًا</option><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><div id="teacher-google"></div><p id="teacher-status" role="status" aria-live="polite"></p><div class="actions"><a class="register" id="register" href="school-edition/teacher-registration.html">إنشاء حساب معلم جديد</a><button type="button" id="supervisor-pencil" aria-label="دخول المشرف" title="دخول المشرف">✎</button></div><p class="hint">الدخول الآمن باستخدام Google. لا نطلب كلمة المرور داخل هذه الصفحة.</p></section>
 <section class="features" aria-label="مميزات الدفتر">
 <div class="feature"><span class="symbol"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 10h6M9 14h6M9 18h3"/></svg></span><strong>تسهيل عملك</strong><small>وتوفير وقتك</small></div>
