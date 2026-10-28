@@ -1,0 +1,44 @@
+name: Build school-logo PWA icons
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/school-logo-icons.yml'
+permissions:
+  contents: write
+jobs:
+  icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pillow
+        run: python -m pip install pillow
+      - name: Extract official school logo from existing official banner
+        run: |
+          python - <<'PY'
+          from PIL import Image, ImageOps, ImageDraw
+          from pathlib import Path
+          im=Image.open('assets/official_school_banner.jpg').convert('RGB')
+          w,h=im.size
+          # The official school emblem is the central third of the original three-logo banner.
+          crop=im.crop((round(w*.345),0,round(w*.655),h))
+          # Trim the near-white surrounding margins, without cropping colored logo strokes.
+          from PIL import ImageChops
+          bg=Image.new('RGB',crop.size,(255,255,255))
+          diff=ImageChops.difference(crop,bg).convert('L').point(lambda x:255 if x>30 else 0)
+          bbox=diff.getbbox()
+          if bbox: crop=crop.crop(bbox)
+          for n in (192,512):
+              canvas=Image.new('RGBA',(n,n),(255,253,247,255))
+              d=ImageDraw.Draw(canvas)
+              d.rounded_rectangle((0,0,n-1,n-1),radius=round(n*.20),fill=(255,253,247,255))
+              thumb=ImageOps.contain(crop,(round(n*.82),round(n*.82)),Image.Resampling.LANCZOS)
+              canvas.paste(thumb,((n-thumb.width)//2,(n-thumb.height)//2))
+              canvas.save(f'assets/school-icon-{n}.png',optimize=True)
+          PY
+      - name: Commit school icon images
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/school-icon-192.png assets/school-icon-512.png
+          git diff --cached --quiet || (git commit -m "Use official school logo as installed PWA icon" && git push)
