@@ -1029,7 +1029,56 @@ function exportAttReport(){
   <p><b>${escHTML(cls?.name||'')}</b> · ${escHTML(periodName(per)||'')} (${escHTML(per?.time||'')}) · ${escHTML(ds)}</p>
   <div class="sum"><span>${t('presentCount')}: ${p}</span><span>${t('absentCount')}: ${a}</span><span>${t('lateCount')}: ${l}</span><span>${t('excusedCount')}: ${e}</span></div>
   <table><thead><tr><th>#</th><th>${t('studentName')}</th><th>${t('studentNumber')}</th><th>${t('attendance')}</th></tr></thead><tbody>${rows}</tbody></table>
-  <script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
+  <script>setTimeout(()=>window.print(),400)<\/script><script id="school-approved-sync-v2">
+(function(){
+function receive(event){
+ if(event.origin!==location.origin||event.source!==window.parent||window.parent===window)return;
+ const payload=event.data;
+ if(!payload||payload.type!=='SCHOOL_APPROVED_DATA_V2')return;
+ if(!Array.isArray(payload.students)||!Array.isArray(payload.slots))return;
+ if(payload.students.length>2500||payload.slots.length>200)return;
+ try{
+ const students=payload.students.filter(x=>x&&typeof x.name==='string'&&typeof x.classId==='string'&&x.name.length<160&&x.classId.length<50);
+ const slots=payload.slots.filter(x=>x&&Number.isInteger(Number(x.weekday))&&Number.isInteger(Number(x.period))&&x.classId);
+ const byClass=new Map();
+ for(const x of students){const id=String(x.classId).trim();if(id)byClass.set(id,true)}
+ for(const x of slots){const id=String(x.classId).trim();if(id)byClass.set(id,true)}
+ const classIds=new Map();
+ for(const name of byClass.keys()){
+ let c=db.classes.find(v=>v.schoolApprovedId===name)||db.classes.find(v=>v.name===name);
+ if(!c){c={id:uid(),name,subject:'',schoolApprovedId:name};db.classes.push(c)}
+ c.schoolApprovedId=name;classIds.set(name,c.id)
+ }
+ const incoming=new Set();
+ for(const x of students){
+ const classId=classIds.get(String(x.classId).trim());if(!classId)continue;
+ const code=String(x.studentCode||'').trim();
+ const key=(code?'code:'+code:'name:'+x.name.trim())+'|'+classId;
+ if(incoming.has(key))continue;incoming.add(key);
+ let record=db.students.find(v=>v.schoolApprovedKey===key)||(code?db.students.find(v=>v.classId===classId&&v.studentNumber===code):db.students.find(v=>v.classId===classId&&v.name===x.name.trim()));
+ if(!record){record={id:uid(),name:x.name.trim(),classId,studentNumber:code};db.students.push(record)}
+ record.schoolApprovedKey=key;
+ }
+ const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
+ const newSchedule=[];
+ for(const x of slots){
+ const classId=classIds.get(String(x.classId).trim());
+ const day=Number(x.weekday),periodId=Number(x.period);
+ if(!classId||day<0||day>6||periodId<1||periodId>15)continue;
+ newSchedule.push({classId,day,periodId,subject:String(x.subject||'English').slice(0,100),schoolApproved:true});
+ }
+ db.schedule=db.schedule.filter(x=>!x.schoolApproved);
+ const occupied=new Set();
+ for(const x of newSchedule){const key=x.classId+'|'+x.day+'|'+x.periodId;if(occupied.has(key))continue;occupied.add(key);db.schedule=db.schedule.filter(v=>!(v.classId===x.classId&&v.day===x.day&&v.periodId===x.periodId));db.schedule.push(x)}
+ db.onboarded=true;save();
+ if(typeof renderHome==='function')renderHome();
+ if(typeof renderClasses==='function')renderClasses();
+ if(typeof toast==='function')toast('تم تحديث '+students.length+' طالبًا و'+newSchedule.length+' حصة من البيانات المعتمدة');
+ }catch(err){if(typeof toast==='function')toast('تعذر ربط بيانات المدرسة: '+err.message)}
+}
+window.addEventListener('message',receive);
+})();
+</script></body></html>`);
   w.document.close();
 }
 function sendAttendanceToNoorExtension(){
