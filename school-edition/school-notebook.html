@@ -4189,15 +4189,19 @@ async function syncManaged(){
   const approvedByGrade=new Map();
   for(const c of nextClasses){
     const grade=String(c.name).split('/')[0];
-    if(!approvedByGrade.has(grade))approvedByGrade.set(grade,c.id);
-    else approvedByGrade.set(grade,null);
+    const schoolKey=String(c.schoolId||'')+'|'+grade;
+    if(!approvedByGrade.has(schoolKey))approvedByGrade.set(schoolKey,c.id);
+    else approvedByGrade.set(schoolKey,null);
   }
   const classAliases=new Map();
   for(const old of db.classes){
-    if(nextClasses.some(c=>c.id===old.id))continue;
+    if(nextClasses.some(c=>String(c.id)===String(old.id)))continue;
+    // Never merge classes from different schools or ambiguous sections.
+    const school=String(old.schoolId||'');
+    if(!school)continue;
     const grade=String(old.name||'').replace(/[.]0$/,'').trim();
-    const target=approvedByGrade.get(grade);
-    if(target&&target!==old.id)classAliases.set(old.id,target);
+    const target=approvedByGrade.get(school+'|'+grade);
+    if(target&&String(target)!==String(old.id))classAliases.set(old.id,target);
   }
   if(classAliases.size){
     db.schedule=db.schedule.map(x=>classAliases.has(x.classId)?{...x,classId:classAliases.get(x.classId)}:x);
