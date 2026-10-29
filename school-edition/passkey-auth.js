@@ -49,5 +49,5 @@ if(document.getElementById('teacher-google')){
 }
 if(location.pathname.endsWith('/school-edition/school-notebook.html')&&typeof schoolAuthRestore==='function'&&schoolAuthRestore()){
  const {b,msg}=makeButton('🔐 تفعيل البصمة / Face ID',async()=>registerWithGoogle(schoolAuthRestore()));
- const panel=document.createElement('div');panel.style.cssText='position:fixed;left:9px;bottom:105px;z-index:500;background:#f5fffa;border:1px solid #bed8c9;border-radius:16px;max-width:210px;box-shadow:0 4px 16px #0438;text-align:center;padding:4px';panel.append(b,msg);document.body.append(panel);
+ const panel=document.createElement('div');panel.style.cssText='position:fixed;left:9px;bottom:105px;z-index:500;background:#f5fffa;border:1px solid #bed8c9;border-radius:16px;max-width:210px;box-shadow:0 4px 16px #0438;text-align:center;padding:4px';panel.append(b,msg);const test=document.createElement('button');test.type='button';test.textContent='تجربة الدخول بالبصمة';test.style.cssText='border:1px solid #9bbfae;border-radius:10px;padding:9px;background:#e5f7ed;color:#075a43;font-weight:700;margin:6px';test.onclick=async()=>{await signOut();schoolAuthClear();location.assign('../')};panel.append(test);document.body.append(panel);
 }
