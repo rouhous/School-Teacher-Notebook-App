@@ -1230,10 +1230,10 @@ function isFinalType(type){const x=String(type||'').toLowerCase();return x==='ex
 
 function schoolAssessmentSubject(value){
  const raw=cleanSchoolSubject(value);
- const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات','علوم':'علوم','العلوم':'علوم','العلوم والبيئة':'العلوم والبيئة','أحياء':'أحياء','علم الأحياء':'أحياء','بيولوجيا':'أحياء','كيمياء':'كيمياء','فيزياء':'فيزياء','Science':'علوم','Biology':'أحياء','Physics':'فيزياء','Chemistry':'كيمياء','Science and Environment':'العلوم والبيئة','الحاسوب':'تقنية المعلومات','حاسوب':'تقنية المعلومات','موسيقى':'مهارات موسيقية','تربية موسيقية':'مهارات موسيقية'};
+ const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات','علوم':'علوم','العلوم':'علوم','العلوم والبيئة':'العلوم والبيئة','العلوم البيئية':'العلوم البيئية','علوم البيئة':'العلوم البيئية','أحياء':'أحياء','علم الأحياء':'أحياء','بيولوجيا':'أحياء','كيمياء':'كيمياء','فيزياء':'فيزياء','Science':'علوم','Biology':'أحياء','Physics':'فيزياء','Chemistry':'كيمياء','Science and Environment':'العلوم والبيئة','الحاسوب':'تقنية المعلومات','حاسوب':'تقنية المعلومات','موسيقى':'مهارات موسيقية','تربية موسيقية':'مهارات موسيقية'};
  if(aliases[raw])return aliases[raw];
  if(/موسيق|music/i.test(raw))return 'مهارات موسيقية';
- if(/بيئ|environment/i.test(raw))return 'العلوم والبيئة';
+ if(/بيئ|environment/i.test(raw))return 'العلوم البيئية';
  if(/(?:أحياء|biology)/i.test(raw))return 'أحياء';
  if(/(?:كيمياء|chemistry)/i.test(raw))return 'كيمياء';
  if(/(?:فيزياء|physics)/i.test(raw))return 'فيزياء';
@@ -1243,13 +1243,25 @@ function schoolAssessmentSubject(value){
 function ensureOfficialAssessments(classId){
  const c=db.classes.find(x=>String(x.id)===String(classId));if(!c)return;
  const grade=Number((String(c.name).match(/\d+/)||[])[0]);if(!grade)return;
- const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات'};
+ const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات','تربية بدنية وصحية':'تربية بدنية','التربية البدنية والصحية':'تربية بدنية','الرياضة المدرسية':'تربية بدنية','الفنون التشكيلية':'فنون بصرية','الفنون الموسيقية':'مهارات موسيقية','الجغرافيا':'جغرافيا','التاريخ':'دراسات اجتماعية','العلوم البيئية':'العلوم البيئية'};
  let subj=schoolAssessmentSubject(classDisplaySubject(c)||c.subject||'');subj=aliases[subj]||subj;
  const bands=bandsForSubject(subj);
  const band=bands.find(b=>b===String(grade))||bands.find(b=>{const m=b.match(/^(\d+)-(\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
  if(!band)return;
  const preset=resolveAssessmentPreset(subj,band);if(!Array.isArray(preset))return;
  let changed=false;
+ // When moving from a provisional science aggregate to detailed tools, remove only
+ // blank provisional columns; if marks exist, retain them and avoid duplicate totals.
+ if(['أحياء','كيمياء','فيزياء','العلوم والبيئة','العلوم البيئية','علوم البيئة'].includes(subj)&&['11','12'].includes(band)){
+   const aggregates=db.assessments.filter(a=>String(a.classId)===String(classId)&&String(a.name||'').startsWith('التقويم المستمر (تفاصيله حسب وثيقة المادة)'));
+   let hasScoredAggregate=false;
+   for(const old of aggregates){
+     const scored=Object.keys(db.grades||{}).some(k=>k.startsWith(String(old.id)+'_')&&db.grades[k]!==''&&db.grades[k]!=null);
+     if(scored)hasScoredAggregate=true;
+     else{db.assessments=db.assessments.filter(a=>a.id!==old.id);changed=true;}
+   }
+   if(hasScoredAggregate){if(changed)save();return;}
+ }
  // The legacy aggregate music activity was replaced by four named 20-mark skills.
  // Remove only empty legacy columns; never delete recorded marks.
  if(subj==='مهارات موسيقية'&&band==='5-10'){
@@ -2364,12 +2376,27 @@ const ASSESSMENT_CATALOG={
   },
   'أحياء':{
     '10':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:40,type:'activity'},{name:'امتحان نهاية الفصل',max:60,type:'exam'}],
-    '11':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:40,type:'activity'},{name:'امتحان نهاية الفصل',max:60,type:'exam'}],
-    '12':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:30,type:'activity'},{name:'امتحان نهاية الفصل',max:70,type:'exam'}]
+    // Detailed 2025/2026 science assessment instruments; verify any 2026/2027 amendments before official adoption.
+    '11':[
+      {name:'الواجبات المنزلية',max:5,type:'activity'},
+      {name:'الحوار',max:5,type:'activity'},
+      {name:'اختبار الاستقصاء العلمي والمهارات العملية',max:10,type:'activity'},
+      {name:'الاختبار القصير (1)',max:10,type:'activity'},
+      {name:'الاختبار القصير (2)',max:10,type:'activity'},
+      {name:'امتحان نهاية الفصل',max:60,type:'exam'}
+    ],
+    '12':[
+      {name:'الواجبات المنزلية',max:10,type:'activity'},
+      {name:'اختبار الاستقصاء العلمي والمهارات العملية',max:10,type:'activity'},
+      {name:'متوسط الاختبارين القصيرين',max:10,type:'activity'},
+      {name:'امتحان نهاية الفصل',max:70,type:'exam'}
+    ]
   },
   'كيمياء':'أحياء',
   'فيزياء':'أحياء',
   'العلوم والبيئة':'أحياء',
+  'العلوم البيئية':'أحياء',
+  'علوم البيئة':'أحياء',
   'رياضيات أساسية':'رياضيات',
   'رياضيات متقدمة':'رياضيات',
 };
@@ -2390,7 +2417,7 @@ function resolveAssessmentPreset(subject,band){
   return items.map(a=>({name:a.name,max:a.max,type:a.type||'activity'}));
 }
 function catalogSubjects(){
-  return ['لغة عربية','تربية إسلامية','دراسات اجتماعية','جغرافيا','هذا وطني','الجغرافيا والتقنيات','توجيه مهني','إنجليزي','رياضيات','رياضيات أساسية','رياضيات متقدمة','تربية بدنية','مهارات حياتية','فنون بصرية','مهارات موسيقية','علوم','أحياء','كيمياء','فيزياء','العلوم والبيئة'];
+  return ['لغة عربية','تربية إسلامية','دراسات اجتماعية','جغرافيا','هذا وطني','الجغرافيا والتقنيات','توجيه مهني','إنجليزي','رياضيات','رياضيات أساسية','رياضيات متقدمة','تربية بدنية','مهارات حياتية','فنون بصرية','مهارات موسيقية','علوم','أحياء','كيمياء','فيزياء','العلوم والبيئة','العلوم البيئية','علوم البيئة'];
 }
 function bandsForSubject(subject){
   let cat=ASSESSMENT_CATALOG[subject];
