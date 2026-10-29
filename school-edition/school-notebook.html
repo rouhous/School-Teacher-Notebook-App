@@ -1232,6 +1232,11 @@ function schoolAssessmentSubject(value){
  const raw=cleanSchoolSubject(value);
  const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات','علوم':'علوم','العلوم':'علوم','العلوم والبيئة':'العلوم والبيئة','العلوم البيئية':'العلوم البيئية','علوم البيئة':'العلوم البيئية','أحياء':'أحياء','الأحياء':'أحياء','علم الأحياء':'أحياء','بيولوجيا':'أحياء','كيمياء':'كيمياء','فيزياء':'فيزياء','Science':'علوم','Biology':'أحياء','Physics':'فيزياء','Chemistry':'كيمياء','Science and Environment':'العلوم والبيئة','الحاسوب':'تقنية المعلومات','حاسوب':'تقنية المعلومات','موسيقى':'مهارات موسيقية','تربية موسيقية':'مهارات موسيقية'};
  if(aliases[raw])return aliases[raw];
+ if(/(?:تقنية\s*المعلومات|تكنولوجيا\s*المعلومات|حاسوب|computer|\bICT\b|information technology)/i.test(raw))return 'تقنية المعلومات';
+ if(/(?:هذا\s*وطني|الدراسات\s*الاجتماعية|social studies)/i.test(raw))return 'دراسات اجتماعية';
+ if(/(?:الرياضيات\s*(?:الأساسية|المتقدمة)|basic mathematics|advanced mathematics)/i.test(raw))return 'رياضيات';
+ if(/(?:التربية\s*الفنية|الفنون\s*التشكيلية|visual arts)/i.test(raw))return 'فنون بصرية';
+ if(/(?:التربية\s*البدنية|الرياضة\s*المدرسية|physical education)/i.test(raw))return 'تربية بدنية';
  if(/موسيق|music/i.test(raw))return 'مهارات موسيقية';
  if(/بيئ|environment/i.test(raw))return 'العلوم البيئية';
  if(/(?:أحياء|biology)/i.test(raw))return 'أحياء';
@@ -1242,9 +1247,9 @@ function schoolAssessmentSubject(value){
 }
 function ensureOfficialAssessments(classId){
  const c=db.classes.find(x=>String(x.id)===String(classId));if(!c)return;
- const grade=Number((String(c.name).match(/\d+/)||[])[0]);if(!grade)return;
+ const grade=Number((String(c.grade||c.gradeLevel||c.name||'').match(/\d+/)||[])[0]);if(!grade)return;
  const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات','تربية بدنية وصحية':'تربية بدنية','التربية البدنية والصحية':'تربية بدنية','الرياضة المدرسية':'تربية بدنية','الفنون التشكيلية':'فنون بصرية','الفنون الموسيقية':'مهارات موسيقية','الجغرافيا':'جغرافيا','التاريخ':'دراسات اجتماعية','العلوم البيئية':'العلوم البيئية'};
- let subj=schoolAssessmentSubject(classDisplaySubject(c)||c.subject||'');subj=aliases[subj]||subj;
+ let subj=schoolAssessmentSubject(c.subject||classDisplaySubject(c)||'');subj=aliases[subj]||subj;
  const bands=bandsForSubject(subj);
  const band=bands.find(b=>b===String(grade))||bands.find(b=>{const m=String(b).match(/^(\d+)\s*[-–]\s*(\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
  if(!band)return;
