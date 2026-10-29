@@ -4242,6 +4242,13 @@ async function syncManaged(){
     const current=schoolAssessmentSubject(cls.subject||'');
     if(!current||!bandsForSubject(current).length)cls.subject=primary;
   }
+  // Give every approved lesson a stable assessment subject even when the
+  // published subject label differs from the catalog's canonical name.
+  for(const cls of db.classes){
+    if(!db.schedule.some(s=>s.type==='lesson'&&String(s.classId)===String(cls.id)))continue;
+    const normalized=schoolAssessmentSubject(classDisplaySubject(cls));
+    if(normalized&&bandsForSubject(normalized).length&&cls.subject!==normalized)cls.subject=normalized;
+  }
   // Retire only obsolete, unreferenced local class shells. Keep every class with
   // an approved lesson, roster, assessment, or student record; never delete grades.
   const protectedClassIds=new Set([
