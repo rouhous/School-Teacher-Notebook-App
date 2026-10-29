@@ -1277,6 +1277,17 @@ function ensureOfficialAssessments(classId){
    }
    if(hasScoredAggregate){if(changed)save();return;}
  }
+ // Replace the provisional 100-mark IT column without losing any recorded marks.
+ if(subj==='تقنية المعلومات'){
+  const provisional=db.assessments.filter(a=>String(a.classId)===String(classId)&&String(a.name||'').startsWith('تقويم مؤقت'));
+  let hasMarks=false;
+  for(const old of provisional){
+   const scored=Object.keys(db.grades||{}).some(k=>k.startsWith(String(old.id)+'_')&&db.grades[k]!==''&&db.grades[k]!=null);
+   if(scored)hasMarks=true;
+   else{db.assessments=db.assessments.filter(a=>a.id!==old.id);changed=true;}
+  }
+  if(hasMarks){if(changed)save();return;}
+ }
  // The legacy aggregate music activity was replaced by four named 20-mark skills.
  // Remove only empty legacy columns; never delete recorded marks.
  if(subj==='مهارات موسيقية'&&band==='5-10'){
@@ -2354,12 +2365,58 @@ const ASSESSMENT_CATALOG={
   }
 ,
 
-  // Temporary editable supervisor template; NOT an official ministry assessment distribution.
-  'تقنية المعلومات': {
-    '1-4': [{name:'تقويم مؤقت — يراجع المشرف البنود والدرجات',max:100,type:'activity'}],
-    '5-6': [{name:'تقويم مؤقت — يراجع المشرف البنود والدرجات',max:100,type:'activity'}],
-    '7-10': [{name:'تقويم مؤقت — يراجع المشرف البنود والدرجات',max:100,type:'activity'}],
-    '11-12': [{name:'تقويم مؤقت — يراجع المشرف البنود والدرجات',max:100,type:'activity'}]
+  // Information Technology assessment columns: official tracking forms, pages 28–30.
+  'تقنية المعلومات':{
+    '1-4':[
+      {name:'الحوار — 1',max:5,type:'activity'},
+      {name:'الحوار — 2',max:5,type:'activity'},
+      {name:'الحوار — 3',max:5,type:'activity'},
+      {name:'الحوار — 4',max:5,type:'activity'},
+      {name:'الأسئلة القصيرة — 1',max:5,type:'activity'},
+      {name:'الأسئلة القصيرة — 2',max:5,type:'activity'},
+      {name:'الأسئلة القصيرة — 3',max:5,type:'activity'},
+      {name:'الأسئلة القصيرة — 4',max:5,type:'activity'},
+      {name:'الأنشطة العملية — 1',max:15,type:'activity'},
+      {name:'الأنشطة العملية — 2',max:15,type:'activity'},
+      {name:'الأنشطة العملية — 3',max:15,type:'activity'},
+      {name:'المشروع',max:15,type:'activity'}
+    ],
+    '5-6':[
+      {name:'الحوار — 1',max:10,type:'activity'},
+      {name:'الحوار — 2',max:10,type:'activity'},
+      {name:'الأسئلة القصيرة — 1',max:5,type:'activity'},
+      {name:'الأسئلة القصيرة — 2',max:5,type:'activity'},
+      {name:'الأسئلة القصيرة — 3',max:5,type:'activity'},
+      {name:'الأسئلة القصيرة — 4',max:5,type:'activity'},
+      {name:'الأنشطة العملية — 1',max:20,type:'activity'},
+      {name:'الأنشطة العملية — 2',max:20,type:'activity'},
+      {name:'المشروع',max:20,type:'activity'}
+    ],
+    '7-8':[
+      {name:'الحوار — 1',max:10,type:'activity'},
+      {name:'الحوار — 2',max:10,type:'activity'},
+      {name:'الأنشطة العملية — 1',max:20,type:'activity'},
+      {name:'الأنشطة العملية — 2',max:20,type:'activity'},
+      {name:'الاختبار القصير — 1',max:10,type:'activity'},
+      {name:'الاختبار القصير — 2',max:10,type:'activity'},
+      {name:'المشروع',max:20,type:'activity'}
+    ],
+    '9-10':[
+      {name:'الحوار — 1',max:10,type:'activity'},
+      {name:'الحوار — 2',max:10,type:'activity'},
+      {name:'الأنشطة العملية — 1',max:20,type:'activity'},
+      {name:'الأنشطة العملية — 2',max:20,type:'activity'},
+      {name:'الاختبار القصير',max:20,type:'activity'},
+      {name:'المشروع',max:20,type:'activity'}
+    ],
+    '11-12':[
+      {name:'الأنشطة العملية — 1',max:10,type:'activity'},
+      {name:'الأنشطة العملية — 2',max:10,type:'activity'},
+      {name:'الاختبار العملي',max:10,type:'activity'},
+      {name:'الاختبار القصير',max:10,type:'activity'},
+      {name:'المشروع',max:20,type:'activity'},
+      {name:'الامتحان النهائي',max:40,type:'exam'}
+    ]
   },
   'رياضيات':{
     '5-9':[
