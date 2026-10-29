@@ -1092,7 +1092,7 @@ function loadAtt(){
   const sum=document.getElementById('attSummary');
   if(!cid||!pid){if(body)body.innerHTML='';if(sum)sum.style.display='none';return}
   const key=cid+'_'+ds+'_'+pid;
-  const students=db.students.filter(s=>String(s.classId)===String(cid));
+  const students=linkedStudentsForClass(cid);
   const existing=db.attendance[key]||{};
   if(!students.length){body.innerHTML=`<div class="empty" style="padding:24px"><p>${t('noClasses')}</p></div>`;sum.style.display='none';return}
   body.innerHTML=students.map(st=>{
@@ -1234,7 +1234,36 @@ function exportAttCsv(){
   const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='attendance-'+ds+'.csv';a.click();
 }
-function fillGrade(){document.getElementById('gradeClass').innerHTML=db.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')||'<option>—</option>'}
+function activeTeacherClasses(){
+ const all=db.classes||[];
+ const withRoster=all.filter(c=>(db.students||[]).some(st=>String(st.classId)===String(c.id)));
+ const withLesson=all.filter(c=>(db.schedule||[]).some(slot=>slot.type==='lesson'&&String(slot.classId)===String(c.id)));
+ const eligible=all.filter(c=>withRoster.includes(c)||withLesson.includes(c));
+ const byGrade=new Map();
+ for(const c of eligible){
+  const grade=schoolGradeLabel(c.name);
+  const prev=byGrade.get(grade);
+  const score=x=>((db.students||[]).filter(st=>String(st.classId)===String(x.id)).length*1000)+((db.schedule||[]).filter(slot=>slot.type==='lesson'&&String(slot.classId)===String(x.id)).length*10)+(/[/\\-]\s*1$/.test(String(x.name))?1:0);
+  if(!prev||score(c)>score(prev))byGrade.set(grade,c);
+ }
+ return [...byGrade.values()].sort((a,b)=>Number(schoolGradeLabel(a.name))-Number(schoolGradeLabel(b.name)));
+}
+function linkedStudentsForClass(classId){
+ const c=db.classes.find(x=>String(x.id)===String(classId));if(!c)return [];
+ const direct=(db.students||[]).filter(st=>String(st.classId)===String(classId));
+ if(direct.length)return direct;
+ const grade=schoolGradeLabel(c.name);
+ const peers=db.classes.filter(x=>schoolGradeLabel(x.name)===grade);
+ if(peers.length>2)return direct; // Avoid cross-section leakage when multiple sections exist.
+ return (db.students||[]).filter(st=>peers.some(x=>String(x.id)===String(st.classId)));
+}
+function fillGrade(){
+ const el=document.getElementById('gradeClass');const prev=el.value;
+ const classes=activeTeacherClasses();
+ el.innerHTML=classes.map(c=>`<option value="${escHTML(c.id)}">${escHTML(c.name)}</option>`).join('')||'<option value="">—</option>';
+ if(classes.some(c=>String(c.id)===String(prev)))el.value=prev;
+}
+
 function isContinuousType(type){return ['activity','quiz','homework','project','assessment','extra'].includes(String(type||'').toLowerCase())}
 function isFinalType(type){const x=String(type||'').toLowerCase();return x==='exam'||x==='final'}
 
@@ -1433,7 +1462,7 @@ function studentMatchesSchoolClass(student,selection){
 function fillStu(){
  const sel=document.getElementById('stuClass');
  const previous=sel.value;
- const grades=[...new Set(db.classes.map(c=>schoolGradeLabel(c.name)).filter(Boolean))].sort((a,b)=>Number(a)-Number(b)||a.localeCompare(b,'ar'));
+ const grades=[...new Set(activeTeacherClasses().map(c=>schoolGradeLabel(c.name)).filter(Boolean))].sort((a,b)=>Number(a)-Number(b)||a.localeCompare(b,'ar'));
  sel.innerHTML=`<option value="">${t('allClasses')}</option>`+grades.map(g=>`<option value="grade:${escHTML(g)}">${escHTML(g)}</option>`).join('');
  if([...sel.options].some(o=>o.value===previous))sel.value=previous;
 }
