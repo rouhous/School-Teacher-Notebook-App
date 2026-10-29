@@ -36,7 +36,10 @@ function render(){
   }
   $('rows').append(tr);
  }
- $('coverage').textContent=school==='girls'&&all.length===0?'تنبيه: جداول مدرسة البنات غير موجودة في قاعدة البيانات الحالية؛ لا يعني ذلك أن المدرسة بلا حصص.':(all.length?'البيانات المتاحة حاليًا '+all.length+' حصة فقط؛ يلزم استكمال استيراد ملفات الجداول المعتمدة للتغطية الكاملة.':'لا توجد جداول مستوردة لهذه المدرسة.');
+ const canonical=all.filter(x=>x.reviewStatus==='published'&&x.classId&&!x.dutyPriority);
+ const parallel=all.filter(x=>x.reviewStatus==='approved_parallel');
+ const expected=school==='boys'?320:480;
+ $('coverage').textContent='الحصص الأساسية: '+canonical.length+' من '+expected+' | التكليفات المتزامنة: '+parallel.length+(canonical.length<expected?' — تنبيه: بعض الحصص الأساسية لم تُحمّل بعد.':' — الجداول الأساسية مكتملة.');
 }
 function options(){const mode=$('view').value,school=$('school').value,item=$('item');item.replaceChildren();const first=document.createElement('option');first.value='';first.textContent='الكل';item.append(first);item.disabled=mode==='all';if(mode==='all'){render();return}const map=new Map();for(const x of slots.filter(x=>x.schoolId===school)){const id=mode==='class'?x.classId:x.teacherId;if(!id)continue;map.set(String(id),mode==='class'?String(id):String(x.teacherName||id))}for(const [id,name] of [...map].sort((a,b)=>a[1].localeCompare(b[1],'ar'))){const o=document.createElement('option');o.value=id;o.textContent=name;item.append(o)}render()}
 async function load(){if(!credential){$('login').classList.add('show');setStatus('يُرجى تسجيل الدخول بحساب المشرف.');return}try{setStatus('جارٍ تحميل الجداول المعتمدة...');const res=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-supervisor-timetables',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential})});const j=await res.json();if(!res.ok||!j.ok)throw Error(j.error||'تعذر التحقق من الصلاحيات');slots=Array.isArray(j.data)?j.data:[];$('login').classList.remove('show');setStatus('تم تحميل '+slots.length+' حصة من قاعدة البيانات (بغض النظر عن تسجيل المعلمين).');options();absenceTeachers();await cover('cover-read')}catch(e){setStatus('تعذر تحميل الجداول: '+e.message);if(/AUTH|TOKEN|FOUNDER|401|403/i.test(e.message)){$('login').classList.add('show')}}}
