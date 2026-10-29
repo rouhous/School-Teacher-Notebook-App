@@ -4225,6 +4225,23 @@ async function syncManaged(){
     db.students=db.students.map(x=>classAliases.has(x.classId)?{...x,classId:classAliases.get(x.classId)}:x);
     db.classes=db.classes.filter(x=>!classAliases.has(x.id));
   }
+  // Resolve the approved teacher's subject AFTER grade-only timetable classes
+  // have been consolidated into student-bearing section IDs.
+  // A roster class must not remain subjectless, otherwise automatic assessment
+  // initialization silently skips it.
+  for(const cls of db.classes){
+    const lessons=db.schedule.filter(s=>s.type==='lesson'&&String(s.classId)===String(cls.id)&&String(s.subject||'').trim());
+    if(!lessons.length)continue;
+    const tally=new Map();
+    for(const lesson of lessons){
+      const subject=schoolAssessmentSubject(lesson.subject);
+      if(subject)tally.set(subject,(tally.get(subject)||0)+1);
+    }
+    if(!tally.size)continue;
+    const primary=[...tally.entries()].sort((a,b)=>b[1]-a[1])[0][0];
+    const current=schoolAssessmentSubject(cls.subject||'');
+    if(!current||!bandsForSubject(current).length)cls.subject=primary;
+  }
   // Retire only obsolete, unreferenced local class shells. Keep every class with
   // an approved lesson, roster, assessment, or student record; never delete grades.
   const protectedClassIds=new Set([
