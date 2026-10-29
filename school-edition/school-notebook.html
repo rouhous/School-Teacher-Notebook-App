@@ -373,7 +373,7 @@ select{max-width:100%;touch-action:auto}
 <button class="icon-btn" onclick="openM('settings')">⚙️</button>
 </div>
 </div>
-<div class="view-pills" id="viewPills" style="display:none">
+<div class="view-pills" id="viewPills" style="display:none!important" hidden>
 <button class="active" data-v="daily" onclick="setView('daily')" data-i18n="daily">يومي</button>
 <button data-v="board" onclick="setView('board')" data-i18n="dashboard">لوحة</button>
 </div>
@@ -985,7 +985,7 @@ body.innerHTML='<button type="button" class="btn btn-outline btn-block" style="m
   const allSubs=subjectsForClass(c.id);
   const subjLabel=allSubs.length>1?allSubs.join(' · '):subj;
   return`<div class="class-card"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div class="cname">${escHTML(schoolClassDisplayName(c.name))}</div><div class="cmeta">${escHTML(subjLabel)} · ${cnt} ${t('students')}</div></div></div><div class="class-actions"><button class="btn btn-ghost btn-sm" onclick="openM('addStu','${c.id}')">+ ${t('students')}</button><button class="btn btn-ghost btn-sm" onclick="openM('sched','${c.id}')">📅 ${t('schedule')}</button><button class="btn btn-ghost btn-sm" onclick="openM('seat','${c.id}')">🪑</button><span style="display:inline-flex;gap:6px;align-items:center"><button class="btn btn-outline btn-sm" title="${db.lang==='ar'?'تعديل الصف':'Edit class'}" onclick="openM('editClass','${c.id}')">✏️</button><button class="btn btn-outline btn-sm" title="${db.lang==='ar'?'حذف الصف':'Delete class'}" onclick="delClass('${c.id}')">🗑️</button></span></div></div>`;
-}).join('')+`<button class="btn btn-primary btn-block" style="margin-top:8px" onclick="openM('addClass')">${t('addClass')}</button><button class="btn btn-outline btn-block" style="margin-top:7px" onclick="openM('importSched')">${t('importSchedule')}</button><button class="btn btn-ghost btn-block" style="margin-top:7px" onclick="openManualScheduleEditor()">${db.lang==='ar'?'تعديل الجدول يدوياً':'Edit schedule manually'}</button>`;
+}).join('')+`<button class="btn btn-primary btn-block" style="margin-top:8px" onclick="openM('addClass')">${t('addClass')}</button><button class="btn btn-outline btn-block" style="margin-top:7px" onclick="openM('importSched')">${t('importSchedule')}</button>`;
 }
 function delClass(id){if(!confirm(db.lang==='ar'?'حذف الصف وجميع بياناته؟':'Delete class and all its data?'))return;db.classes=db.classes.filter(c=>c.id!==id);db.students=db.students.filter(s=>s.classId!==id);db.schedule=db.schedule.filter(s=>s.classId!==id);db.assessments=db.assessments.filter(a=>a.classId!==id);save();renderClasses();toast('✓')}
 function attDateStr(){const el=document.getElementById('attDate');if(el&&el.value)return el.value;return todayStr()}
@@ -1782,7 +1782,7 @@ ${cloudSettingsHTML()}
     </div>
   </div>
   <p style="font-size:.75rem;color:var(--mu);margin-bottom:8px">${db.lang==='ar'?'أيقونة الكاميرا لرفع صورة · أو استورد PDF للنص':'Camera icon to upload image · or import PDF text'}</p>
-  <button class="btn btn-primary btn-block" style="margin-bottom:8px" onclick="openManualScheduleEditor()">${db.lang==='ar'?'تعديل الجدول الأسبوعي يدوياً':'Edit weekly schedule manually'}</button>
+  
 <button class="btn btn-outline btn-block" onclick="openM('importSched')">${t('importSchedule')} (PDF)</button>
 </div>
 <div class="form-group">
