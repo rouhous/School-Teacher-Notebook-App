@@ -60,7 +60,7 @@ function friendlyPasskeyError(error,phase){
 function makeButton(label,action,phase){
  const b=document.createElement('button');
  b.type='button';b.textContent=label;
- b.style.cssText='border:1px solid #9bbfae;border-radius:12px;background:#fff;color:#086147;padding:12px 14px;margin:8px;font-weight:800;cursor:pointer;max-width:100%;white-space:normal';
+ b.style.cssText='border:1px solid #9bbfae;border-radius:10px;background:#fff;color:#086147;padding:8px 12px;margin:6px auto;display:block;font-size:.85rem;line-height:1.4;font-weight:750;cursor:pointer;max-width:100%;white-space:normal';
  const msg=document.createElement('p');msg.setAttribute('role','status');
  msg.style.cssText='font-size:13px;color:#426657;margin:6px;text-align:center;line-height:1.7;overflow-wrap:anywhere';
  b.addEventListener('click',async()=>{
@@ -76,12 +76,10 @@ function makeButton(label,action,phase){
 }
 if(document.getElementById('teacher-google')){
  const holder=document.getElementById('teacher-google');
- const {b,msg}=makeButton('🔐 لدي مفتاح مرور مسجّل — الدخول بالبصمة / Face ID',async()=>{
+ const {b,msg}=makeButton('🔐 الدخول بالبصمة / Face ID',async()=>{
   await signIn();
   location.assign('school-edition/school-notebook.html');
  },'login');
  holder.insertAdjacentElement('afterend',b);b.insertAdjacentElement('afterend',msg);
- if(localStorage.getItem(ENROLLED_KEY)!=='1'){
-  msg.textContent='أول استخدام؟ سجّل الدخول بواسطة Google أولاً، ثم افتح دفتر المعلم واضغط «تفعيل البصمة / Face ID». زر مفتاح المرور مخصّص لمن فعّله مسبقًا.';
- }
+ // Instructions are available on demand in the expandable help section.
 }
