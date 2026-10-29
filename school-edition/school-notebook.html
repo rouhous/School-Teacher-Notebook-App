@@ -1330,14 +1330,14 @@ function loadGrades(){
     ordered.forEach(a=>{
       const k=a.id+'_'+st.id; const v=db.grades[k];
       if(v!==undefined)contSum+=parseFloat(v)||0;
-      h+='<td><input class="'+(v===undefined?'missing-grade':'')+'" type="number" min="0" max="'+a.max+'" step="0.5" value="'+(v!==undefined?v:'')+'" onchange="setG(\''+a.id+'\',\''+st.id+'\',this.value);loadGrades()"></td>';
+      h+='<td><input class="'+(v===undefined?'missing-grade':'')+'" type="number" min="0" max="'+a.max+'" step="0.5" value="'+(v!==undefined?v:'')+'" onchange="setG(\''+a.id+'\',\''+st.id+'\',this.value)&&loadGrades()"></td>';
     });
     h+='<td style="font-weight:800;color:var(--ok);background:#ecfdf5">'+contSum.toFixed(1)+'</td>';
     if(finals.length){
       finals.forEach(a=>{
         const k=a.id+'_'+st.id; const v=db.grades[k];
         if(v!==undefined)finalSum+=parseFloat(v)||0;
-        h+='<td><input class="'+(v===undefined?'missing-grade':'')+'" type="number" min="0" max="'+a.max+'" step="0.5" value="'+(v!==undefined?v:'')+'" onchange="setG(\''+a.id+'\',\''+st.id+'\',this.value);loadGrades()"></td>';
+        h+='<td><input class="'+(v===undefined?'missing-grade':'')+'" type="number" min="0" max="'+a.max+'" step="0.5" value="'+(v!==undefined?v:'')+'" onchange="setG(\''+a.id+'\',\''+st.id+'\',this.value)&&loadGrades()"></td>';
       });
     } else {
       h+='<td style="color:#94a3b8">—</td>';
@@ -1403,7 +1403,7 @@ function delAssess(id){
   Object.keys(db.grades).forEach(k=>{if(k.startsWith(id+'_'))delete db.grades[k]});
   save();loadGrades();toast('✓');
 }
-function setG(aid,sid,val){const k=aid+'_'+sid;if(val===''){delete db.grades[k];save();return}const n=Number(val);const a=db.assessments.find(x=>x.id===aid);if(!Number.isFinite(n)||n<0||(a&&n>Number(a.max))){toast(db.lang==='ar'?'الدرجة يجب أن تكون بين 0 و'+(a?.max??'الحد الأقصى'):'Score must be between 0 and '+(a?.max??'the maximum'));return}db.grades[k]=n;save()}
+function setG(aid,sid,val){const k=aid+'_'+sid;const old=db.grades[k];if(val===''){delete db.grades[k];if(save())return true;if(old!==undefined)db.grades[k]=old;return false}const n=Number(val);const a=db.assessments.find(x=>String(x.id)===String(aid));if(!Number.isFinite(n)||n<0||(a&&n>Number(a.max))){toast(db.lang==='ar'?'الدرجة يجب أن تكون بين 0 و'+(a?.max??'الحد الأقصى'):'Score must be between 0 and '+(a?.max??'the maximum'));return false}db.grades[k]=n;if(save())return true;if(old===undefined)delete db.grades[k];else db.grades[k]=old;return false}
 // Display school grades without section suffixes while preserving original class IDs and student links.
 function schoolGradeLabel(name){
  const raw=String(name||'').trim().replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
