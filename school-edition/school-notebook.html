@@ -1207,7 +1207,7 @@ function ensureOfficialAssessments(classId){
  const c=db.classes.find(x=>String(x.id)===String(classId));if(!c)return;
  const grade=Number((String(c.name).match(/\d+/)||[])[0]);if(!grade)return;
  const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات'};
- let subj=String(classDisplaySubject(c)||'').trim();subj=aliases[subj]||subj;
+ let subj=String(classDisplaySubject(c)||'').trim();subj=aliases[subj]||subj;if(/موسيق|music/i.test(subj))subj='مهارات موسيقية';
  const bands=bandsForSubject(subj);
  const band=bands.find(b=>b===String(grade))||bands.find(b=>{const m=b.match(/^(\d+)-(\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
  if(!band)return;
@@ -1232,7 +1232,7 @@ function loadGrades(){
   const assesses=db.assessments.filter(a=>a.classId===cid&&!a.hidden);
   const students=db.students.filter(s=>s.classId===cid);
   const body=document.getElementById('gradesBody');
-  if(!assesses.length){body.innerHTML=`<div class="empty"><div class="icon">📊</div><p>${t('grades')}</p><button class="btn btn-primary" onclick="openM('addAssess')">${t('addAssess')}</button></div>`;return}
+  if(!assesses.length){body.innerHTML=`<div class="empty"><div class="icon">📊</div><p>لم يُحدد نموذج تقييم لهذا الصف بعد. يمكن إضافة تقييم وبدء رصد الدرجات دون تغيير بيانات الطلاب.</p><p>${students.length} طالبًا مرتبطًا بهذا الصف</p><button class="btn btn-primary" onclick="openM('addAssess')">+ إضافة تقييم</button></div>`;return}
   if(!students.length){body.innerHTML=`<div class="empty"><p>لا توجد قائمة طلاب معتمدة مرتبطة بهذا الصف حتى الآن. يجب استيراد قائمة الصف من حساب المشرف لتفعيل رصد الدرجات.</p></div>`;return}
   // Group: continuous sub-sections, finals, others
   const cont=assesses.filter(a=>isContinuousType(a.type)&&!isFinalType(a.type)&&classifyAssessment(a.name)!=='total'&&classifyAssessment(a.name)!=='exam');
