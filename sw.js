@@ -1,4 +1,4 @@
-const VERSION='school-pwa-v11-passkey-settings-refresh';
+const VERSION='school-pwa-v12-mobile-login-artwork';
 const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)));
