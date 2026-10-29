@@ -489,7 +489,7 @@ function save(){try{localStorage.setItem(schoolNotebookKey,JSON.stringify(db));i
 function subjectsForClass(classId){
   const map={};
   (db.schedule||[]).forEach(s=>{
-    if(s.classId!==classId||!s.subject)return;
+    if(String(s.classId)!==String(classId)||!s.subject)return;
     if(s.type==='break'||s.type==='rest')return;
     const sub=String(s.subject).trim();
     if(!sub||sub==='فسحة'||/راحة|استراحة|Break|Rest/i.test(sub))return;
@@ -499,9 +499,9 @@ function subjectsForClass(classId){
 }
 function classDisplaySubject(c){
   if(!c)return '';
+  if(String(c.subject||'').trim())return c.subject;
   const fromSched=subjectsForClass(c.id);
-  if(fromSched.length)return fromSched[0];
-  return c.subject||'';
+  return fromSched[0]||'';
 }
 function syncClassSubjectsFromSchedule(){
   // Never overwrite an explicitly assigned subject with the most frequent
@@ -1086,7 +1086,7 @@ function loadAtt(){
   const sum=document.getElementById('attSummary');
   if(!cid||!pid){if(body)body.innerHTML='';if(sum)sum.style.display='none';return}
   const key=cid+'_'+ds+'_'+pid;
-  const students=db.students.filter(s=>s.classId===cid);
+  const students=db.students.filter(s=>String(s.classId)===String(cid));
   const existing=db.attendance[key]||{};
   if(!students.length){body.innerHTML=`<div class="empty" style="padding:24px"><p>${t('noClasses')}</p></div>`;sum.style.display='none';return}
   body.innerHTML=students.map(st=>{
@@ -1283,7 +1283,7 @@ function ensureOfficialAssessments(classId){
  }
  for(const a of preset){
   const key=subj+'|'+band+'|'+a.name;
-  const existing=db.assessments.find(x=>x.classId===classId&&(x.officialKey===key||(x.name===a.name&&Number(x.max)===Number(a.max))));
+  const existing=db.assessments.find(x=>String(x.classId)===String(classId)&&(x.officialKey===key||(x.name===a.name&&Number(x.max)===Number(a.max))));
   if(existing){if(!existing.officialKey){existing.officialKey=key;existing.official=true;changed=true;}continue;}
   db.assessments.push({id:uid(),classId,name:a.name,max:a.max,type:a.type,official:true,officialKey:key});changed=true;
  }
@@ -1297,7 +1297,7 @@ function hideCustomAssessment(id){
 function loadGrades(){
   const cid=document.getElementById('gradeClass').value;
   ensureOfficialAssessments(cid);
-  const assesses=db.assessments.filter(a=>a.classId===cid&&!a.hidden);
+  const assesses=db.assessments.filter(a=>String(a.classId)===String(cid)&&!a.hidden);
   const students=db.students.filter(s=>s.classId===cid);
   const body=document.getElementById('gradesBody');
   if(!assesses.length){body.innerHTML=`<div class="empty"><div class="icon">📊</div><p>لم يُحدد نموذج تقييم لهذا الصف بعد. يمكن إضافة تقييم وبدء رصد الدرجات دون تغيير بيانات الطلاب.</p><p>${students.length} طالبًا مرتبطًا بهذا الصف</p><button class="btn btn-primary" onclick="openM('addAssess')">+ إضافة تقييم</button></div>`;return}
