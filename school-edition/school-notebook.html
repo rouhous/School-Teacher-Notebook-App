@@ -328,6 +328,14 @@ select{max-width:100%;touch-action:auto}
 .sched-vertical .period-col{font-size:10px!important}
 .sched-vertical .period-col small{font-size:8px!important}
 </style>
+<style id="science-schedule-readable-20261029">
+/* Long course titles wrap normally instead of being cropped in a narrow weekly cell. */
+.sched-vertical td.sched-cell{overflow-wrap:normal!important;word-break:normal!important;white-space:normal!important;vertical-align:middle!important;min-width:0}
+.sched-vertical td .sc-cls{font-size:clamp(10px,2.6vw,13px)!important;line-height:1.15!important;font-weight:800!important}
+.sched-vertical td .sc-subj{font-size:clamp(8px,2.05vw,10px)!important;line-height:1.35!important;font-weight:650!important;overflow-wrap:normal!important;word-break:normal!important;white-space:normal!important}
+.sched-vertical td{height:auto!important;min-height:43px!important;padding:5px 2px!important}
+.sched-vertical td .sc-rest{font-size:clamp(9px,2.3vw,11px)!important}
+</style>
 <style id="active-lesson-visual">
 .sched-vertical td.lesson-active-now,.sched-vertical td.sched-cell.lesson-active-now{
  background:linear-gradient(135deg,#fef08a,#fbbf24)!important;
@@ -918,6 +926,15 @@ function showLessonNoteEditor(day,period){
   save();bg.remove();toast('تم حفظ الملاحظة');renderHome();
  };
 }
+function cleanSchoolSubject(value){
+ const v=String(value||'').normalize('NFKC').replace(/[\u200e\u200f\u202a-\u202e]/g,'').replace(/\s+/g,' ').trim();
+ // Supervisor timetable names are authoritative; normalize common OCR/import aliases only.
+ if(/(?:علوم\s*(?:و|&)\s*البيئة|علوم\s*البيئه|science\s*(?:and|&)\s*environment)/i.test(v))return 'العلوم والبيئة';
+ if(/(?:^|\s)أحياء(?:\s|$)|biology/i.test(v))return 'أحياء';
+ if(/(?:^|\s)فيزياء(?:\s|$)|physics/i.test(v))return 'فيزياء';
+ if(/(?:^|\s)كيمياء(?:\s|$)|chemistry/i.test(v))return 'كيمياء';
+ return v;
+}
 function buildScheduleTableHTML(){
  const daysIdx=[0,1,2,3,4],dn=days(),periods=[...db.periods].sort((a,b)=>a.id-b.id);
  const dayLabel=i=>({'الأحد':'أحد','الاثنين':'اثنين','الثلاثاء':'ثلاثاء','الأربعاء':'أربعاء','الخميس':'خميس'}[dn[i]]||dn[i]||'');
@@ -931,7 +948,7 @@ function buildScheduleTableHTML(){
   const flags=(db.periodAlarms?.[di+'_'+p.id]?'🔔':'')+((db.periodNotes?.[di+'_'+p.id]||hasDatedNote)?'📝':'');
   if(!x)return '<td class="sched-cell"'+attr+' ><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
   const cls=db.classes.find(c=>c.id===x.classId),name=schoolGradeLabel(cls?.name||'').slice(0,10);
-  const sub=String(x.subject||cls?.subject||'').slice(0,12);
+  const sub=cleanSchoolSubject(x.subject||cls?.subject||'');
   return '<td class="sched-cell"'+attr+' ><div class="sc-cls">'+escHTML(name)+'</div>'+(subjects.size>1?'<div class="sc-subj">'+escHTML(sub)+'</div>':'')+(flags?'<small>'+flags+'</small>':'')+'</td>';
  };
  let h='<table class="sched-compact sched-vertical"><thead><tr><th class="period-col">'+(db.lang==='ar'?'الحصة':'Period')+'</th>';
@@ -1211,11 +1228,23 @@ function fillGrade(){document.getElementById('gradeClass').innerHTML=db.classes.
 function isContinuousType(type){return ['activity','quiz','homework','project','assessment','extra'].includes(String(type||'').toLowerCase())}
 function isFinalType(type){const x=String(type||'').toLowerCase();return x==='exam'||x==='final'}
 
+function schoolAssessmentSubject(value){
+ const raw=cleanSchoolSubject(value);
+ const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات','علوم':'علوم','العلوم':'علوم','العلوم والبيئة':'العلوم والبيئة','أحياء':'أحياء','علم الأحياء':'أحياء','بيولوجيا':'أحياء','كيمياء':'كيمياء','فيزياء':'فيزياء','Science':'علوم','Biology':'أحياء','Physics':'فيزياء','Chemistry':'كيمياء','Science and Environment':'العلوم والبيئة','الحاسوب':'تقنية المعلومات','حاسوب':'تقنية المعلومات','موسيقى':'مهارات موسيقية','تربية موسيقية':'مهارات موسيقية'};
+ if(aliases[raw])return aliases[raw];
+ if(/موسيق|music/i.test(raw))return 'مهارات موسيقية';
+ if(/بيئ|environment/i.test(raw))return 'العلوم والبيئة';
+ if(/(?:أحياء|biology)/i.test(raw))return 'أحياء';
+ if(/(?:كيمياء|chemistry)/i.test(raw))return 'كيمياء';
+ if(/(?:فيزياء|physics)/i.test(raw))return 'فيزياء';
+ if(/علوم|science/i.test(raw))return 'علوم';
+ return raw;
+}
 function ensureOfficialAssessments(classId){
  const c=db.classes.find(x=>String(x.id)===String(classId));if(!c)return;
  const grade=Number((String(c.name).match(/\d+/)||[])[0]);if(!grade)return;
  const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات'};
- let subj=String(classDisplaySubject(c)||'').trim();subj=aliases[subj]||subj;if(/موسيق|music/i.test(subj))subj='مهارات موسيقية';
+ let subj=schoolAssessmentSubject(classDisplaySubject(c)||c.subject||'');subj=aliases[subj]||subj;
  const bands=bandsForSubject(subj);
  const band=bands.find(b=>b===String(grade))||bands.find(b=>{const m=b.match(/^(\d+)-(\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
  if(!band)return;
@@ -2328,6 +2357,19 @@ const ASSESSMENT_CATALOG={
       {name:'امتحان نهاية الفصل',max:70,type:'exam'}
     ]
   },
+  // Aggregate scoring bands for science: fine-grained official instruments must be verified before use.
+  'علوم':{
+    '5-9':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:60,type:'activity'},{name:'امتحان نهاية الفصل',max:40,type:'exam'}],
+    '10':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:40,type:'activity'},{name:'امتحان نهاية الفصل',max:60,type:'exam'}]
+  },
+  'أحياء':{
+    '10':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:40,type:'activity'},{name:'امتحان نهاية الفصل',max:60,type:'exam'}],
+    '11':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:40,type:'activity'},{name:'امتحان نهاية الفصل',max:60,type:'exam'}],
+    '12':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:30,type:'activity'},{name:'امتحان نهاية الفصل',max:70,type:'exam'}]
+  },
+  'كيمياء':'أحياء',
+  'فيزياء':'أحياء',
+  'العلوم والبيئة':'أحياء',
   'رياضيات أساسية':'رياضيات',
   'رياضيات متقدمة':'رياضيات',
 };
@@ -2337,6 +2379,7 @@ function resolveAssessmentPreset(subject,band){
     return englishAssessmentsForGrade(g);
   }
   let cat=ASSESSMENT_CATALOG[subject];
+  if(typeof cat==='string')cat=ASSESSMENT_CATALOG[cat];
   if(!cat)return null;
   let items=cat[band];
   if(typeof items==='string'){
@@ -2347,7 +2390,7 @@ function resolveAssessmentPreset(subject,band){
   return items.map(a=>({name:a.name,max:a.max,type:a.type||'activity'}));
 }
 function catalogSubjects(){
-  return ['لغة عربية','تربية إسلامية','دراسات اجتماعية','جغرافيا','هذا وطني','الجغرافيا والتقنيات','توجيه مهني','إنجليزي','رياضيات','رياضيات أساسية','رياضيات متقدمة','تربية بدنية','مهارات حياتية','فنون بصرية','مهارات موسيقية'];
+  return ['لغة عربية','تربية إسلامية','دراسات اجتماعية','جغرافيا','هذا وطني','الجغرافيا والتقنيات','توجيه مهني','إنجليزي','رياضيات','رياضيات أساسية','رياضيات متقدمة','تربية بدنية','مهارات حياتية','فنون بصرية','مهارات موسيقية','علوم','أحياء','كيمياء','فيزياء','العلوم والبيئة'];
 }
 function bandsForSubject(subject){
   let cat=ASSESSMENT_CATALOG[subject];
@@ -4117,6 +4160,13 @@ async function syncManaged(){
     db.assessments=db.assessments.map(x=>classAliases.has(x.classId)?{...x,classId:classAliases.get(x.classId)}:x);
     db.students=db.students.map(x=>classAliases.has(x.classId)?{...x,classId:classAliases.get(x.classId)}:x);
     db.classes=db.classes.filter(x=>!classAliases.has(x.id));
+  }
+  // Ensure every approved subject with a matching catalog receives its grading columns.
+  // This is additive and never removes recorded grades or changes student identities.
+  for(const sc of db.classes){
+   if(db.schedule.some(slot=>String(slot.classId)===String(sc.id))||db.students.some(st=>String(st.classId)===String(sc.id))){
+    ensureOfficialAssessments(sc.id);
+   }
   }
   // Persist the approved timetable even when no student list has been returned.
   save();
