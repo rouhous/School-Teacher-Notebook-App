@@ -1246,7 +1246,7 @@ function ensureOfficialAssessments(classId){
  const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات','تربية بدنية وصحية':'تربية بدنية','التربية البدنية والصحية':'تربية بدنية','الرياضة المدرسية':'تربية بدنية','الفنون التشكيلية':'فنون بصرية','الفنون الموسيقية':'مهارات موسيقية','الجغرافيا':'جغرافيا','التاريخ':'دراسات اجتماعية','العلوم البيئية':'العلوم البيئية'};
  let subj=schoolAssessmentSubject(classDisplaySubject(c)||c.subject||'');subj=aliases[subj]||subj;
  const bands=bandsForSubject(subj);
- const band=bands.find(b=>b===String(grade))||bands.find(b=>{const m=b.match(/^(\d+)-(\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
+ const band=bands.find(b=>b===String(grade))||bands.find(b=>{const m=String(b).match(/^(\d+)\s*[-–]\s*(\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
  if(!band)return;
  const preset=resolveAssessmentPreset(subj,band);if(!Array.isArray(preset))return;
  let changed=false;
@@ -4191,9 +4191,7 @@ async function syncManaged(){
   // Ensure every approved subject with a matching catalog receives its grading columns.
   // This is additive and never removes recorded grades or changes student identities.
   for(const sc of db.classes){
-   if(db.schedule.some(slot=>String(slot.classId)===String(sc.id))||db.students.some(st=>String(st.classId)===String(sc.id))){
-    ensureOfficialAssessments(sc.id);
-   }
+   ensureOfficialAssessments(sc.id);
   }
   // Persist the approved timetable even when no student list has been returned.
   save();
