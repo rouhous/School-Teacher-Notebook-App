@@ -4227,21 +4227,22 @@ window.schoolLinkAudit=function(){
  const students=Array.isArray(db.students)?db.students:[];
  const slots=Array.isArray(db.schedule)?db.schedule:[];
  const assessments=Array.isArray(db.assessments)?db.assessments:[];
- const ids=new Set(classes.map(c=>String(c.id)));
+ const activeClasses=classes.filter(c=>slots.some(s=>s.type==='lesson'&&String(s.classId)===String(c.id))||students.some(s=>String(s.classId)===String(c.id))); const ids=new Set(classes.map(c=>String(c.id)));
  const lessons=slots.filter(s=>s.type==='lesson');
  const orphanStudents=students.filter(s=>!ids.has(String(s.classId))).length;
  const orphanLessons=lessons.filter(s=>!ids.has(String(s.classId))).length;
  const orphanAssessments=assessments.filter(a=>!ids.has(String(a.classId))).length;
  const missingRoster=classes.filter(c=>lessons.some(s=>String(s.classId)===String(c.id))&&!students.some(s=>String(s.classId)===String(c.id))).length;
  const missingAssessment=classes.filter(c=>students.some(s=>String(s.classId)===String(c.id))&&!assessments.some(a=>String(a.classId)===String(c.id)&&!a.hidden)).length;
- const duplicateClassKeys=classes.length-new Set(classes.map(c=>String(c.schoolRosterKey||String(c.schoolId||'')+'|'+String(c.name)))).size;
- return {classes:classes.length,students:students.length,lessons:lessons.length,assessments:assessments.length,orphanStudents,orphanLessons,orphanAssessments,missingRoster,missingAssessment,duplicateClassKeys};
+ const duplicateClassKeys=activeClasses.length-new Set(activeClasses.map(c=>String(c.schoolRosterKey||String(c.schoolId||'')+'|'+String(c.name)))).size;
+ return {classes:activeClasses.length,inactiveClasses:classes.length-activeClasses.length,students:students.length,lessons:lessons.length,assessments:assessments.length,orphanStudents,orphanLessons,orphanAssessments,missingRoster,missingAssessment,duplicateClassKeys};
 };
 window.showSchoolLinkAudit=function(){
  const a=window.schoolLinkAudit();
  const lines=[
  'تدقيق ارتباطات دفتر المعلم (هذا الحساب)',
- 'الصفوف: '+a.classes+' | الطلاب: '+a.students,
+ 'الصفوف المرتبطة: '+a.classes+' | الطلاب: '+a.students,
+ 'سجلات صفوف غير مرتبطة: '+a.inactiveClasses,
  'الحصص الأساسية: '+a.lessons+' | بنود التقييم: '+a.assessments,
  'طلاب دون صف: '+a.orphanStudents,
  'حصص دون صف: '+a.orphanLessons,
