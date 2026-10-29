@@ -4035,6 +4035,26 @@ async function syncManaged(){
     const rosterId=cls&&(rosterClassIds.get(String(cls.name))||byGrade.get(String(cls.name).replace(/[.]0$/,'')));
     return rosterId?{...slot,classId:rosterId}:slot;
   });
+  // Reconcile grade-only timetable and assessment aliases with an unambiguous approved section.
+  const approvedByGrade=new Map();
+  for(const c of nextClasses){
+    const grade=String(c.name).split('/')[0];
+    if(!approvedByGrade.has(grade))approvedByGrade.set(grade,c.id);
+    else approvedByGrade.set(grade,null);
+  }
+  const classAliases=new Map();
+  for(const old of db.classes){
+    if(nextClasses.some(c=>c.id===old.id))continue;
+    const grade=String(old.name||'').replace(/[.]0$/,'').trim();
+    const target=approvedByGrade.get(grade);
+    if(target&&target!==old.id)classAliases.set(old.id,target);
+  }
+  if(classAliases.size){
+    db.schedule=db.schedule.map(x=>classAliases.has(x.classId)?{...x,classId:classAliases.get(x.classId)}:x);
+    db.assessments=db.assessments.map(x=>classAliases.has(x.classId)?{...x,classId:classAliases.get(x.classId)}:x);
+    db.students=db.students.map(x=>classAliases.has(x.classId)?{...x,classId:classAliases.get(x.classId)}:x);
+    db.classes=db.classes.filter(x=>!classAliases.has(x.id));
+  }
   // Persist the approved timetable even when no student list has been returned.
   save();
   replaceHome();
