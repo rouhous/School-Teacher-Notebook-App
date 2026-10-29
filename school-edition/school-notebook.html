@@ -2391,26 +2391,35 @@ const ASSESSMENT_CATALOG={
       {name:'امتحان نهاية الفصل',max:70,type:'exam'}
     ]
   },
-  // Aggregate scoring bands for science: fine-grained official instruments must be verified before use.
+  // Science assessment instruments transcribed from supplied official tracking workbooks.
   'علوم':{
-    '5-9':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:60,type:'activity'},{name:'امتحان نهاية الفصل',max:40,type:'exam'}],
-    '10':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:40,type:'activity'},{name:'امتحان نهاية الفصل',max:60,type:'exam'}]
+    '5-9':[
+      {name:'الواجبات المنزلية — الأول',max:5,type:'activity'},
+      {name:'الواجبات المنزلية — الثاني',max:5,type:'activity'},
+      {name:'الحوار الشفوي — الأول',max:5,type:'activity'},
+      {name:'الحوار الشفوي — الثاني',max:5,type:'activity'},
+      {name:'النشاط العملي',max:10,type:'activity'},
+      {name:'الاختبار القصير — الأول',max:15,type:'activity'},
+      {name:'الاختبار القصير — الثاني',max:15,type:'activity'},
+      {name:'امتحان نهاية الفصل',max:40,type:'exam'}
+    ],
+    '10':[{name:'التقويم المستمر — مؤقت لحين استمارة الصف العاشر',max:40,type:'activity'},{name:'امتحان نهاية الفصل',max:60,type:'exam'}]
   },
   'أحياء':{
-    '10':[{name:'التقويم المستمر (تفاصيله حسب وثيقة المادة)',max:40,type:'activity'},{name:'امتحان نهاية الفصل',max:60,type:'exam'}],
-    // Detailed 2025/2026 science assessment instruments; verify any 2026/2027 amendments before official adoption.
+    '10':'علوم',
     '11':[
-      {name:'الواجبات المنزلية',max:5,type:'activity'},
-      {name:'الحوار',max:5,type:'activity'},
+      {name:'الواجب المنزلي',max:5,type:'activity'},
+      {name:'الحوار الشفوي',max:5,type:'activity'},
       {name:'اختبار الاستقصاء العلمي والمهارات العملية',max:10,type:'activity'},
-      {name:'الاختبار القصير (1)',max:10,type:'activity'},
-      {name:'الاختبار القصير (2)',max:10,type:'activity'},
+      {name:'الاختبار القصير — الأول',max:10,type:'activity'},
+      {name:'الاختبار القصير — الثاني',max:10,type:'activity'},
       {name:'امتحان نهاية الفصل',max:60,type:'exam'}
     ],
     '12':[
-      {name:'الواجبات المنزلية',max:10,type:'activity'},
+      {name:'الواجبات المنزلية — الأول',max:5,type:'activity'},
+      {name:'الواجبات المنزلية — الثاني',max:5,type:'activity'},
       {name:'اختبار الاستقصاء العلمي والمهارات العملية',max:10,type:'activity'},
-      {name:'متوسط الاختبارين القصيرين',max:10,type:'activity'},
+      {name:'متوسط الاختبارين القصيرين (10 درجات)',max:10,type:'activity'},
       {name:'امتحان نهاية الفصل',max:70,type:'exam'}
     ]
   },
