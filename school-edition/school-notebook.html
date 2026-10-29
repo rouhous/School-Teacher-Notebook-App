@@ -928,7 +928,7 @@ function buildScheduleTableHTML(){
   const hasDatedNote=Object.keys(db.dailyPeriodNotes||{}).some(k=>k.endsWith('_'+di+'_'+p.id));
   const flags=(db.periodAlarms?.[di+'_'+p.id]?'🔔':'')+((db.periodNotes?.[di+'_'+p.id]||hasDatedNote)?'📝':'');
   if(!x)return '<td class="sched-cell"'+attr+' ><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
-  const cls=db.classes.find(c=>c.id===x.classId),name=String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'').slice(0,10);
+  const cls=db.classes.find(c=>c.id===x.classId),name=schoolGradeLabel(cls?.name||'').slice(0,10);
   const sub=String(x.subject||cls?.subject||'').slice(0,12);
   return '<td class="sched-cell"'+attr+' ><div class="sc-cls">'+escHTML(name)+'</div>'+(subjects.size>1?'<div class="sc-subj">'+escHTML(sub)+'</div>':'')+(flags?'<small>'+flags+'</small>':'')+'</td>';
  };
@@ -1346,11 +1346,34 @@ function delAssess(id){
   save();loadGrades();toast('✓');
 }
 function setG(aid,sid,val){const k=aid+'_'+sid;if(val===''){delete db.grades[k];save();return}const n=Number(val);const a=db.assessments.find(x=>x.id===aid);if(!Number.isFinite(n)||n<0||(a&&n>Number(a.max))){toast(db.lang==='ar'?'الدرجة يجب أن تكون بين 0 و'+(a?.max??'الحد الأقصى'):'Score must be between 0 and '+(a?.max??'the maximum'));return}db.grades[k]=n;save()}
-function fillStu(){const sel=document.getElementById('stuClass');sel.innerHTML=`<option value="">${t('allClasses')}</option>`+db.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+// Display school grades without section suffixes while preserving original class IDs and student links.
+function schoolGradeLabel(name){
+ const raw=String(name||'').trim().replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+ const m=raw.match(/(?:^|[^0-9])(1[0-2]|[1-9])\s*(?:[/\\-]\s*[0-9]+)?\s*$/);
+ return m?m[1]:raw;
+}
+function studentMatchesSchoolClass(student,selection){
+ if(!selection)return true;
+ if(selection.startsWith('grade:')){
+  const grade=selection.slice(6);
+  const cls=db.classes.find(c=>String(c.id)===String(student.classId));
+  return !!cls&&schoolGradeLabel(cls.name)===grade;
+ }
+ return String(student.classId)===selection;
+}
+function fillStu(){
+ const sel=document.getElementById('stuClass');
+ const previous=sel.value;
+ const grades=[...new Set(db.classes.map(c=>schoolGradeLabel(c.name)).filter(Boolean))].sort((a,b)=>Number(a)-Number(b)||a.localeCompare(b,'ar'));
+ sel.innerHTML=`<option value="">${t('allClasses')}</option>`+grades.map(g=>`<option value="grade:${escHTML(g)}">${escHTML(g)}</option>`).join('');
+ if([...sel.options].some(o=>o.value===previous))sel.value=previous;
+}
 function loadStudents(){
-  const cid=document.getElementById('stuClass').value;const list=cid?db.students.filter(s=>s.classId===cid):db.students;const body=document.getElementById('stuBody');
+ const cid=document.getElementById('stuClass').value;
+ const list=db.students.filter(st=>studentMatchesSchoolClass(st,cid));
+ const body=document.getElementById('stuBody');
   if(!list.length){body.innerHTML=`<div class="empty" style="padding:24px"><p>${t('students')}</p></div>`;return}
-  body.innerHTML=list.map(st=>{const cls=db.classes.find(c=>c.id===st.classId);const nc=db.notes.filter(n=>n.studentId===st.id).length;const pos=db.notes.filter(n=>n.studentId===st.id&&n.type==='pos').length;const neg=db.notes.filter(n=>n.studentId===st.id&&n.type==='neg').length;const details=[st.phone,st.city,st.village,st.studentNumber].filter(Boolean).join(' · ');return`<div class="list-item" onclick="openM('file','${st.id}')"><div class="avatar">${escHTML(st.name[0])}</div><div class="info"><div class="name">${escHTML(st.name)}</div><div class="meta">${escHTML(cls?.name||'')}${details?' · '+escHTML(details):''}${nc?' · '+nc:''}${pos?` <span class="badge b-green">+${pos}</span>`:''}${neg?` <span class="badge b-red">-${neg}</span>`:''}</div></div><div style="display:flex;gap:4px" onclick="event.stopPropagation()"><button class="btn-icon" title="${t('editStudent')}" onclick="openM('editStu','${st.id}')">✏️</button><button class="btn-icon" title="${t('deleteStudent')}" onclick="delStudent('${st.id}')">🗑️</button><button class="btn-icon" onclick="openM('note','${st.id}')">📝</button></div></div>`}).join('')
+  body.innerHTML=list.map(st=>{const cls=db.classes.find(c=>c.id===st.classId);const nc=db.notes.filter(n=>n.studentId===st.id).length;const pos=db.notes.filter(n=>n.studentId===st.id&&n.type==='pos').length;const neg=db.notes.filter(n=>n.studentId===st.id&&n.type==='neg').length;const details=[st.phone,st.city,st.village,st.studentNumber].filter(Boolean).join(' · ');return`<div class="list-item" onclick="openM('file','${st.id}')"><div class="avatar">${escHTML(st.name[0])}</div><div class="info"><div class="name">${escHTML(st.name)}</div><div class="meta">${escHTML(schoolGradeLabel(cls?.name||''))}${details?' · '+escHTML(details):''}${nc?' · '+nc:''}${pos?` <span class="badge b-green">+${pos}</span>`:''}${neg?` <span class="badge b-red">-${neg}</span>`:''}</div></div><div style="display:flex;gap:4px" onclick="event.stopPropagation()"><button class="btn-icon" title="${t('editStudent')}" onclick="openM('editStu','${st.id}')">✏️</button><button class="btn-icon" title="${t('deleteStudent')}" onclick="delStudent('${st.id}')">🗑️</button><button class="btn-icon" onclick="openM('note','${st.id}')">📝</button></div></div>`}).join('')
 }
 function delStudent(id){
   if(!confirm(t('confirmDeleteStudent')))return;
@@ -3499,7 +3522,7 @@ function exportGradesReport(){
 }
 function exportBehaviorReport(){
   const cid=document.getElementById('stuClass')?.value||'';
-  const students=cid?db.students.filter(s=>s.classId===cid):db.students.slice();
+  const students=db.students.filter(st=>studentMatchesSchoolClass(st,cid));
   const notes=db.notes.filter(n=>!cid||students.some(s=>s.id===n.studentId));
   const w=window.open('','_blank');if(!w)return;
   const rows=notes.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(n=>{
@@ -3522,7 +3545,7 @@ async function shareStudentPdf(sid){
   const st=isAll?null:db.students.find(s=>String(s.id)===String(sid));
   if(!isAll&&!st)return;
   const cls=st?db.classes.find(c=>String(c.id)===String(st.classId)):db.classes.find(c=>String(c.id)===String(cid));
-  const notes=db.notes.filter(n=>isAll?(!cid||db.students.some(s=>String(s.id)===String(n.studentId)&&String(s.classId)===String(cid))):String(n.studentId)===String(sid));
+  const notes=db.notes.filter(n=>isAll?db.students.some(st=>String(st.id)===String(n.studentId)&&studentMatchesSchoolClass(st,cid)):String(n.studentId)===String(sid));
   const headers=isAll?['#',t('studentName'),t('day'),t('type'),t('note')]:['#',t('studentName'),t('type'),t('note')];
   const rows=notes.map((n,i)=>{const student=db.students.find(s=>String(s.id)===String(n.studentId));return isAll?[String(i+1),student?.name||'',n.date||'',n.type==='pos'?t('positive'):n.type==='neg'?t('negative'):'—',n.text||'']:[String(i+1),n.date||'',n.type==='pos'?t('positive'):n.type==='neg'?t('negative'):'—',n.text||'']});
   if(!rows.length)rows.push(isAll?['1','—','—','—','—']:['1','—','—','—']);
@@ -4172,7 +4195,7 @@ async function activateTeacherPasskeyFromSettings(){
   status.style.color='#a33b32';
  }finally{button.disabled=false}
 }
-</script><script type="module" src="./passkey-auth.js?v=20261029-2">
+</script><script id="school-timetable-interactions-20261029">
 // Active notebook timetable: clicking a lesson opens a dated note editor.
 (function enableSchoolTimetableInteractions(){
  const selector='#school-managed-schedule td.sched-cell[data-day][data-period]';
@@ -4213,4 +4236,4 @@ async function activateTeacherPasskeyFromSettings(){
  enhanceTimetable();
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)enhanceTimetable()});
 })();
-</script></body></html>
+</script><script type="module" src="./passkey-auth.js?v=20261029-3"></script></body></html>
