@@ -41,7 +41,7 @@ async function existing(){
  try{const r=await call('school-passkey-identity',{action:'resolve'},access);sessionStorage.setItem(SUBKEY,r.google_sub);return true;}catch{sessionStorage.removeItem(SUBKEY);return false;}
 }
 async function signOut(){await client.auth.signOut();sessionStorage.removeItem(SUBKEY);}
-window.schoolPasskey={registerWithGoogle,signIn,token,existing,signOut,getSubject:()=>sessionStorage.getItem(SUBKEY)||''};
+window.schoolPasskey={registerWithGoogle,signIn,token,existing,signOut,getSubject:()=>sessionStorage.getItem(SUBKEY)||'',friendlyPasskeyError};
 window.dispatchEvent(new Event('school-passkey-ready'));
 
 function friendlyPasskeyError(error,phase){
@@ -84,17 +84,4 @@ if(document.getElementById('teacher-google')){
  if(localStorage.getItem(ENROLLED_KEY)!=='1'){
   msg.textContent='أول استخدام؟ سجّل الدخول بواسطة Google أولاً، ثم افتح دفتر المعلم واضغط «تفعيل البصمة / Face ID». زر مفتاح المرور مخصّص لمن فعّله مسبقًا.';
  }
-}
-if(location.pathname.endsWith('/school-edition/school-notebook.html')&&typeof schoolAuthRestore==='function'&&schoolAuthRestore()){
- const {b,msg}=makeButton('🔐 تفعيل البصمة / Face ID على هذا الجهاز',async()=>{
-  await registerWithGoogle(schoolAuthRestore());
- },'register');
- const panel=document.createElement('div');
- panel.style.cssText='position:fixed;left:9px;bottom:105px;z-index:500;background:#f5fffa;border:1px solid #bed8c9;border-radius:16px;max-width:min(260px,calc(100vw - 24px));box-shadow:0 4px 16px #0438;text-align:center;padding:6px';
- panel.append(b,msg);
- const close=document.createElement('button');
- close.type='button';close.textContent='إخفاء';close.setAttribute('aria-label','إخفاء إعداد مفتاح المرور');
- close.style.cssText='border:0;background:transparent;color:#075a43;padding:6px 12px;cursor:pointer';
- close.onclick=()=>panel.remove();
- panel.append(close);document.body.append(panel);
 }
