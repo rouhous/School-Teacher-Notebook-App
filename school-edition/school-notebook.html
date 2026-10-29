@@ -4219,6 +4219,22 @@ async function syncManaged(){
   replaceHome();
  }catch(e){loaded=true;managedSchedule=[];replaceHome();const body=document.getElementById('homeBody');body.insertAdjacentHTML('afterbegin','<div class="school-managed-notice">تعذر جلب البيانات المعتمدة. لم يتم تعديل القوائم المحلية. حاول إعادة فتح التطبيق بعد التحقق من الاتصال.</div>');}
 }
+// Read-only linkage audit. Counts only; no student names or identifiers leave the device.
+window.schoolLinkAudit=function(){
+ const classes=Array.isArray(db.classes)?db.classes:[];
+ const students=Array.isArray(db.students)?db.students:[];
+ const slots=Array.isArray(db.schedule)?db.schedule:[];
+ const assessments=Array.isArray(db.assessments)?db.assessments:[];
+ const ids=new Set(classes.map(c=>String(c.id)));
+ const lessons=slots.filter(s=>s.type==='lesson');
+ const orphanStudents=students.filter(s=>!ids.has(String(s.classId))).length;
+ const orphanLessons=lessons.filter(s=>!ids.has(String(s.classId))).length;
+ const orphanAssessments=assessments.filter(a=>!ids.has(String(a.classId))).length;
+ const missingRoster=classes.filter(c=>lessons.some(s=>String(s.classId)===String(c.id))&&!students.some(s=>String(s.classId)===String(c.id))).length;
+ const missingAssessment=classes.filter(c=>students.some(s=>String(s.classId)===String(c.id))&&!assessments.some(a=>String(a.classId)===String(c.id)&&!a.hidden)).length;
+ const duplicateClassKeys=classes.length-new Set(classes.map(c=>String(c.schoolRosterKey||String(c.schoolId||'')+'|'+String(c.name)))).size;
+ return {classes:classes.length,students:students.length,lessons:lessons.length,assessments:assessments.length,orphanStudents,orphanLessons,orphanAssessments,missingRoster,missingAssessment,duplicateClassKeys};
+};
 // Automatically refresh supervisor-approved rosters and timetables while the notebook is in use.
 let schoolSyncRunning=false;
 const schoolSyncOriginal=syncManaged;
