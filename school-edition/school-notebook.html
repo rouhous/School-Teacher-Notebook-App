@@ -2416,19 +2416,17 @@ const ASSESSMENT_CATALOG={
   'رياضيات متقدمة':'رياضيات',
 };
 function resolveAssessmentPreset(subject,band){
-  if(subject==='إنجليزي'){
-    const g=band==='12'?12:band==='11'?11:band==='10'?10:9;
-    return englishAssessmentsForGrade(g);
-  }
+  const aliases={'اللغة العربية':'لغة عربية','التربية الإسلامية':'تربية إسلامية','الدراسات الاجتماعية':'دراسات اجتماعية','الدراسات':'دراسات اجتماعية','التربية البدنية':'تربية بدنية','التربية الرياضية':'تربية بدنية','الفنون':'فنون بصرية','التربية الفنية':'فنون بصرية','الموسيقى':'مهارات موسيقية','التربية الموسيقية':'مهارات موسيقية','اللغة الإنجليزية':'إنجليزي','الانجليزية':'إنجليزي','English':'إنجليزي','الرياضيات':'رياضيات','الرياضيات الأساسية':'رياضيات','الرياضيات المتقدمة':'رياضيات','العلوم':'علوم','الأحياء':'أحياء','الفيزياء':'فيزياء','الكيمياء':'كيمياء','علوم البيئة':'العلوم والبيئة'};
+  subject=aliases[String(subject||'').trim()]||String(subject||'').trim();
+  const g=Number(String(band||'').match(/\\d+/)?.[0])||0;
+  if(subject==='إنجليزي')return englishAssessmentsForGrade(g>=10?g:9);
   let cat=ASSESSMENT_CATALOG[subject];
   if(typeof cat==='string')cat=ASSESSMENT_CATALOG[cat];
   if(!cat)return null;
   let items=cat[band];
-  if(typeof items==='string'){
-    cat=ASSESSMENT_CATALOG[items];
-    items=cat&&cat[band];
-  }
-  if(!items||!Array.isArray(items))return null;
+  if(!items&&g)items=Object.entries(cat).find(([range])=>{const n=range.split('-').map(Number);return n.length===1?n[0]===g:n.length===2&&g>=n[0]&&g<=n[1]})?.[1];
+  if(typeof items==='string'){const target=ASSESSMENT_CATALOG[items];items=target?.[band]||(g?Object.entries(target||{}).find(([range])=>{const n=range.split('-').map(Number);return n.length===1?n[0]===g:n.length===2&&g>=n[0]&&g<=n[1]})?.[1]:null)}
+  if(!Array.isArray(items))return null;
   return items.map(a=>({name:a.name,max:a.max,type:a.type||'activity'}));
 }
 function catalogSubjects(){
