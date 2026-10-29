@@ -1658,6 +1658,7 @@ function parseStudentsFromText(text){
   return unique.slice(0,500);
 }
 function openM(type,data){const box=document.getElementById('modalBox');let h='';if(type==='settings'){h=`<div class="modal-head"><h3>${t('settings')}</h3><button class="modal-x" onclick="closeM()">×</button></div>
+<p style="font-size:.72rem;color:var(--mu);text-align:center;margin:4px 0 10px">إصدار إعدادات المعلم: 2026.10.29-2</p>
 ${cloudSettingsHTML()}
 <div class="form-group" style="padding:14px;border:1px solid var(--bd);border-radius:14px;margin:12px 0;background:var(--card,#fff)">
  <label style="font-weight:800">🔐 ${db.lang==='ar'?'البصمة / Face ID':'Fingerprint / Face ID'}</label>
@@ -4161,4 +4162,4 @@ async function activateTeacherPasskeyFromSettings(){
   status.style.color='#a33b32';
  }finally{button.disabled=false}
 }
-</script><script type="module" src="./passkey-auth.js"></script></body></html>
+</script><script type="module" src="./passkey-auth.js?v=20261029-2"></script></body></html>
