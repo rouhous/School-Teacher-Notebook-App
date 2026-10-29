@@ -366,6 +366,19 @@ footer{position:relative!important;z-index:2!important;background:transparent!im
    schoolAuthSave(response.credential);location.replace('school-edition/school-notebook.html');
   }catch(e){status.textContent=e.message||'تعذر التحقق من حساب المعلم.';}
  }
+ // Reuse a still-valid Google session on Android/iOS without prompting again.
+ async function resumeApprovedSession(){
+  const credential=schoolAuthRestore();
+  if(!credential)return;
+  status.textContent='جارٍ استعادة جلسة الدخول المحفوظة...';
+  try{
+   const r=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential})});
+   const j=await r.json();
+   if(r.ok&&j.ok&&j.data?.approved){location.replace('school-edition/school-notebook.html');return;}
+   schoolAuthClear();
+  }catch(e){status.textContent='تعذر التحقق من الجلسة المحفوظة. يمكنك تسجيل الدخول باستخدام Google.';}
+ }
+ resumeApprovedSession();
  function render(){
   if(!window.google?.accounts?.id){status.textContent='تعذر تحميل خدمة Google. أعد تحميل الصفحة.';return;}
   google.accounts.id.initialize({client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:verifiedTeacher});
