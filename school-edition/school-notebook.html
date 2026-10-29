@@ -1213,6 +1213,16 @@ function ensureOfficialAssessments(classId){
  if(!band)return;
  const preset=resolveAssessmentPreset(subj,band);if(!Array.isArray(preset))return;
  let changed=false;
+ // The legacy aggregate music activity was replaced by four named 20-mark skills.
+ // Remove only empty legacy columns; never delete recorded marks.
+ if(subj==='مهارات موسيقية'&&band==='5-10'){
+  const obsolete=db.assessments.filter(x=>String(x.classId)===String(classId)&&
+    (String(x.name||'').trim()==='الأنشطة العملية'||/^النشاط العملي\s*[(（]?[1-4]/.test(String(x.name||'').trim())));
+  for(const a of obsolete){
+   const hasMarks=Object.keys(db.grades||{}).some(k=>k.startsWith(String(a.id)+'_')&&db.grades[k]!==''&&db.grades[k]!==null&&db.grades[k]!==undefined);
+   if(!hasMarks){db.assessments=db.assessments.filter(x=>x.id!==a.id);changed=true;}
+  }
+ }
  for(const a of preset){
   const key=subj+'|'+band+'|'+a.name;
   const existing=db.assessments.find(x=>x.classId===classId&&(x.officialKey===key||(x.name===a.name&&Number(x.max)===Number(a.max))));
