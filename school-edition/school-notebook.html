@@ -4110,7 +4110,7 @@ async function syncManaged(){
   db.classes=[...scheduleClasses.values()];
   db.schedule=managedSchedule.filter(x=>x&&Number.isInteger(Number(x.weekday))&&Number.isInteger(Number(x.period))).map(x=>{
     const cls=x.dutyPriority?null:scheduleClasses.get(String(x.classId||''));
-    return {day:Number(x.weekday),periodId:Number(x.period),classId:cls?.id||'',subject:String(x.subject||x.dutyPriority||''),dutyPriority:String(x.dutyPriority||(!cls&&/^[ABCD]$/i.test(String(x.subject||''))?x.subject:'')),type:cls?'lesson':'rest'};
+    return {day:Number(x.weekday),periodId:Number(x.period),schoolId:String(x.schoolId||''),classId:cls?.id||'',subject:String(x.subject||x.dutyPriority||''),dutyPriority:String(x.dutyPriority||(!cls&&/^[ABCD]$/i.test(String(x.subject||''))?x.subject:'')),type:cls?'lesson':'rest'};
   });
   db.scheduleView='data';
   db.onboarded=true;
@@ -4171,10 +4171,11 @@ async function syncManaged(){
       db.classes=db.classes.filter(c=>c.id!==duplicate.id);
     }
   }
-  const rosterClassIds=new Map(nextClasses.map(c=>[String(c.name),c.id]));const byGrade=new Map();for(const c of nextClasses){const g=String(c.name).split('/')[0];if(!byGrade.has(g))byGrade.set(g,c.id);else byGrade.set(g,null)}
+  const rosterClassIds=new Map(nextClasses.map(c=>[String(c.schoolRosterKey||'') ,c.id]));const byGrade=new Map();for(const c of nextClasses){const g=String(c.schoolRosterKey||'').split('|')[0]+'|'+String(c.name).split('/')[0];if(!byGrade.has(g))byGrade.set(g,c.id);else byGrade.set(g,null)}
   db.schedule=db.schedule.map(slot=>{
     const cls=db.classes.find(c=>c.id===slot.classId);
-    const rosterId=cls&&(rosterClassIds.get(String(cls.name))||byGrade.get(String(cls.name).replace(/[.]0$/,'')));
+    const schoolKey=String(slot.schoolId||'')+'|'+String(cls?.name||'');
+    const rosterId=cls&&(rosterClassIds.get(schoolKey)||byGrade.get(String(slot.schoolId||'')+'|'+String(cls.name).replace(/[.]0$/,'')));
     return rosterId?{...slot,classId:rosterId}:slot;
   });
   // Reconcile grade-only timetable and assessment aliases with an unambiguous approved section.
