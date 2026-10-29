@@ -1659,6 +1659,12 @@ function parseStudentsFromText(text){
 }
 function openM(type,data){const box=document.getElementById('modalBox');let h='';if(type==='settings'){h=`<div class="modal-head"><h3>${t('settings')}</h3><button class="modal-x" onclick="closeM()">×</button></div>
 ${cloudSettingsHTML()}
+<div class="form-group" style="padding:14px;border:1px solid var(--bd);border-radius:14px;margin:12px 0;background:var(--card,#fff)">
+ <label style="font-weight:800">🔐 ${db.lang==='ar'?'البصمة / Face ID':'Fingerprint / Face ID'}</label>
+ <p style="font-size:.8rem;color:var(--mu);line-height:1.7;margin:8px 0">${db.lang==='ar'?'فعّل مفتاح مرور لهذا الجهاز بعد تسجيل الدخول بحساب Google المعتمد، لتتمكن من الدخول دون تكرار تسجيل Google.':'Register a passkey for this device after signing in with your approved Google account.'}</p>
+ <button type="button" class="btn btn-primary btn-block" id="teacherActivatePasskey" onclick="activateTeacherPasskeyFromSettings()">🔐 ${db.lang==='ar'?'تفعيل البصمة / Face ID':'Enable fingerprint / Face ID'}</button>
+ <p id="teacherPasskeySettingsStatus" role="status" aria-live="polite" style="font-size:.78rem;line-height:1.7;margin-top:8px;color:var(--mu)">${db.lang==='ar'?'يجب تفعيل مفتاح المرور مرة واحدة قبل استخدام زر الدخول بالبصمة.':'Register once before using passkey sign-in.'}</p>
+</div>
 <div class="form-group theme-settings" style="padding:12px;border:1px solid var(--bd);border-radius:14px">
  <label style="font-weight:800">🎨 ${db.lang==='ar'?'ألوان التطبيق':'App theme colors'}</label>
  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:8px">
@@ -4127,4 +4133,32 @@ function schoolDutyLabel(day,period){
   if(e.key==='Escape'&&document.getElementById('modalBg')?.classList.contains('open')){closeM();e.preventDefault()}
  });
 })();
-</script></body></html>
+
+async function activateTeacherPasskeyFromSettings(){
+ const button=document.getElementById('teacherActivatePasskey');
+ const status=document.getElementById('teacherPasskeySettingsStatus');
+ if(!button||!status)return;
+ if(!schoolNotebookCredential){
+  status.textContent='لتسجيل بصمة جديدة، يلزم الدخول باستخدام Google مرة واحدة. أعد الدخول بحساب المعلم المعتمد ثم افتح الإعدادات.';
+  return;
+ }
+ button.disabled=true;
+ status.textContent='جارٍ فتح تسجيل مفتاح المرور الآمن على الجهاز...';
+ try{
+  if(!window.schoolPasskey){
+   await Promise.race([
+    new Promise(resolve=>window.addEventListener('school-passkey-ready',resolve,{once:true})),
+    new Promise((_,reject)=>setTimeout(()=>reject(Error('تعذر تحميل خدمة مفتاح المرور. تحقق من الإنترنت وأعد فتح التطبيق.')),12000))
+   ]);
+  }
+  if(typeof window.schoolPasskey?.registerWithGoogle!=='function')throw Error('خدمة البصمة غير متاحة حاليًا.');
+  await window.schoolPasskey.registerWithGoogle(schoolNotebookCredential);
+  status.textContent='✓ تم تسجيل مفتاح المرور بنجاح. يمكنك الآن الدخول بالبصمة / Face ID من شاشة تسجيل الدخول.';
+  status.style.color='#067647';
+ }catch(e){
+  const message=window.schoolPasskey?.friendlyPasskeyError?.(e,'register')||String(e?.message||e);
+  status.textContent='تعذر تفعيل البصمة: '+message;
+  status.style.color='#a33b32';
+ }finally{button.disabled=false}
+}
+</script><script type="module" src="./passkey-auth.js"></script></body></html>
