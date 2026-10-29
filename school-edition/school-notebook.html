@@ -979,7 +979,7 @@ function schoolClassDisplayName(value){
 }
 function renderClasses(){const body=document.getElementById('classesBody');if(!db.classes.length){body.innerHTML=`<div class="empty"><div class="icon">🏫</div><p>${t('noClasses')}</p><span>${t('addFirstClass')}</span><button class="btn btn-primary" onclick="openM('addClass')">${t('addClass')}</button><button class="btn btn-ghost" style="margin-top:7px" onclick="openM('importSched')">${t('importSchedule')}</button></div>`;return}
 try{syncClassSubjectsFromSchedule()}catch(e){}
-body.innerHTML='<button type="button" class="btn btn-outline btn-block" style="margin:8px 0" onclick="showSchoolLinkAudit()">🔎 تدقيق ارتباطات الصفوف والطلاب والتقييمات</button>'+db.classes.map(c=>{
+body.innerHTML='<button type="button" class="btn btn-outline btn-block" style="margin:8px 0" onclick="showSchoolLinkAudit()">🔎 تدقيق ارتباطات الصفوف والطلاب والتقييمات</button>'+db.classes.filter(c=>db.schedule.some(s=>s.type==='lesson'&&String(s.classId)===String(c.id))||db.students.some(s=>String(s.classId)===String(c.id))).map(c=>{
   const cnt=db.students.filter(s=>s.classId===c.id).length;
   const subj=classDisplaySubject(c)||'—';
   const allSubs=subjectsForClass(c.id);
@@ -4170,7 +4170,7 @@ async function syncManaged(){
   // Consolidate timetable classes and roster classes by the same school/class key.
   // This keeps gradebook and attendance pointing to the student-bearing class.
   for(const rc of nextClasses){
-    const duplicates=(db.classes||[]).filter(c=>c.id!==rc.id&&String(c.name).trim()===String(rc.name).trim());
+    const duplicates=(db.classes||[]).filter(c=>String(c.id)!==String(rc.id)&&String(c.name).trim()===String(rc.name).trim()&&String(c.schoolId||'')!==''&&String(c.schoolId)===String(rc.schoolId||''));
     for(const duplicate of duplicates){
       db.schedule=db.schedule.map(item=>item.classId===duplicate.id?{...item,classId:rc.id}:item);
       db.assessments=db.assessments.map(item=>item.classId===duplicate.id?{...item,classId:rc.id}:item);
