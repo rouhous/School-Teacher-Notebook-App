@@ -504,10 +504,14 @@ function classDisplaySubject(c){
   return c.subject||'';
 }
 function syncClassSubjectsFromSchedule(){
+  // Never overwrite an explicitly assigned subject with the most frequent
+  // timetable label. A class can have several lessons or imported aliases.
   let changed=false;
   (db.classes||[]).forEach(c=>{
     const subs=subjectsForClass(c.id);
-    if(subs.length && c.subject!==subs[0]){c.subject=subs[0];changed=true;}
+    if(subs.length && !String(c.subject||'').trim()){
+      c.subject=subs[0];changed=true;
+    }
   });
   return changed;
 }
@@ -2422,7 +2426,7 @@ function resolveAssessmentPreset(subject,band){
   return items.map(a=>({name:a.name,max:a.max,type:a.type||'activity'}));
 }
 function catalogSubjects(){
-  return ['لغة عربية','تربية إسلامية','دراسات اجتماعية','جغرافيا','هذا وطني','الجغرافيا والتقنيات','توجيه مهني','إنجليزي','رياضيات','رياضيات أساسية','رياضيات متقدمة','تربية بدنية','مهارات حياتية','فنون بصرية','مهارات موسيقية','علوم','أحياء','كيمياء','فيزياء','العلوم والبيئة','العلوم البيئية','علوم البيئة'];
+  return ['لغة عربية','تربية إسلامية','دراسات اجتماعية','جغرافيا','هذا وطني','الجغرافيا والتقنيات','توجيه مهني','تقنية المعلومات','إنجليزي','رياضيات','رياضيات أساسية','رياضيات متقدمة','تربية بدنية','مهارات حياتية','فنون بصرية','مهارات موسيقية','علوم','أحياء','كيمياء','فيزياء','العلوم والبيئة','العلوم البيئية','علوم البيئة'];
 }
 function bandsForSubject(subject){
   let cat=ASSESSMENT_CATALOG[subject];
