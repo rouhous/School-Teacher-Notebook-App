@@ -51,7 +51,7 @@ function friendlyPasskeyError(error,phase){
   return phase==='login'?'لم يُعثر على مفتاح مرور، أو أُلغيت العملية. إذا كانت هذه أول مرة، ادخل باستخدام Google ثم فعّل البصمة داخل الدفتر.':'لم تكتمل عملية إنشاء المفتاح. تأكد من إعداد قفل الشاشة أو البصمة، ثم أعد المحاولة.';
  if(/passkey.*(disabled|not enabled|unsupported)|webauthn.*(disabled|not enabled)|feature.*disabled/i.test(raw))
   return 'خدمة مفاتيح المرور غير مفعّلة على الخادم. يجب تفعيلها من إعدادات المصادقة أولاً.';
- if(/AUTH_BOOTSTRAP_FAILED|AUTH_VERIFY_FAILED|AUTH_SESSION_FAILED|AUTH_LINK_MISSING/.test(raw))
+ if(/AUTH_BOOTSTRAP_FAILED|AUTH_VERIFY_FAILED|AUTH_SESSION_FAILED|AUTH_LINK_MISSING|IDENTITY_LINK_FAILED/.test(raw))
   return 'تعذر تجهيز حساب مفتاح المرور على الخادم. لم يتم تفعيل البصمة؛ جرّب الدخول باستخدام Google.';
  if(/NOT_APPROVED|IDENTITY_ALREADY_LINKED/.test(raw))
   return 'تعذر ربط المفتاح بالمعلم المعتمد. يُرجى مراجعة المشرف دون إنشاء حساب معلم جديد.';
