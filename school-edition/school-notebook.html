@@ -12,9 +12,14 @@
 <title>دفتر المعلم المدرسي | النسخة الموحدة</title><script src="./session-auth.js"></script>
 <script>
 const schoolNotebookCredential=schoolAuthRestore();
-const schoolNotebookSubject=(()=>{try{return String(JSON.parse(atob(schoolNotebookCredential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub||'')}catch{return ''}})();
+const schoolNotebookSubject=(()=>{try{return String(JSON.parse(atob(schoolNotebookCredential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub||'')}catch{return sessionStorage.getItem('school-notebook-passkey-subject-v1')||''}})();
 const schoolNotebookKey='school-notebook-v1:'+schoolNotebookSubject+':data';
-if(!schoolNotebookCredential||!schoolNotebookSubject)location.replace('../');
+async function schoolNotebookPasskeyToken(){
+ if(!window.schoolPasskey)await new Promise(resolve=>{window.addEventListener('school-passkey-ready',resolve,{once:true});setTimeout(resolve,12000)});
+ return window.schoolPasskey?.token?.()||null;
+}
+
+if(!schoolNotebookSubject)location.replace('../');
 </script>
 <style>#appLock{display:none!important}#schoolAuthCover{position:fixed;inset:0;background:#f1f6f5;z-index:2147483646;display:grid;place-items:center;padding:24px;font:18px Tahoma;color:#075d4e;text-align:center}#schoolAuthCover a{color:#075d4e}</style>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1170,7 +1175,7 @@ document.addEventListener('click',function(event){
  if(typeof showLessonNoteEditor==='function')showLessonNoteEditor(day,period);
  else console.error('Period note editor is not available');
 },true);
-<\/script></body></html>`);
+<\/script><script type="module" src="./passkey-auth.js"></script></body></html>`);
   w.document.close();
 }
 function sendAttendanceToNoorExtension(){
@@ -3888,8 +3893,10 @@ scheduleAlarmChecker();
 (async()=>{
  const cover=document.getElementById('schoolAuthCover');
  try{
-  if(!schoolNotebookCredential||!schoolNotebookSubject)throw Error('LOGIN_REQUIRED');
-  const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:schoolNotebookCredential})});
+  if(!schoolNotebookSubject)throw Error('LOGIN_REQUIRED');
+  const authPayload=schoolNotebookCredential?{credential:schoolNotebookCredential}:{access_token:await schoolNotebookPasskeyToken()};
+  if(!authPayload.credential&&!authPayload.access_token)throw Error('LOGIN_REQUIRED');
+  const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(authPayload)});
   const result=await response.json();
   if(!response.ok||!result.ok||!result.data?.approved)throw Error('NOT_APPROVED');
   cover.remove();
@@ -3959,7 +3966,8 @@ window.openM=function(type,data){
  return originalOpenM(type,data);
 };
 async function fetchApproved(path){
- const response=await fetch(schoolApi+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:schoolNotebookCredential})});
+ const authPayload=schoolNotebookCredential?{credential:schoolNotebookCredential}:{access_token:await schoolNotebookPasskeyToken()};
+ const response=await fetch(schoolApi+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(authPayload)});
  const result=await response.json();
  if(!response.ok||!result.ok)throw Error('تعذر تحميل بيانات المدرسة المعتمدة');
  return result.data;
