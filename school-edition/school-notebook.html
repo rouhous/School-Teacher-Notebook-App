@@ -4182,7 +4182,8 @@ async function syncManaged(){
   db.schedule=db.schedule.map(slot=>{
     const cls=db.classes.find(c=>c.id===slot.classId);
     const schoolKey=String(slot.schoolId||'')+'|'+String(cls?.name||'');
-    const rosterId=cls&&(rosterClassIds.get(schoolKey)||byGrade.get(String(slot.schoolId||'')+'|'+String(cls.name).replace(/[.]0$/,'')));
+    const gradeKey=String(cls?.name||'').trim().split(/[\/\\-]/)[0].replace(/[.]0$/,'');
+    const rosterId=cls&&(rosterClassIds.get(schoolKey)||byGrade.get(String(slot.schoolId||'')+'|'+gradeKey));
     return rosterId?{...slot,classId:rosterId}:slot;
   });
   // Reconcile grade-only timetable and assessment aliases with an unambiguous approved section.
@@ -4199,7 +4200,7 @@ async function syncManaged(){
     // Never merge classes from different schools or ambiguous sections.
     const school=String(old.schoolId||'');
     if(!school)continue;
-    const grade=String(old.name||'').replace(/[.]0$/,'').trim();
+    const grade=String(old.name||'').trim().split(/[\/\\-]/)[0].replace(/[.]0$/,'');
     const target=approvedByGrade.get(school+'|'+grade);
     if(target&&String(target)!==String(old.id))classAliases.set(old.id,target);
   }
