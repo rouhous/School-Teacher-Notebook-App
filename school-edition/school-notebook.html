@@ -979,7 +979,7 @@ function schoolClassDisplayName(value){
 }
 function renderClasses(){const body=document.getElementById('classesBody');if(!db.classes.length){body.innerHTML=`<div class="empty"><div class="icon">🏫</div><p>${t('noClasses')}</p><span>${t('addFirstClass')}</span><button class="btn btn-primary" onclick="openM('addClass')">${t('addClass')}</button><button class="btn btn-ghost" style="margin-top:7px" onclick="openM('importSched')">${t('importSchedule')}</button></div>`;return}
 try{syncClassSubjectsFromSchedule()}catch(e){}
-body.innerHTML=db.classes.map(c=>{
+body.innerHTML='<button type="button" class="btn btn-outline btn-block" style="margin:8px 0" onclick="showSchoolLinkAudit()">🔎 تدقيق ارتباطات الصفوف والطلاب والتقييمات</button>'+db.classes.map(c=>{
   const cnt=db.students.filter(s=>s.classId===c.id).length;
   const subj=classDisplaySubject(c)||'—';
   const allSubs=subjectsForClass(c.id);
@@ -4234,6 +4234,21 @@ window.schoolLinkAudit=function(){
  const missingAssessment=classes.filter(c=>students.some(s=>String(s.classId)===String(c.id))&&!assessments.some(a=>String(a.classId)===String(c.id)&&!a.hidden)).length;
  const duplicateClassKeys=classes.length-new Set(classes.map(c=>String(c.schoolRosterKey||String(c.schoolId||'')+'|'+String(c.name)))).size;
  return {classes:classes.length,students:students.length,lessons:lessons.length,assessments:assessments.length,orphanStudents,orphanLessons,orphanAssessments,missingRoster,missingAssessment,duplicateClassKeys};
+};
+window.showSchoolLinkAudit=function(){
+ const a=window.schoolLinkAudit();
+ const lines=[
+ 'تدقيق ارتباطات دفتر المعلم (هذا الحساب)',
+ 'الصفوف: '+a.classes+' | الطلاب: '+a.students,
+ 'الحصص الأساسية: '+a.lessons+' | بنود التقييم: '+a.assessments,
+ 'طلاب دون صف: '+a.orphanStudents,
+ 'حصص دون صف: '+a.orphanLessons,
+ 'تقييمات دون صف: '+a.orphanAssessments,
+ 'صفوف بحصص دون قائمة طلاب: '+a.missingRoster,
+ 'صفوف بطلاب دون تقييم: '+a.missingAssessment,
+ 'معرّفات صفوف مكررة: '+a.duplicateClassKeys
+ ];
+ alert(lines.join('\\n'));
 };
 // Automatically refresh supervisor-approved rosters and timetables while the notebook is in use.
 let schoolSyncRunning=false;
