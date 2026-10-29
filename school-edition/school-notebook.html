@@ -994,7 +994,7 @@ function fillAtt(){
   const clsSel=document.getElementById('attClass');
   if(!clsSel)return;
   const prev=clsSel.value;
-  clsSel.innerHTML=db.classes.map(c=>`<option value="${c.id}">${escHTML(c.name)}</option>`).join('')||'<option value="">—</option>';
+  clsSel.innerHTML=activeTeacherClasses().map(c=>`<option value="${escHTML(c.id)}">${escHTML(c.name)}</option>`).join('')||'<option value="">—</option>';
   if(prev&&[...clsSel.options].some(o=>o.value===prev))clsSel.value=prev;
   const dateEl=document.getElementById('attDate');
   if(dateEl&&!dateEl.value)dateEl.value=db.attDate||todayStr();
@@ -1002,7 +1002,7 @@ function fillAtt(){
 }
 function periodsForClassDay(cid,dayIdx){
   return db.schedule
-    .filter(s=>s.classId===cid&&Number(s.day)===Number(dayIdx)&&!isRestSlot(s)&&!isBreakPeriod(db.periods.find(p=>p.id===s.periodId)))
+    .filter(s=>String(s.classId)===String(cid)&&Number(s.day)===Number(dayIdx)&&!isRestSlot(s)&&!isBreakPeriod(db.periods.find(p=>p.id===s.periodId)))
     .sort((a,b)=>a.periodId-b.periodId);
 }
 function onAttDateChange(){
