@@ -4029,10 +4029,10 @@ async function syncManaged(){
       db.classes=db.classes.filter(c=>c.id!==duplicate.id);
     }
   }
-  const rosterClassIds=new Map(nextClasses.map(c=>[String(c.name),c.id]));
+  const rosterClassIds=new Map(nextClasses.map(c=>[String(c.name),c.id]));const byGrade=new Map();for(const c of nextClasses){const g=String(c.name).split('/')[0];if(!byGrade.has(g))byGrade.set(g,c.id);else byGrade.set(g,null)}
   db.schedule=db.schedule.map(slot=>{
     const cls=db.classes.find(c=>c.id===slot.classId);
-    const rosterId=cls&&rosterClassIds.get(String(cls.name));
+    const rosterId=cls&&(rosterClassIds.get(String(cls.name))||byGrade.get(String(cls.name).replace(/[.]0$/,'')));
     return rosterId?{...slot,classId:rosterId}:slot;
   });
   // Persist the approved timetable even when no student list has been returned.
