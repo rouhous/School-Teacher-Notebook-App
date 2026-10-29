@@ -446,6 +446,21 @@ footer{position:relative!important;z-index:2!important;background:transparent!im
 #school-launch-overlay .school-launch-title{font-family:"Noto Sans Arabic",Tahoma,Arial,sans-serif;font-size:clamp(1.1rem,4.5vw,1.65rem);font-weight:800;line-height:1.5;color:#075a47;text-align:center;padding:0 14px;white-space:normal}
 #school-launch-overlay.school-launch-hide{opacity:0;pointer-events:none}
 @media(prefers-reduced-motion:reduce){#school-launch-overlay{transition:none}}
+</style><style id="ministry-title-correction-20261029">
+/* Correct the ministry wording on the existing mobile artwork without touching sign-in controls. */
+@media(max-width:800px){
+ .site.mobile-reference-ready:after{
+  content:"وزارة التعليم";
+  display:flex!important;align-items:center;justify-content:center;
+  position:absolute!important;z-index:3!important;
+  top:17.7svh!important;right:5.2%!important;
+  width:25%!important;height:3.4svh!important;
+  background:#faf0d9!important;color:#172a25!important;
+  font:700 clamp(11px,3.3vw,19px)/1.2 Tahoma,"Noto Sans Arabic",Arial,sans-serif!important;
+  text-align:center!important;border-radius:3px!important;
+  pointer-events:none!important;
+ }
+}
 </style></head><body><div id="school-launch-overlay" aria-label="دفتر المعلم المدرسي | وادي الحواسنة"><img src="./assets/school-icon-512.png" alt="شعار مدرسة وادي الحواسنة"><div class="school-launch-title">دفتر المعلم المدرسي | وادي الحواسنة</div></div><script>(function(){const e=document.getElementById('school-launch-overlay');function hide(){e.classList.add('school-launch-hide');setTimeout(()=>e.remove(),350)}window.addEventListener('load',hide,{once:true});setTimeout(hide,1800)})();</script><div class="site reference-ready mobile-reference-ready">
 <header class="masthead"><div class="official-banner-wrap"><img src="assets/official_school_banner.jpg" alt="شعارات رؤية عُمان 2040 ومدرسة وادي الحواسنة ووزارة التربية والتعليم" loading="eager" decoding="async"></div></header>
 <section class="hero"><div class="school-scene" aria-hidden="true"></div><div class="school-floating-icons" aria-hidden="true"><span>♧</span><span>☼</span><span>▣</span></div><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
