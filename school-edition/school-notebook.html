@@ -3961,7 +3961,7 @@ async function syncManaged(){
   const existingClasses=Array.isArray(db.classes)?db.classes:[];
   const scheduleClasses=new Map(existingClasses.map(c=>[String(c.name),c]));
   for(const slot of managedSchedule){
-    if(!slot||!slot.classId)continue;
+    if(!slot||!slot.classId||slot.dutyPriority)continue;
     const name=String(slot.classId);
     if(!scheduleClasses.has(name))scheduleClasses.set(name,{id:'school-class-'+String(slot.schoolId||'')+'-'+name,name,subject:String(slot.subject||'')});
   }
