@@ -4107,6 +4107,7 @@ async function syncManaged(){
   // Translate the supervisor's published slots into the ORIGINAL notebook schedule model.
   // Keep identifiers stable so attendance and grades remain linked to their students.
   const existingClasses=Array.isArray(db.classes)?db.classes:[];
+  const existingStudents=Array.isArray(db.students)?db.students:[];
   const scheduleClasses=new Map(existingClasses.map(c=>[String(c.schoolRosterKey||String(c.schoolId||'')+'|'+String(c.name)),c]));
   for(const slot of managedSchedule){
     if(!slot||!slot.classId||slot.dutyPriority)continue;
@@ -4136,8 +4137,8 @@ async function syncManaged(){
   managedRoster=Array.isArray(roster)?roster:[];
   loaded=true;
   // Approved rosters are authoritative; preserve all existing class/student-linked records.
-  const previousClasses=Array.isArray(db.classes)?db.classes:[];
-  const previousStudents=Array.isArray(db.students)?db.students:[];
+  const previousClasses=existingClasses;
+  const previousStudents=existingStudents;
   const classByKey=new Map(previousClasses.map(c=>[String(c.schoolRosterKey||String(c.schoolId||'')+'|'+String(c.name)),c]));
   const studentByCode=new Map(previousStudents.filter(st=>st.studentNumber).map(st=>[String(st.schoolId||'')+'|'+String(st.studentNumber),st]));
   const nextClasses=[],nextStudents=[],ids=new Map();
@@ -4218,7 +4219,7 @@ async function syncManaged(){
   // Persist the approved timetable even when no student list has been returned.
   save();
   replaceHome();
- }catch(e){loaded=true;managedSchedule=[];replaceHome();const body=document.getElementById('homeBody');body.insertAdjacentHTML('afterbegin','<div class="school-managed-notice">تعذر جلب البيانات المعتمدة. لم يتم تعديل القوائم المحلية. حاول إعادة فتح التطبيق بعد التحقق من الاتصال.</div>');}
+ }catch(e){loaded=true;replaceHome();const body=document.getElementById('homeBody');if(body)body.insertAdjacentHTML('afterbegin','<div class="school-managed-notice">تعذر تحديث البيانات المعتمدة مؤقتًا. احتفظ التطبيق بآخر بيانات متاحة؛ حاول إعادة التحميل بعد التحقق من الاتصال.</div>');}
 }
 // Read-only linkage audit. Counts only; no student names or identifiers leave the device.
 window.schoolLinkAudit=function(){
