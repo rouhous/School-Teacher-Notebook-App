@@ -1233,7 +1233,7 @@ function loadGrades(){
   const students=db.students.filter(s=>s.classId===cid);
   const body=document.getElementById('gradesBody');
   if(!assesses.length){body.innerHTML=`<div class="empty"><div class="icon">📊</div><p>${t('grades')}</p><button class="btn btn-primary" onclick="openM('addAssess')">${t('addAssess')}</button></div>`;return}
-  if(!students.length){body.innerHTML=`<div class="empty"><p>${t('students')}</p></div>`;return}
+  if(!students.length){body.innerHTML=`<div class="empty"><p>لا توجد قائمة طلاب معتمدة مرتبطة بهذا الصف حتى الآن. يجب استيراد قائمة الصف من حساب المشرف لتفعيل رصد الدرجات.</p></div>`;return}
   // Group: continuous sub-sections, finals, others
   const cont=assesses.filter(a=>isContinuousType(a.type)&&!isFinalType(a.type)&&classifyAssessment(a.name)!=='total'&&classifyAssessment(a.name)!=='exam');
   const finals=assesses.filter(a=>isFinalType(a.type)||classifyAssessment(a.name)==='exam');
@@ -4018,6 +4018,17 @@ async function syncManaged(){
     db.onboarded=true;
   }
   // Keep schedule references pointing to the same class IDs as approved students.
+  // Consolidate timetable classes and roster classes by the same school/class key.
+  // This keeps gradebook and attendance pointing to the student-bearing class.
+  for(const rc of nextClasses){
+    const duplicates=(db.classes||[]).filter(c=>c.id!==rc.id&&String(c.name).trim()===String(rc.name).trim());
+    for(const duplicate of duplicates){
+      db.schedule=db.schedule.map(item=>item.classId===duplicate.id?{...item,classId:rc.id}:item);
+      db.assessments=db.assessments.map(item=>item.classId===duplicate.id?{...item,classId:rc.id}:item);
+      db.students=db.students.map(item=>item.classId===duplicate.id?{...item,classId:rc.id}:item);
+      db.classes=db.classes.filter(c=>c.id!==duplicate.id);
+    }
+  }
   const rosterClassIds=new Map(nextClasses.map(c=>[String(c.name),c.id]));
   db.schedule=db.schedule.map(slot=>{
     const cls=db.classes.find(c=>c.id===slot.classId);
