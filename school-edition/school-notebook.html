@@ -925,7 +925,8 @@ function buildScheduleTableHTML(){
   if(isBreakPeriod(p))return '<td class="sc-break">'+escHTML(t('breakPeriod'))+'</td>';
   const matches=(db.schedule||[]).filter(x=>Number(x.day)===di&&Number(x.periodId)===Number(p.id));
   const x=matches.find(x=>!isRestSlot(x)&&x.type!=='break');
-  const flags=(db.periodAlarms?.[di+'_'+p.id]?'🔔':'')+(db.periodNotes?.[di+'_'+p.id]?'📝':'');
+  const hasDatedNote=Object.keys(db.dailyPeriodNotes||{}).some(k=>k.endsWith('_'+di+'_'+p.id));
+  const flags=(db.periodAlarms?.[di+'_'+p.id]?'🔔':'')+((db.periodNotes?.[di+'_'+p.id]||hasDatedNote)?'📝':'');
   if(!x)return '<td class="sched-cell"'+attr+' ><span class="sc-rest">'+escHTML(schoolDutyLabel(di,p.id))+'</span><small>'+flags+'</small></td>';
   const cls=db.classes.find(c=>c.id===x.classId),name=String(cls?.name||'').replace(/\s*\/\s*1\s*$/,'').slice(0,10);
   const sub=String(x.subject||cls?.subject||'').slice(0,12);
@@ -3936,6 +3937,8 @@ function managedHTML(){
 function replaceHome(){
  const body=document.getElementById('homeBody');if(!body)return;
  body.innerHTML=managedHTML();
+ // The managed school view replaces the entire timetable; refresh the live gold highlight after each replacement.
+ if(typeof updateActiveLessonVisual==='function')updateActiveLessonVisual();
 }
 window.renderHome=replaceHome;
 window.loadSample=function(){toast('البيانات التجريبية غير متاحة في النسخة المدرسية.')};
@@ -4169,4 +4172,45 @@ async function activateTeacherPasskeyFromSettings(){
   status.style.color='#a33b32';
  }finally{button.disabled=false}
 }
-</script><script type="module" src="./passkey-auth.js?v=20261029-2"></script></body></html>
+</script><script type="module" src="./passkey-auth.js?v=20261029-2">
+// Active notebook timetable: clicking a lesson opens a dated note editor.
+(function enableSchoolTimetableInteractions(){
+ const selector='#school-managed-schedule td.sched-cell[data-day][data-period]';
+ function openFromCell(cell){
+  const day=Number(cell.dataset.day),period=Number(cell.dataset.period);
+  if(!Number.isInteger(day)||!Number.isInteger(period))return;
+  showLessonNoteEditor(day,period);
+ }
+ document.addEventListener('click',function(e){
+  const cell=e.target.closest?.(selector);
+  if(!cell)return;
+  e.preventDefault();
+  openFromCell(cell);
+ });
+ document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const cell=e.target.closest?.(selector);
+  if(!cell)return;
+  e.preventDefault();
+  openFromCell(cell);
+ });
+ function enhanceTimetable(){
+  const cells=document.querySelectorAll(selector);
+  cells.forEach(cell=>{
+   cell.tabIndex=0;
+   cell.setAttribute('role','button');
+   cell.setAttribute('aria-label','إضافة أو تعديل ملاحظة للحصة');
+   cell.style.cursor='pointer';
+  });
+  if(typeof updateActiveLessonVisual==='function')updateActiveLessonVisual();
+ }
+ // DOM observers are limited to the managed schedule container, avoiding loops and unnecessary work.
+ const home=document.getElementById('homeBody');
+ if(home){
+  const observer=new MutationObserver(()=>enhanceTimetable());
+  observer.observe(home,{childList:true});
+ }
+ enhanceTimetable();
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)enhanceTimetable()});
+})();
+</script></body></html>
