@@ -1,4 +1,4 @@
-const VERSION='school-pwa-v9-pc-clean2';
+const VERSION='school-pwa-v10-passkey';
 const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)));
@@ -13,11 +13,17 @@ self.addEventListener('fetch',event=>{
  const u=new URL(req.url);
  if(u.origin!==self.location.origin||!u.pathname.startsWith('/School-Teacher-Notebook-App/'))return;
  if(req.mode==='navigate'){
+   // Never serve the login document in place of a protected notebook or dashboard.
+   if(!['/School-Teacher-Notebook-App/','/School-Teacher-Notebook-App/index.html'].includes(u.pathname))return;
    event.respondWith((async()=>{
      const cache=await caches.open(VERSION);
-     const local=await cache.match('./index.html');
-     if(local){event.waitUntil(fetch('./index.html',{cache:'no-store'}).then(res=>{if(res.ok)return cache.put('./index.html',res.clone())}).catch(()=>{}));return local;}
-     try{const res=await fetch(req);if(res.ok)cache.put('./index.html',res.clone());return res}catch(e){return (await caches.match('./index.html'))||Response.error()}
+     try{
+       const fresh=await fetch(req,{cache:'no-store'});
+       if(fresh.ok)await cache.put('./index.html',fresh.clone());
+       return fresh;
+     }catch{
+       return (await cache.match('./index.html'))||Response.error();
+     }
    })());
    return;
  }
