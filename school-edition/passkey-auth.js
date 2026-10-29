@@ -40,3 +40,14 @@ async function existing(){
 async function signOut(){await client.auth.signOut();sessionStorage.removeItem(SUBKEY);}
 window.schoolPasskey={registerWithGoogle,signIn,token,existing,signOut,getSubject:()=>sessionStorage.getItem(SUBKEY)||''};
 window.dispatchEvent(new Event('school-passkey-ready'));
+
+function makeButton(text,action){const b=document.createElement('button');b.type='button';b.textContent=text;b.style.cssText='border:1px solid #9bbfae;border-radius:12px;background:#fff;color:#086147;padding:12px 14px;margin:8px;font-weight:800;cursor:pointer';const msg=document.createElement('p');msg.style.cssText='font-size:13px;color:#426657;margin:6px;text-align:center';b.addEventListener('click',async()=>{b.disabled=true;msg.textContent='جارٍ تنفيذ المصادقة الآمنة...';try{await action();msg.textContent='تم تسجيل مفتاح المرور بنجاح.';}catch(e){msg.textContent='تعذر استخدام مفتاح المرور: '+(e.message||e)}finally{b.disabled=false}});return {b,msg};}
+if(document.getElementById('teacher-google')){
+ const holder=document.getElementById('teacher-google');
+ const {b,msg}=makeButton('🔐 الدخول بالبصمة أو Face ID',async()=>{await signIn();location.assign('school-edition/school-notebook.html')});
+ holder.insertAdjacentElement('afterend',b);b.insertAdjacentElement('afterend',msg);
+}
+if(location.pathname.endsWith('/school-edition/school-notebook.html')&&typeof schoolAuthRestore==='function'&&schoolAuthRestore()){
+ const {b,msg}=makeButton('🔐 تفعيل البصمة / Face ID',async()=>registerWithGoogle(schoolAuthRestore()));
+ const panel=document.createElement('div');panel.style.cssText='position:fixed;left:9px;bottom:105px;z-index:500;background:#f5fffa;border:1px solid #bed8c9;border-radius:16px;max-width:210px;box-shadow:0 4px 16px #0438;text-align:center;padding:4px';panel.append(b,msg);document.body.append(panel);
+}
