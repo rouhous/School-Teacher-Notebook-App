@@ -159,6 +159,11 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 #supervisorPasskeyRegister{background:#f1e7cd!important;color:#075443!important;border:1px solid #d4b66c!important;font-weight:800}
 #supervisorPasskeyRegister[hidden]{display:none!important}
 #supervisorPasskeyStatus{min-height:1em;margin:7px 0;font-size:12px}
+</style><style id="supervisor-report-collapse-20261030">
+#behaviorReportsDetails{margin:12px 0;border:1px solid #d9e6db;border-radius:14px;background:#fff;padding:9px 12px}
+#behaviorReportsDetails summary{cursor:pointer;font-weight:800;color:#075a47;padding:9px 4px}
+#behaviorReportsDetails #supervisorBehaviorInbox{box-shadow:none;border:0;padding:10px 0;margin:0!important}
+#behaviorReportsDetails:not([open]) #supervisorBehaviorInbox{display:none!important}
 </style></head><body><main><header class="supervisor-main-hero">
 <div class="supervisor-hero-row"><a href="../" class="supervisor-home-shortcut">الرئيسية</a><a href="school-notebook.html" class="supervisor-teacher-shortcut">📘 دفتر المعلم</a></div>
 <h1>لوحة المشرف المدرسي</h1><p>الإدارة المدرسية من مكان واحد</p>
@@ -203,7 +208,9 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 <a class="supervisor-module" href="data-admin.html?tab=review&school=girls"><span class="module-icon">👥</span><strong>طلاب البنات</strong><small>قوائم وبيانات الاتصال</small></a>
 <a class="supervisor-module" href="data-admin.html?tab=manage&school=girls"><span class="module-icon">🗂️</span><strong>إدارة القوائم</strong><small>نقل السجلات ومراجعتها</small></a>
 </div>
-</section><div id="generalOperationsDetails"><section id="supervisorBehaviorInbox" aria-label="تقارير سلوك الطلاب">
+</section><div id="generalOperationsDetails"><details id="behaviorReportsDetails" class="supervisor-secondary-options">
+<summary>📨 التقارير السلوكية الواردة</summary>
+<section id="supervisorBehaviorInbox" aria-label="تقارير سلوك الطلاب">
 <h2>📬 صندوق تقارير سلوك الطلاب <span id="supervisorBehaviorCount" class="behavior-report-count">0</span></h2>
 <p class="behavior-report-guidance">يُؤكّد وصول التقرير تلقائيًا للمعلم بمجرد حفظه في الوارد. تتغير الحالة إلى «تم الاطلاع» فقط عند فتح المشرف التقرير.</p>
 <div class="behavior-report-controls">
@@ -212,7 +219,7 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 </div>
 <p id="supervisorBehaviorMessage" role="status" aria-live="polite"></p>
 <div id="supervisorBehaviorList"></div>
-</section>
+</section></details>
 <details id="supervisorPendingRequests" class="supervisor-secondary-options">
 <summary>طلبات اعتماد المعلمين <span id="pending" class="pending-chip">0</span></summary>
 <div class="supervisor-table-scroll"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div>
@@ -355,6 +362,11 @@ function activate(key){
  try{sessionStorage.setItem('school-supervisor-active-tab',key)}catch(e){}
 }
 for(const b of buttons)b.addEventListener('click',()=>activate(b.dataset.supervisorTab));
+const reportShortcut=document.querySelector('a[href="#supervisorBehaviorInbox"]');
+if(reportShortcut)reportShortcut.addEventListener('click',()=>{
+ activate('general');
+ document.getElementById('behaviorReportsDetails').open=true;
+});
 activate(new URLSearchParams(location.search).get('tab')||sessionStorage.getItem('school-supervisor-active-tab')||'general');
 })();
 </script><script>
