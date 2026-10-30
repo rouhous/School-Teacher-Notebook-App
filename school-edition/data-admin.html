@@ -391,7 +391,7 @@ async function managePreviewMerge(){
  }catch(e){$('managePreview').textContent='تعذرت المعاينة: '+e.message}
 }
 $('managePreviewMerge').onclick=managePreviewMerge;
-$('managePreviewMergeLegacy').onclick=()=>managePreview('move');
+
 $('managePreviewDelete').onclick=()=>managePreview('deactivate');
 $('manageExecute').onclick=async()=>{
  const p=manageState.preview;if(!p)return;
