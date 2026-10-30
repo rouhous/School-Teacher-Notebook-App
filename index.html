@@ -535,7 +535,7 @@ body.teacher-passkey-mode #teacher-google,body.teacher-passkey-mode #school,body
  }
  // Reuse a still-valid Google session on Android/iOS without prompting again.
  async function resumeApprovedSession(){
-  if(localStorage.getItem('school-notebook-passkey-enrolled-v1')==='1')return;
+  if(localStorage.getItem('school-notebook-passkey-enrolled-v1')==='1'||localStorage.getItem('school-notebook-supervisor-passkey-enrolled-v1')==='1')return;
   const credential=schoolAuthRestore();
   if(!credential)return;
   status.textContent='جارٍ استعادة جلسة الدخول المحفوظة...';
