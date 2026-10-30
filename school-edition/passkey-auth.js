@@ -93,35 +93,52 @@ if(document.getElementById('teacher-google')){
  const holder=document.getElementById('teacher-google');
  const entry=document.getElementById('teacher-passkey-entry');
  const enrolled=localStorage.getItem(ENROLLED_KEY)==='1'||localStorage.getItem('school-notebook-supervisor-passkey-enrolled-v1')==='1';
- const action=async()=>{
-  const result=await signIn();
-  location.replace(result.role==='supervisor'?'school-edition/founder-dashboard.html':'school-edition/school-notebook.html');
- };
- const {b,msg}=makeButton('🔐 الدخول بالبصمة / Face ID',action,'login');
- holder.insertAdjacentElement('afterend',b);b.insertAdjacentElement('afterend',msg);
+ const route=role=>location.replace(role==='supervisor'?'school-edition/founder-dashboard.html':'school-edition/school-notebook.html');
+ const action=async()=>route((await signIn()).role);
  if(enrolled&&entry){
   document.body.classList.add('teacher-passkey-mode');
-  entry.hidden=false;b.hidden=true;msg.hidden=true;
+  entry.hidden=false;
   const status=document.getElementById('teacher-passkey-direct-status');
   const go=document.getElementById('teacher-passkey-direct');
   const fallback=document.getElementById('teacher-passkey-google-fallback');
   let running=false;
-  const authenticate=async()=>{
-   if(running)return;running=true;go.disabled=true;
-   status.textContent='جارٍ طلب تأكيد بصمة الجهاز...';
+  go.onclick=async()=>{
+   if(running)return;
+   running=true;go.disabled=true;
+   status.textContent='جارٍ التحقق من بصمة الجهاز…';
    try{await action()}
-   catch(e){status.textContent=friendlyPasskeyError(e,'login')+' يمكنك إعادة المحاولة أو استخدام Google.'}
+   catch(e){status.textContent=friendlyPasskeyError(e,'login')}
    finally{running=false;go.disabled=false}
   };
-  go.onclick=authenticate;
   fallback.onclick=()=>{
-   document.body.classList.remove('teacher-passkey-mode');entry.hidden=true;
-   b.hidden=false;msg.hidden=false;
-   document.getElementById('teacher-status').textContent='يمكنك اختيار حساب Google للتسجيل من جديد.';
+   document.body.classList.remove('teacher-passkey-mode');
+   entry.hidden=true;
+   holder.hidden=false;
+   const help=document.getElementById('passkey-help');
+   if(help)help.hidden=false;
   };
-  // Try to open the platform prompt immediately. Browsers that require a
-  // user gesture will leave the visible passkey button ready for one tap.
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>authenticate(),{once:true});
-  else authenticate();
+  // First try an already valid session without showing any OS passkey chooser.
+  // A new passkey assertion still requires explicit confirmation by the device.
+  (async()=>{
+   try{
+    const access=await token();
+    if(!access)return;
+    const supervisor=await fetch(ROOT+'/functions/v1/school-founder-dashboard',{
+     method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({access_token:access})
+    });
+    if(supervisor.ok&&(await supervisor.json()).ok){route('supervisor');return}
+    if(![401,403].includes(supervisor.status))return;
+    const teacher=await call('school-passkey-identity',{action:'resolve'},access);
+    if(teacher.data?.approved){
+     sessionStorage.setItem(SUBKEY,teacher.google_sub);
+     route('teacher');
+    }
+   }catch(e){/* Expired session: leave the compact fingerprint button ready. */}
+  })();
+ }else{
+  const {b,msg}=makeButton('🔐 الدخول بالبصمة / Face ID',action,'login');
+  holder.insertAdjacentElement('afterend',b);
+  b.insertAdjacentElement('afterend',msg);
+  if(entry)entry.hidden=true;
  }
 }
