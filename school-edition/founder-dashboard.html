@@ -365,6 +365,11 @@ document.getElementById('supervisorSecurityOpen').addEventListener('click',()=>{
 window.addEventListener('supervisor-dashboard-ready',()=>{
  window.supervisorGoogleVerified=Boolean(typeof schoolAuthRestore==='function'&&schoolAuthRestore());
  window.dispatchEvent(new Event('supervisor-google-verified'));
+ if(window.supervisorGoogleVerified&&localStorage.getItem('school-notebook-supervisor-passkey-enrolled-v1')!=='1'){
+  document.getElementById('supervisorSecuritySettings').open=true;
+  const info=document.getElementById('supervisorPasskeyStatus');
+  if(info&&!info.textContent)info.textContent='يمكنك تفعيل البصمة الآن لمرة واحدة؛ بعدها يكون الدخول من الشاشة الرئيسية.';
+ }
 });
 </script>
 <script type="module" src="./supervisor-passkey.js?v=20261030-settings-v2"></script></body></html>
