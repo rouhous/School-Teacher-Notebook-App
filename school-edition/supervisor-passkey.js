@@ -5,6 +5,8 @@ const client=createClient(ROOT,'sb_publishable_fwWBrwdO6rsJxzQRS1dfLw_laESLi4U',
 });
 const $=id=>document.getElementById(id);
 const message=$('supervisorPasskeyStatus');
+const supervisorEnrolledKey='school-notebook-supervisor-passkey-enrolled-v1';
+const previouslyEnabled=localStorage.getItem(supervisorEnrolledKey)==='1';
 function inform(txt){if(message)message.textContent=txt}
 function friendly(error){
  const msg=String(error?.message||error||'');
@@ -58,10 +60,36 @@ if(register){
    const registered=await client.auth.registerPasskey();
    if(registered.error)throw registered.error;
    await verifiedDashboard(await accessToken());
-   inform('تم تفعيل البصمة لهذا الحساب. يمكنك استخدامها عند الدخول لاحقًا.');
+   localStorage.setItem(supervisorEnrolledKey,'1');
+   inform('✓ البصمة مفعّلة على هذا الجهاز. سيظهر دخول البصمة مباشرة في المرات القادمة.');
+   register.textContent='✓ البصمة مفعّلة';register.disabled=true;
+   if(login)login.hidden=true;
   }catch(e){inform(friendly(e))}
   finally{register.disabled=false}
  };
 }
-window.addEventListener('supervisor-google-verified',()=>{if(register)register.hidden=false});
-if(register&&window.supervisorGoogleVerified===true)register.hidden=false;
+function reflectEnrollment(){
+ if(register){
+  register.hidden=!(window.supervisorGoogleVerified===true);
+  if(previouslyEnabled){register.textContent='✓ البصمة مفعّلة';register.disabled=true}
+ }
+}
+window.addEventListener('supervisor-google-verified',reflectEnrollment);
+reflectEnrollment();
+if(previouslyEnabled&&login&&!window.supervisorGoogleVerified){
+ document.body.classList.add('supervisor-passkey-mode');
+ const fallback=document.getElementById('supervisorPasskeyFallback');
+ if(fallback)fallback.hidden=false;
+ inform('البصمة مفعّلة على هذا الجهاز. أكّد هويتك للمتابعة.');
+ // Browser platforms may require one tap before showing the biometric prompt.
+ // If automatic mediation is denied, the visible button remains available.
+ login.click();
+}
+const fallback=document.getElementById('supervisorPasskeyFallback');
+if(fallback)fallback.addEventListener('click',()=>{
+ document.body.classList.remove('supervisor-passkey-mode');
+ fallback.hidden=true;
+ document.querySelector('#signin')?.closest('section')?.removeAttribute('hidden');
+ inform('يمكنك اختيار حساب Google للدخول أو استعادة الوصول.');
+});
+
