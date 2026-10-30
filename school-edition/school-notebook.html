@@ -4598,6 +4598,11 @@ async function activateTeacherPasskeyFromSettings(){
  function status(status){
   return status==='opened'?'✅ تم الاطلاع':'☑️ تم الوصول إلى المشرف';
  }
+ function reportTime(iso){
+  const d=new Date(iso);
+  if(!Number.isFinite(d.getTime()))return 'غير متاح';
+  return new Intl.DateTimeFormat('ar-OM',{timeZone:'Asia/Muscat',weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}).format(d);
+ }
  window.openBehaviorSupervisorReport=function(sid){
   const st=db.students.find(x=>String(x.id)===String(sid));if(!st)return;
   const code=String(st.studentNumber||'').trim();
@@ -4647,10 +4652,10 @@ async function activateTeacherPasskeyFromSettings(){
     const item=el('div',undefined,'behavior-report-item');
     item.append(el('strong',report.studentName+' — '+report.classId));
     item.append(el('div',report.behavior));
-    item.append(el('div','أُرسل: '+new Date(report.createdAt).toLocaleString('ar-OM')));
+    item.append(el('div','يوم وتاريخ ووقت الإرسال (عُمان): '+reportTime(report.createdAt)));
     item.append(el('div',status(report.status),'behavior-report-state'));
-    if(report.receivedAt)item.append(el('small','الاستلام: '+new Date(report.receivedAt).toLocaleString('ar-OM')));
-    if(report.openedAt)item.append(el('small',' | الاطلاع: '+new Date(report.openedAt).toLocaleString('ar-OM')));
+    if(report.receivedAt)item.append(el('small','الوصول التلقائي: '+reportTime(report.receivedAt)));
+    if(report.openedAt)item.append(el('small',' | الاطلاع: '+reportTime(report.openedAt)));
     container.append(item);
    }
   }catch(e){loading.textContent='تعذّر تحميل التقارير: '+e.message}
