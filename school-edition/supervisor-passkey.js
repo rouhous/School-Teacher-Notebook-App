@@ -80,10 +80,17 @@ if(previouslyEnabled&&login&&!window.supervisorGoogleVerified){
  document.body.classList.add('supervisor-passkey-mode');
  const fallback=document.getElementById('supervisorPasskeyFallback');
  if(fallback)fallback.hidden=false;
- inform('البصمة مفعّلة على هذا الجهاز. أكّد هويتك للمتابعة.');
- // Browser platforms may require one tap before showing the biometric prompt.
- // If automatic mediation is denied, the visible button remains available.
- login.click();
+ inform('جارٍ التحقق من الجلسة المحفوظة...');
+ (async()=>{
+  try{
+   // Reuse the passkey-authenticated session after coming from the teacher entry.
+   await enter();
+   inform('تم الدخول إلى لوحة المشرف.');
+  }catch(e){
+   inform('البصمة مفعّلة على هذا الجهاز. أكّد هويتك للمتابعة.');
+   login.click();
+  }
+ })();
 }
 const fallback=document.getElementById('supervisorPasskeyFallback');
 if(fallback)fallback.addEventListener('click',()=>{
