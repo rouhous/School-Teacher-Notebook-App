@@ -62,7 +62,7 @@ if(register){
    await verifiedDashboard(await accessToken());
    localStorage.setItem(supervisorEnrolledKey,'1');
    inform('✓ البصمة مفعّلة على هذا الجهاز. سيظهر دخول البصمة مباشرة في المرات القادمة.');
-   register.textContent='✓ البصمة مفعّلة';register.disabled=true;
+   register.textContent='✓ تم تفعيل البصمة (إعادة التفعيل)';
    if(login)login.hidden=true;
   }catch(e){inform(friendly(e))}
   finally{register.disabled=false}
@@ -71,7 +71,7 @@ if(register){
 function reflectEnrollment(){
  if(register){
   register.hidden=!(window.supervisorGoogleVerified===true);
-  if(previouslyEnabled){register.textContent='✓ البصمة مفعّلة';register.disabled=true}
+  if(previouslyEnabled){register.textContent='إعادة تفعيل البصمة على هذا الجهاز';inform('البصمة مسجلة سابقًا على هذا المتصفح. يمكنك إعادة التفعيل عند الحاجة.')}
  }
 }
 window.addEventListener('supervisor-google-verified',reflectEnrollment);
