@@ -376,7 +376,7 @@ $('manageExecute').onclick=async()=>{
  const label=p.action==='move'?'نقل':'تعطيل';
  if(!confirm('تأكيد '+label+' '+p.codes.length+' طالبًا؟ هذه العملية ستحدّث بيانات المدرسة مباشرة.'))return;
  const btn=$('manageExecute');btn.disabled=true;
- try{const result=await manageCall(p.action,p);manageReset();$('managePreview').textContent='✓ تم '+label+' '+result.count+' طالبًا بنجاح. أعد تحميل القائمة للتحقق.';await $('manageLoad').onclick()}catch(e){$('managePreview').textContent='لم تتم العملية: '+e.message;btn.disabled=false}
+ try{const result=await manageCall(p.action,p);await $('manageLoad').onclick();$('managePreview').textContent='✓ تم '+label+' '+result.count+' طالبًا بنجاح. تم تحديث القائمة. تحقق من صف المدرسة المستقبلة عند النقل.'}catch(e){$('managePreview').textContent='لم تتم العملية: '+e.message;btn.disabled=false}
 };
 
 // The review tab is always the first screen; imports are secondary.
