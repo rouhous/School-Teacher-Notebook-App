@@ -150,6 +150,15 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 #supervisorPendingRequests:not([open]) .supervisor-table-scroll{display:none!important}
 #supervisorPendingRequests .supervisor-table-scroll{overflow-x:auto}
 #supervisorPendingRequests table{min-width:440px}
+</style><style id="supervisor-biometrics-settings-20261030">
+.supervisor-settings-link{font-family:inherit;text-align:right;cursor:pointer}
+.supervisor-settings-link:hover{transform:none!important}
+.supervisor-security-settings{margin:12px 0 0!important;border:1px solid #d9e4db!important;border-radius:14px;background:#fff;padding:10px 14px;font-size:13px;color:#47695b}
+.supervisor-security-settings summary{cursor:pointer;color:#075b47;font-weight:800;padding:7px 0}
+.supervisor-security-settings p{line-height:1.65}
+#supervisorPasskeyRegister{background:#f1e7cd!important;color:#075443!important;border:1px solid #d4b66c!important;font-weight:800}
+#supervisorPasskeyRegister[hidden]{display:none!important}
+#supervisorPasskeyStatus{min-height:1em;margin:7px 0;font-size:12px}
 </style></head><body><main><header class="supervisor-main-hero">
 <div class="supervisor-hero-row"><a href="../" class="supervisor-home-shortcut">الرئيسية</a><a href="school-notebook.html" class="supervisor-teacher-shortcut">📘 دفتر المعلم</a></div>
 <h1>لوحة المشرف المدرسي</h1><p>الإدارة المدرسية من مكان واحد</p>
@@ -166,7 +175,14 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 <a class="supervisor-module" href="data-admin.html?tab=import"><span class="module-icon">📥</span><strong>استيراد البيانات</strong><small>الملفات والقوائم المعتمدة</small></a>
 <a class="supervisor-module" href="assessment-review.html"><span class="module-icon">📝</span><strong>وسائل التقويم</strong><small>قراءة الوثائق ومراجعة مسودات التقييم (دون نشر)</small></a>
 <a class="supervisor-module" href="#supervisorBehaviorInbox"><span class="module-icon">📨</span><strong>التقارير السلوكية</strong><small>الوارد وحالات الاطلاع</small></a>
+<button type="button" class="supervisor-module supervisor-settings-link" id="supervisorSecurityOpen"><span class="module-icon">🔐</span><strong>إعدادات الدخول</strong><small>تفعيل بصمة المشرف على هذا الجهاز</small></button>
 </div>
+<details class="supervisor-security-settings" id="supervisorSecuritySettings">
+<summary>🔐 تفعيل بصمة المشرف (لمرة واحدة)</summary>
+<p>بعد الدخول أول مرة بحساب Google المعتمد، يمكنك تفعيل مفتاح المرور. بعد ذلك يتم الدخول من الشاشة الرئيسية فقط.</p>
+<button type="button" id="supervisorPasskeyRegister">تفعيل البصمة على هذا الجهاز</button>
+<p id="supervisorPasskeyStatus" role="status" aria-live="polite"></p>
+</details>
 </section>
 <section class="supervisor-tab-panel" data-panel="boys" id="supervisorBoys" role="tabpanel" hidden>
 <h2>🏫 مدرسة البنين</h2>
@@ -341,4 +357,14 @@ function activate(key){
 for(const b of buttons)b.addEventListener('click',()=>activate(b.dataset.supervisorTab));
 activate(new URLSearchParams(location.search).get('tab')||sessionStorage.getItem('school-supervisor-active-tab')||'general');
 })();
-</script></body></html>
+</script><script>
+document.getElementById('supervisorSecurityOpen').addEventListener('click',()=>{
+ const sec=document.getElementById('supervisorSecuritySettings');sec.open=!sec.open;
+ if(sec.open)sec.scrollIntoView({behavior:'smooth',block:'nearest'});
+});
+window.addEventListener('supervisor-dashboard-ready',()=>{
+ window.supervisorGoogleVerified=Boolean(typeof schoolAuthRestore==='function'&&schoolAuthRestore());
+ window.dispatchEvent(new Event('supervisor-google-verified'));
+});
+</script>
+<script type="module" src="./supervisor-passkey.js?v=20261030-settings-v2"></script></body></html>
