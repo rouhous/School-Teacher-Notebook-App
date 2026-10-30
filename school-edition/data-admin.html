@@ -63,7 +63,7 @@ main>h1{font-size:clamp(1.3rem,5vw,1.75rem)!important;margin:9px 0 2px!important
 .timing-action-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .timing-action-buttons button{flex:1 1 160px;margin:0}
 @media(max-width:420px){.timing-period-row{grid-template-columns:42px minmax(0,1fr) minmax(0,1fr) 36px;gap:4px}.timing-period-row label{font-size:11px}}
-</style></head><body><main><a class="supervisor-back-button" href="founder-dashboard.html"><span aria-hidden="true">↩</span> العودة إلى لوحة المشرف</a><h1>مركز البيانات المدرسية</h1><p class="intro">مراجعة واعتماد القوائم المدرسية واستيراد الملفات.</p><nav class="admin-tabs" aria-label="أقسام مركز البيانات"><button type="button" class="active" data-tab="review">بيانات الطلاب</button><button type="button" data-tab="import">استيراد الملفات</button><button type="button" data-tab="manage">نقل / حذف القوائم</button></nav><p id="status" role="status" style="text-align:center">جارٍ فتح بيانات المشرف…</p><div class="school-filter"><label for="school">المدرسة</label><select id="school"><option value="boys">مدرسة البنين — 71 للمراجعة</option><option value="girls">مدرسة البنات والمختلط — 161 للمراجعة</option></select></div><section class="card" id="rosterReviewPanel" data-panel="review"><h2>بيانات الطلاب وتعديلها</h2><p class="review-hint">راجع السجلات المنشورة وصحح الاسم والهاتف والمنطقة والصف دون إعادة الاستيراد. يبقى الرقم المدرسي ثابتًا للربط.</p><button id="loadPending" type="button">تحميل بيانات الطلاب</button><div class="school-filter"><label for="studentProfileClass">الصف</label><select id="studentProfileClass"><option value="">جميع الصفوف</option></select></div><input id="studentProfileSearch" type="search" placeholder="بحث بالاسم أو الرقم المدرسي" aria-label="بحث في بيانات الطلاب" /><p id="reviewMessage" role="status">سجّل الدخول كمشرف ثم اختر المدرسة.</p><div id="reviewClasses"></div></section><section class="card" data-panel="manage" hidden id="managePanel">
+</style></head><body><main><a class="supervisor-back-button" href="founder-dashboard.html"><span aria-hidden="true">↩</span> العودة إلى لوحة المشرف</a><h1>مركز البيانات المدرسية</h1><p class="intro">مراجعة واعتماد القوائم المدرسية واستيراد الملفات.</p><nav class="admin-tabs" aria-label="أقسام مركز البيانات"><button type="button" data-tab="timing">التوقيت المدرسي</button><button type="button" class="active" data-tab="review">بيانات الطلاب</button><button type="button" data-tab="import">استيراد الملفات</button><button type="button" data-tab="manage">نقل / حذف القوائم</button></nav><p id="status" role="status" style="text-align:center">جارٍ فتح بيانات المشرف…</p><div class="school-filter"><label for="school">المدرسة</label><select id="school"><option value="boys">مدرسة البنين — 71 للمراجعة</option><option value="girls">مدرسة البنات والمختلط — 161 للمراجعة</option></select></div><section class="card" id="rosterReviewPanel" data-panel="review"><h2>بيانات الطلاب وتعديلها</h2><p class="review-hint">راجع السجلات المنشورة وصحح الاسم والهاتف والمنطقة والصف دون إعادة الاستيراد. يبقى الرقم المدرسي ثابتًا للربط.</p><button id="loadPending" type="button">تحميل بيانات الطلاب</button><div class="school-filter"><label for="studentProfileClass">الصف</label><select id="studentProfileClass"><option value="">جميع الصفوف</option></select></div><input id="studentProfileSearch" type="search" placeholder="بحث بالاسم أو الرقم المدرسي" aria-label="بحث في بيانات الطلاب" /><p id="reviewMessage" role="status">سجّل الدخول كمشرف ثم اختر المدرسة.</p><div id="reviewClasses"></div></section><section class="card" data-panel="manage" hidden id="managePanel">
 <h2>نقل أو حذف قوائم الطلاب المنشورة</h2>
 <p class="notice">اختر المدرسة والصف والطلاب المحددين. «حذف» يعطّل السجلات دون محوها نهائيًا، و«نقل» يُغيّر المدرسة والصف دون إعادة استيراد PDF. لا يتم التنفيذ قبل المعاينة والتأكيد.</p>
 <label for="manageSource">المدرسة الحالية</label><select id="manageSource"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select>
@@ -76,7 +76,7 @@ main>h1{font-size:clamp(1.3rem,5vw,1.75rem)!important;margin:9px 0 2px!important
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><button type="button" id="managePreviewMerge" style="background:#086f58">معاينة النقل والدمج</button><button type="button" id="managePreviewDelete" style="background:#9c4c3a">معاينة الحذف</button></div>
 <div id="managePreview" role="status" aria-live="polite" class="notice" style="margin-top:12px">اختر الطلاب ثم عاين العملية قبل التأكيد.</div>
 <button type="button" id="manageExecute" disabled style="background:#8d3e31">تأكيد العملية المختارة</button>
-</section><section class="card" data-panel="review" hidden><h2>التقييمات الوزارية</h2><p>مراجعة وثائق التقييم PDF العربية والإنجليزية وإنشاء مسودة قابلة للتصحيح قبل الاعتماد.</p><a href="assessment-review.html">فتح مراجعة التقييمات الوزارية</a></section><section class="card" id="timingPublishPanel" data-panel="import" hidden>
+</section><section class="card" data-panel="review" hidden><h2>التقييمات الوزارية</h2><p>مراجعة وثائق التقييم PDF العربية والإنجليزية وإنشاء مسودة قابلة للتصحيح قبل الاعتماد.</p><a href="assessment-review.html">فتح مراجعة التقييمات الوزارية</a></section><section class="card" id="timingPublishPanel" data-panel="timing" hidden>
 <h2>⏰ اعتماد التوقيت المدرسي</h2>
 
 <div id="timingRows"></div>
@@ -437,6 +437,7 @@ $('manageExecute').onclick=async()=>{
 document.querySelectorAll('.admin-tabs button').forEach(button=>button.addEventListener('click',()=>{
  document.querySelectorAll('.admin-tabs button').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-selected',String(b===button))});
  document.querySelectorAll('[data-panel]').forEach(panel=>panel.hidden=panel.dataset.panel!==button.dataset.tab);
+  if(typeof showPanel==='function')showPanel();
 }));
 const reviewEndpoint='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-roster-review';
 async function reviewCall(action,classId='',studentCode='',displayName=''){
@@ -535,7 +536,7 @@ if(['students','timetable','timing'].includes(requested.get('kind'))){
  $('kind').dispatchEvent(new Event('change'));
 }
 const requestedTab=requested.get('tab');
-if(['review','import','manage'].includes(requestedTab)){
+if(['review','import','manage','timing'].includes(requestedTab)){
  const button=document.querySelector('[data-tab="'+requestedTab+'"]');
  if(button)button.click();
 }
@@ -575,7 +576,7 @@ $('school').addEventListener('change',()=>{profileState.rows=[];$('reviewClasses
   const r=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...auth,action,schoolId:school.value,rows})});
   const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw Error(j.error||'تعذرت العملية');return j.data;
  }
- function showPanel(){panel.hidden=kind.value!=='timing'}
+ function showPanel(){panel.hidden=document.querySelector('.admin-tabs button.active')?.dataset.tab!=='timing'}
  kind.addEventListener('change',showPanel);
  const originalClick=document.getElementById('addTimingPeriod');originalClick.onclick=()=>{if(root.children.length>=12){status.textContent='الحد الأقصى 12 حصة';return}addPeriod()};
  document.getElementById('readTiming').onclick=async()=>{
