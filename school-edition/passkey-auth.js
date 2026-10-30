@@ -92,7 +92,7 @@ function makeButton(label,action,phase){
 if(document.getElementById('teacher-google')){
  const holder=document.getElementById('teacher-google');
  const entry=document.getElementById('teacher-passkey-entry');
- const enrolled=localStorage.getItem(ENROLLED_KEY)==='1';
+ const enrolled=localStorage.getItem(ENROLLED_KEY)==='1'||localStorage.getItem('school-notebook-supervisor-passkey-enrolled-v1')==='1';
  const action=async()=>{
   const result=await signIn();
   location.replace(result.role==='supervisor'?'school-edition/founder-dashboard.html':'school-edition/school-notebook.html');
