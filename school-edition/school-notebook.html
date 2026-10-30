@@ -4596,7 +4596,7 @@ async function activateTeacherPasskeyFromSettings(){
   return modalBox;
  }
  function status(status){
-  return status==='opened'?'✅ تم الاطلاع':status==='received'?'☑️ تم الاستلام':'📨 أُرسل وينتظر الاستلام';
+  return status==='opened'?'✅ تم الاطلاع':'☑️ تم الوصول إلى المشرف';
  }
  window.openBehaviorSupervisorReport=function(sid){
   const st=db.students.find(x=>String(x.id)===String(sid));if(!st)return;
@@ -4633,8 +4633,8 @@ async function activateTeacherPasskeyFromSettings(){
    send.disabled=true;msg.textContent='جارٍ إرسال التقرير...';
    try{
     await invoke('submit',{schoolId:school,studentCode:code,kind:typ.value,behavior:selected,note:note.value.trim()});
-    msg.textContent='✓ تم إرسال التقرير. يمكن تتبع الاستلام والاطلاع من «تقاريري للمشرف».';
-    send.textContent='✓ تم الإرسال';
+    msg.textContent='✓ تم وصول التقرير إلى صندوق المشرف تلقائيًا. ستتغير الحالة إلى «تم الاطلاع» عند فتحه.';
+    send.textContent='✓ تم الوصول';
    }catch(e){msg.textContent='لم يُرسل التقرير: '+e.message;send.disabled=false}
   };
  };
