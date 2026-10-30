@@ -565,6 +565,25 @@ body.teacher-passkey-mode #teacher-passkey-entry{
  opacity:1!important;
 }
 body.teacher-passkey-mode #teacher-passkey-entry[hidden]{display:none!important}
+</style><style id="passkey-raised-fixed-help-20261030">
+body.teacher-passkey-mode #teacher-passkey-entry .passkey-fixed-help{
+ display:block!important;position:relative!important;
+ margin:9px 0 3px!important;padding:8px 7px!important;
+ color:#4b695d!important;font-size:.72rem!important;line-height:1.55!important;
+ text-align:center!important;background:#fffaf2!important;border-top:1px solid #e4d6b3!important;
+}
+body.teacher-passkey-mode .site.mobile-reference-ready .panel{
+ padding-bottom:20px!important;min-height:0!important;
+ background:#fffaf2!important;
+}
+@media(max-width:800px){
+ body.teacher-passkey-mode .site.mobile-reference-ready .content{
+  transform:translateY(-24px)!important;
+  margin-bottom:0!important;
+  background:#fffaf2!important;
+  box-shadow:0 7px 21px rgba(14,65,47,.18)!important;
+ }
+}
 </style></head><body><div id="school-launch-overlay" aria-label="دفتر المعلم المدرسي | وادي الحواسنة"><img src="./assets/school-icon-512.png" alt="شعار مدرسة وادي الحواسنة"><div class="school-launch-title">دفتر المعلم المدرسي | وادي الحواسنة</div></div><script>(function(){const e=document.getElementById('school-launch-overlay');function hide(){e.classList.add('school-launch-hide');setTimeout(()=>e.remove(),350)}window.addEventListener('load',hide,{once:true});setTimeout(hide,1800)})();</script><div class="site reference-ready mobile-reference-ready">
 <header class="masthead"><div class="official-banner-wrap"><img src="assets/official_school_banner.jpg" alt="شعارات رؤية عُمان 2040 ومدرسة وادي الحواسنة ووزارة التربية والتعليم" loading="eager" decoding="async"></div></header>
 <section class="hero"><div class="school-scene" aria-hidden="true"></div><div class="school-floating-icons" aria-hidden="true"><span>♧</span><span>☼</span><span>▣</span></div><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
@@ -573,7 +592,7 @@ body.teacher-passkey-mode #teacher-passkey-entry[hidden]{display:none!important}
  <button id="teacher-passkey-direct" type="button">الدخول بالبصمة / Face ID</button>
  <button id="teacher-passkey-google-fallback" type="button">الدخول بحساب Google</button>
  <p id="teacher-passkey-direct-status" role="status" aria-live="polite"></p>
- <details class="passkey-compact-help"><summary>مساعدة</summary><p>إذا لم تظهر البصمة، استخدم Google. قد يطلب الجهاز تأكيد مفتاح المرور لحماية حسابك.</p></details>
+ <p class="passkey-fixed-help">مساعدة: إذا لم تظهر البصمة، استخدم Google. قد يطلب الجهاز تأكيد مفتاح المرور لحماية حسابك.</p>
 </div><div id="teacher-google"></div><details id="passkey-help" class="passkey-help"><summary>ⓘ تعليمات الدخول بالبصمة</summary><p>للتفعيل لأول مرة: سجّل الدخول باستخدام Google، ثم افتح إعدادات دفتر المعلم واضغط «تفعيل البصمة / Face ID». في المرات القادمة يمكنك استخدام زر الدخول بالبصمة مباشرة.</p></details><p id="teacher-status" role="status" aria-live="polite"></p><div class="actions"><a class="register" id="register" href="school-edition/teacher-registration.html">إنشاء حساب معلم جديد</a><button type="button" id="supervisor-pencil" aria-label="دخول المشرف" title="دخول المشرف">✎</button></div><p class="hint">الدخول الآمن باستخدام Google. لا نطلب كلمة المرور داخل هذه الصفحة.</p></section>
 <section class="features" aria-label="مميزات الدفتر">
 <div class="feature"><span class="symbol"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6M9 10h6M9 14h6M9 18h3"/></svg></span><strong>تسهيل عملك</strong><small>وتوفير وقتك</small></div>
