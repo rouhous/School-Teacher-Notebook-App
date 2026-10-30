@@ -543,7 +543,7 @@ $('loadPending').onclick=loadRosterReview;
 $('studentProfileClass').onchange=renderStudentProfiles;
 $('studentProfileSearch').oninput=renderStudentProfiles;
 $('school').addEventListener('change',()=>{profileState.rows=[];$('reviewClasses').replaceChildren();$('studentProfileClass').replaceChildren(new Option('جميع الصفوف',''));$('reviewMessage').textContent='اختر تحميل بيانات الطلاب للمدرسة المحددة.'});
-(async()=>{const auth=await schoolSupervisorSession();if(!auth){location.replace('../');return}credential=auth.credential||'';loadRosterReview();$('publish').disabled=!rows.length})();
+(async()=>{const auth=await schoolSupervisorSession();if(!auth){location.replace('../');return}credential=auth.credential||auth.access_token||'';loadRosterReview();$('publish').disabled=!rows.length})();
 </script><script id="school-timing-publication-client">
 (function(){
  const kind=document.getElementById('kind'),school=document.getElementById('school');
