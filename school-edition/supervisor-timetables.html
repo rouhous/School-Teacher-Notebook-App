@@ -102,7 +102,7 @@ header .supervisor-back-button span{font-size:20px;line-height:1}
 </style><script src="./session-auth.js"></script><style>
 /* Mobile-friendly teacher timetable: five day columns, eight period rows, no subject names. */
 #timetableTable.compact-teacher-week{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;font-size:clamp(10px,2.5vw,14px)}
-#timetableTable.compact-teacher-week th,#timetableTable.compact-teacher-week td{box-sizing:border-box;width:auto;min-width:0;padding:5px 2px;text-align:center;white-space:normal;overflow-wrap:anywhere;line-height:1.25;height:43px;border:1px solid #bad1c4}
+#timetableTable.compact-teacher-week th,#timetableTable.compact-teacher-week td{box-sizing:border-box;width:auto;min-width:0;padding:5px 2px;text-align:center;white-space:normal;overflow-wrap:anywhere;line-height:1.25;height:32px;border:1px solid #bad1c4}
 #timetableTable.compact-teacher-week thead th{background:#075b47;color:white;font-weight:800;position:static}
 #timetableTable.compact-teacher-week thead th:first-child,#timetableTable.compact-teacher-week tbody th{width:11%;font-weight:800}
 #timetableTable.compact-teacher-week tbody th{background:#e3f0e8;color:#075b47}
@@ -111,7 +111,8 @@ header .supervisor-back-button span{font-size:20px;line-height:1}
 #timetableTable.compact-teacher-week tbody td.teacher-detail-pending{background:#ffead2}
 #timetableTable.compact-teacher-week tbody td.teacher-detail-conflict{outline:2px solid #bf6b3d;outline-offset:-2px}
 #timetableScroll:has(.compact-teacher-week){overflow-x:hidden}
-@media(max-width:480px){#timetableTable.compact-teacher-week th,#timetableTable.compact-teacher-week td{padding:4px 1px;height:40px;font-size:11px}}
+#timetableTable.compact-teacher-week tr:has(.teacher-break-cell) th,#timetableTable.compact-teacher-week .teacher-break-cell{height:24px;background:#fff1d8;color:#a35d16;font-weight:800;font-size:10px}
+@media(max-width:480px){#timetableTable.compact-teacher-week th,#timetableTable.compact-teacher-week td{padding:4px 1px;height:30px;font-size:10px}}
 </style></head><body><main><header><a class="supervisor-back-button" href="founder-dashboard.html" aria-label="العودة إلى لوحة المشرف"><span aria-hidden="true">↩</span> العودة إلى لوحة المشرف</a><h1>متابعة الجداول اليومية</h1><a href="data-admin.html?tab=review&import=timetable" style="display:inline-block;background:#075b47;color:#fff;border-radius:12px;padding:12px 18px;text-decoration:none;font-weight:700;margin:8px 0">استيراد جداول المعلمين</a><p>الجداول المستخرجة من ملفات المدرسة، مستقلة عن تسجيل المعلمين. الخانات الصفراء تحتاج مطابقة بالأصل قبل اعتمادها النهائي.</p></header><section class="card"><div class="filters"><label>المدرسة<select id="school"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><label>اليوم<select id="day"><option value="week">الأسبوع كاملًا</option><option value="0">الأحد</option><option value="1">الاثنين</option><option value="2">الثلاثاء</option><option value="3">الأربعاء</option><option value="4">الخميس</option></select></label><label>نوع الجدول<select id="view"><option value="all">الجدول العام</option><option value="class">جدول الصف</option><option value="teacher">جدول المعلم</option></select></label><label>الصف / المعلم<select id="item" disabled><option value="">الكل</option></select></label></div><p id="coverage" style="color:#875c1e"></p><p id="status" role="status">جارٍ استعادة جلسة المشرف...</p><button id="reload" type="button">تحديث الجداول</button></section><section class="card"><h2 id="heading">الحصص</h2><div class="scroll" id="timetableScroll"><table id="timetableTable"><thead><tr id="cols"></tr></thead><tbody id="rows"></tbody></table></div></section><section class="card" id="absencePanel"><h2>غياب المعلمين وتوزيع حصص الاحتياط</h2><p class="muted">التوزيع المقترح يعتمد على رموز الاحتياط A ثم B ثم C ثم D من الجداول المستخرجة، ويحتاج تأكيد المشرف قبل إبلاغ المعلمين.</p><label>تاريخ الغياب <input type="date" id="absenceDate"></label><p>حدد المعلمين الغائبين:</p><div class="abs-grid" id="absentTeachers"></div><p><button type="button" id="saveAbsences">حفظ الغياب وتوزيع الاحتياط</button> <button type="button" id="readAbsences">عرض توزيع اليوم</button></p><p id="coverStatus" role="status"></p><div id="coverResults"></div></section></main><script>
 const $=id=>document.getElementById(id);let credential=schoolAuthRestore(),slots=[];
 function setStatus(s){$('status').textContent=s}
@@ -189,7 +190,7 @@ function renderSingleClassSchedule(all,chosen,chosenDays,days){
   indexed.get(key).push(x);
  }
  const fragment=document.createDocumentFragment();
- for(let p=1;p<=8;p++){
+ for(let p=1;p<=9;p++){
   const tr=document.createElement('tr'),period=document.createElement('th');
   period.textContent='الحصة '+p;period.scope='row';tr.append(period);
   for(const d of chosenDays){
@@ -230,9 +231,11 @@ function renderSingleTeacherSchedule(all,chosen,chosenDays,days){
  const frag=document.createDocumentFragment();
  for(let p=1;p<=8;p++){
   const tr=document.createElement('tr'),period=document.createElement('th');
-  period.scope='row';period.textContent=String(p);tr.append(period);
+  period.scope='row';period.textContent=p===5?'فسحة':String(p>5?p-1:p);tr.append(period);
+  if(p===5){for(const d of chosenDays){const cell=document.createElement('td');cell.textContent='فسحة';cell.className='teacher-break-cell';tr.append(cell)}frag.append(tr);continue}
+  const actualPeriod=p>5?p-1:p;
   for(const d of chosenDays){
-   const cell=document.createElement('td'),items=index.get(d+'|'+p)||[];
+   const cell=document.createElement('td'),items=index.get(d+'|'+actualPeriod)||[];
    if(!items.length)cell.textContent='—';
    else{
     const values=items.map(x=>x.dutyPriority?'احتياط '+x.dutyPriority:(x.classId||'—'));
