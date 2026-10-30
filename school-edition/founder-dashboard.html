@@ -222,7 +222,7 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 <details id="supervisorPendingRequests" class="supervisor-secondary-options">
 <summary>طلبات اعتماد المعلمين <span id="pending" class="pending-chip">0</span></summary>
 <div class="supervisor-table-scroll"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div>
-<p id="empty"></p><details class="supervisor-secondary-options" style="margin-top:14px"><summary>الطلبات المعتمدة سابقًا <span id="approvedRequestsCount" class="pending-chip">0</span></summary><div class="supervisor-table-scroll"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>تاريخ الاعتماد</th><th>الحالة</th></tr></thead><tbody id="approvedRequests"></tbody></table></div><p id="approvedRequestsEmpty"></p></details><button id="refresh" type="button">تحديث الطلبات</button>
+<p id="empty"></p><details open class="supervisor-secondary-options" style="margin-top:14px"><summary>الطلبات المعتمدة سابقًا <span id="approvedRequestsCount" class="pending-chip">0</span></summary><div class="supervisor-table-scroll"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>تاريخ الاعتماد</th><th>الحالة</th></tr></thead><tbody id="approvedRequests"></tbody></table></div><p id="approvedRequestsEmpty"></p></details><button id="refresh" type="button">تحديث الطلبات</button>
 </details></div></div></main><script src="./session-auth.js?v=20261030-session"></script><script>
 const $=id=>document.getElementById(id);let credential='',supervisorPasskeyToken='';
 const base='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
