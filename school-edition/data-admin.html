@@ -52,7 +52,7 @@ main>h1{font-size:clamp(1.3rem,5vw,1.75rem)!important;margin:9px 0 2px!important
 <p id="manageSelected" role="status">لم يتم تحديد طلاب.</p>
 <label for="manageTarget">المدرسة المستقبلة</label><select id="manageTarget"><option value="girls">مدرسة البنات</option><option value="boys">مدرسة البنين</option></select>
 <label for="manageTargetClass">الصف الصحيح في المدرسة المستقبلة</label><input id="manageTargetClass" placeholder="مثال: 9/2" autocomplete="off">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><button type="button" id="managePreviewMove">معاينة النقل</button><button type="button" id="managePreviewDelete" style="background:#9c4c3a">معاينة الحذف</button></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><button type="button" id="managePreviewMerge" style="background:#086f58">معاينة النقل والدمج</button><button type="button" id="managePreviewDelete" style="background:#9c4c3a">معاينة الحذف</button></div>
 <div id="managePreview" role="status" aria-live="polite" class="notice" style="margin-top:12px">اختر الطلاب ثم عاين العملية قبل التأكيد.</div>
 <button type="button" id="manageExecute" disabled style="background:#8d3e31">تأكيد العملية المختارة</button>
 </section><section class="card"><h2>التقييمات الوزارية</h2><p>مراجعة وثائق التقييم PDF العربية والإنجليزية وإنشاء مسودة قابلة للتصحيح قبل الاعتماد.</p><a href="assessment-review.html">فتح مراجعة التقييمات الوزارية</a></section><section class="card" data-panel="import" hidden><h2>استيراد PDF أو CSV</h2><label for="kind">نوع البيانات</label><select id="kind"><option value="students">قوائم الطلاب</option><option value="timetable">حصص الجدول</option><option value="timing">التوقيت المدرسي (PDF أو صورة)</option></select><p class="notice compact-format" id="format">الطلاب: student_code,class_id,display_name — معرّف الطالب، الصف، الاسم.</p><label for="file">اختر عدة ملفات لقوائم الطلاب من الهاتف (PDF أو CSV) — حتى 20 ملفًا</label><p class="notice">يمكن تحديد ملفات متعددة من تطبيق «الملفات» على الهاتف في عملية واحدة. بعد الاختيار ستظهر مراجعة مستقلة لكل ملف قبل اعتماد البيانات.</p><input type="file" id="file" multiple accept=".csv,.pdf,.png,.jpg,.jpeg,.webp,application/pdf,text/csv,image/png,image/jpeg,image/webp"><details class="compact-help"><summary>تعليمات استيراد الملفات</summary><p>يمكن إدراج حتى 20 ملف PDF لقوائم الصفوف دفعة واحدة. يُحلّل كل ملف على حدة قبل النشر.</p></details><p id="previewStatus" role="status"></p><div id="batchReview" hidden></div><label for="teacher">معرّف المعلم (لجدول PDF فردي)</label><input id="teacher" placeholder="مثال: B07"><label for="class">الصف (لقائمة الطلاب PDF)</label><input id="class" placeholder="مثال: 9A"><p class="notice">عند قراءة PDF، راجع النص المستخرج والسجلات قبل النشر. لا يُنشر أي سجل غير مكتمل أو غير موثوق تلقائيًا.</p><textarea id="pdfText" style="width:100%;min-height:130px" placeholder="النص المستخرج من PDF، قابل للتصحيح" hidden></textarea><button id="parsePdf" type="button" hidden>تحليل النص بعد التصحيح</button><button id="ocrPdf" type="button" hidden>قراءة PDF أو الصورة بتقنية OCR</button><pre id="preview"></pre><button id="publish" disabled>اعتماد ونشر البيانات</button><p class="notice">يُحدّث استيراد الطلاب السجلات الموجودة باستخدام المعرّف نفسه. استيراد الحصص يضيف سجلات جديدة، ويمنع تكرار حصة المعلم في اليوم والفترة نفسها؛ لا يستبدل الجدول كاملًا تلقائيًا.</p></section></main><script src="https://accounts.google.com/gsi/client" async defer></script><script src="./session-auth.js"></script><script>
@@ -368,15 +368,38 @@ async function managePreview(action){
   $('manageExecute').disabled=false;
  }catch(e){$('managePreview').textContent='فشلت المعاينة: '+e.message}
 }
-$('managePreviewMove').onclick=()=>managePreview('move');
+
+async function manageMergeCall(action,payload){
+ if(!credential)throw Error('سجّل الدخول بحساب المشرف');
+ const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-roster-merge',{
+ method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential,action,source:$('manageSource').value,...payload})
+ });
+ const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'تعذرت عملية الدمج');
+ return result;
+}
+async function managePreviewMerge(){
+ manageReset();
+ const classId=$('manageClass').value,codes=manageSelectedCodes(),target=$('manageTarget').value,targetClass=$('manageTargetClass').value.trim();
+ if(!classId||!codes.length||!targetClass||target===$('manageSource').value){$('managePreview').textContent='اختر الطلاب والمدرسة المختلفة والصف الصحيح أولًا.';return}
+ try{
+  const result=await manageMergeCall('preview',{classId,codes,target,targetClass});
+  if(result.count!==codes.length)throw Error('تغيرت القائمة، أعد تحميل الطلاب');
+  if(result.linkedAttendance){$('managePreview').textContent='النقل موقوف لأن '+result.linkedAttendance+' سجلات حضور مرتبطة بهؤلاء الطلاب. لن تحذف بياناتهم.';return}
+  $('managePreview').textContent='معاينة النقل والدمج: '+result.count+' طالبًا، منهم '+result.existing+' موجودون في المدرسة المستقبلة وسيتم تحديثهم، و'+result.toAdd+' سيضافون. بعد نجاح الدمج ستُحذف النسخ المحددة من المدرسة الحالية نهائيًا.';
+  manageState.preview={action:'merge',classId,codes,target,targetClass,source:$('manageSource').value};
+  $('manageExecute').disabled=false;
+ }catch(e){$('managePreview').textContent='تعذرت المعاينة: '+e.message}
+}
+$('managePreviewMerge').onclick=managePreviewMerge;
+$('managePreviewMergeLegacy').onclick=()=>managePreview('move');
 $('managePreviewDelete').onclick=()=>managePreview('deactivate');
 $('manageExecute').onclick=async()=>{
  const p=manageState.preview;if(!p)return;
  if($('manageSource').value!==p.source||$('manageClass').value!==p.classId||JSON.stringify(manageSelectedCodes())!==JSON.stringify(p.codes)){manageReset();return}
- const label=p.action==='move'?'نقل':'تعطيل';
+ const label=p.action==='merge'?'دمج ونقل مع حذف النسخ من المصدر':p.action==='move'?'نقل':'تعطيل';
  if(!confirm('تأكيد '+label+' '+p.codes.length+' طالبًا؟ هذه العملية ستحدّث بيانات المدرسة مباشرة.'))return;
  const btn=$('manageExecute');btn.disabled=true;
- try{const result=await manageCall(p.action,p);await $('manageLoad').onclick();$('managePreview').textContent='✓ تم '+label+' '+result.count+' طالبًا بنجاح. تم تحديث القائمة. تحقق من صف المدرسة المستقبلة عند النقل.'}catch(e){$('managePreview').textContent='لم تتم العملية: '+e.message;btn.disabled=false}
+ try{const result=p.action==='merge'?await manageMergeCall('merge',p):await manageCall(p.action,p);await $('manageLoad').onclick();$('managePreview').textContent='✓ تم '+label+' '+result.count+' طالبًا بنجاح. تم تحديث القائمة. تحقق من صف المدرسة المستقبلة عند النقل.'}catch(e){$('managePreview').textContent='لم تتم العملية: '+e.message;btn.disabled=false}
 };
 
 // The review tab is always the first screen; imports are secondary.
