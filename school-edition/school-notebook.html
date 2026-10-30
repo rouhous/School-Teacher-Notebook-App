@@ -346,6 +346,12 @@ select{max-width:100%;touch-action:auto}
 .sched-vertical td.lesson-start-now,.today-lesson.lesson-start-now{animation:lessonGlow 1.4s ease-in-out infinite alternate}
 @keyframes lessonGlow{from{filter:brightness(1)}to{filter:brightness(1.13)}}
 @media(prefers-reduced-motion:reduce){.sched-vertical td.lesson-start-now,.today-lesson.lesson-start-now{animation:none}}
+</style><style id="teacher-supervisor-switch-style">
+.header-actions .teacher-supervisor-switch{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:35px;padding:6px 11px;border:1px solid #dab16b;border-radius:10px;background:#fff5d8;color:#07594a;font:700 12px Tajawal,Tahoma,sans-serif;line-height:1.25;text-decoration:none;white-space:nowrap;box-shadow:0 2px 7px #044a2f1a}
+.header-actions .teacher-supervisor-switch[hidden]{display:none!important}
+.header-actions .teacher-supervisor-switch:hover{background:#ffe5a3}
+.header-actions .teacher-supervisor-switch:focus-visible{outline:3px solid #d7a55a;outline-offset:2px}
+@media(max-width:440px){.header-actions .teacher-supervisor-switch{padding:6px 7px;font-size:11px;min-height:32px}}
 </style></head>
 <body data-lang="ar"><div id="schoolAuthCover"><div>جارٍ التحقق من حساب المعلم المدرسي…<p><a href="../">العودة إلى تسجيل الدخول</a></p></div></div>
 <div id="appLock" class="app-lock" aria-hidden="false">
@@ -369,6 +375,7 @@ select{max-width:100%;touch-action:auto}
 <div class="header-top">
 <div><h1 id="appTitle">دفتر المعلم</h1><div class="sub" id="headerSub"></div></div>
 <div class="header-actions">
+<a id="teacherSupervisorSwitch" href="founder-dashboard.html" class="teacher-supervisor-switch" hidden aria-label="الانتقال إلى بوابة المشرف">لوحة المشرف ⇄</a>
 <button class="lang-btn" id="langBtn" onclick="toggleLang()">EN</button>
 <button class="icon-btn" onclick="openM('settings')">⚙️</button>
 </div>
@@ -4539,4 +4546,18 @@ async function activateTeacherPasskeyFromSettings(){
  enhanceTimetable();
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)enhanceTimetable()});
 })();
-</script><script type="module" src="./passkey-auth.js?v=20261029-3"></script></body></html>
+</script><script type="module" src="./passkey-auth.js?v=20261029-3"></script><script id="teacher-supervisor-switch-check">
+(async function(){
+ const button=document.getElementById('teacherSupervisorSwitch');
+ if(!button||typeof schoolAuthRestore!=='function')return;
+ const credential=schoolAuthRestore();
+ if(!credential)return;
+ try{
+  const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-founder-dashboard',{
+   method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential})
+  });
+  const result=await response.json();
+  if(response.ok&&result.ok)button.hidden=false;
+ }catch(e){/* Hide when eligibility cannot be verified. */}
+})();
+</script></body></html>
