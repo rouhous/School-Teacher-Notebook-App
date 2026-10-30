@@ -4344,18 +4344,27 @@ async function syncManaged(){
       db.classes=db.classes.filter(c=>c.id!==duplicate.id);
     }
   }
-  const rosterClassIds=new Map(nextClasses.map(c=>[String(c.schoolRosterKey||'') ,c.id]));const byGrade=new Map();for(const c of nextClasses){const g=String(c.schoolRosterKey||'').split('|')[0]+'|'+String(c.name).split('/')[0];if(!byGrade.has(g))byGrade.set(g,c.id);else byGrade.set(g,null)}
+  // Exact school/class matching first. Grade-only aliases are allowed only when
+  // there is precisely one approved section for that grade in that school.
+  const rosterClassIds=new Map(nextClasses.map(c=>[String(c.schoolRosterKey||''),c.id]));
+  const normalizeGrade=value=>String(value||'').trim().replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).split(/[\/\\\-_]/)[0].replace(/[^0-9]/g,'').replace(/^0+(?=\d)/,'');
+  const byGrade=new Map();
+  for(const c of nextClasses){
+    const g=String(c.schoolId||'')+'|'+normalizeGrade(c.name);
+    if(!byGrade.has(g))byGrade.set(g,c.id);
+    else if(byGrade.get(g)!==c.id)byGrade.set(g,null);
+  }
   db.schedule=db.schedule.map(slot=>{
     const cls=db.classes.find(c=>c.id===slot.classId);
     const schoolKey=String(slot.schoolId||'')+'|'+String(cls?.name||'');
-    const gradeKey=String(cls?.name||'').trim().split(/[\/\\-]/)[0].replace(/[.]0$/,'');
+    const gradeKey=normalizeGrade(cls?.name);
     const rosterId=cls&&(rosterClassIds.get(schoolKey)||byGrade.get(String(slot.schoolId||'')+'|'+gradeKey));
     return rosterId?{...slot,classId:rosterId}:slot;
   });
   // Reconcile grade-only timetable and assessment aliases with an unambiguous approved section.
   const approvedByGrade=new Map();
   for(const c of nextClasses){
-    const grade=String(c.name).split('/')[0];
+    const grade=normalizeGrade(c.name);
     const schoolKey=String(c.schoolId||'')+'|'+grade;
     if(!approvedByGrade.has(schoolKey))approvedByGrade.set(schoolKey,c.id);
     else approvedByGrade.set(schoolKey,null);
@@ -4366,7 +4375,7 @@ async function syncManaged(){
     // Never merge classes from different schools or ambiguous sections.
     const school=String(old.schoolId||'');
     if(!school)continue;
-    const grade=String(old.name||'').trim().split(/[\/\\-]/)[0].replace(/[.]0$/,'');
+    const grade=normalizeGrade(old.name);
     const target=approvedByGrade.get(school+'|'+grade);
     if(target&&String(target)!==String(old.id))classAliases.set(old.id,target);
   }
