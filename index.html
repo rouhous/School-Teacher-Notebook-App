@@ -635,25 +635,11 @@ body.teacher-passkey-mode .site.mobile-reference-ready .panel{
 <script>const school=document.getElementById('school');school.value=sessionStorage.getItem('school-notebook-selected-school')||'';school.addEventListener('change',()=>{sessionStorage.setItem('school-notebook-selected-school',school.value)});document.getElementById('register').addEventListener('click',()=>sessionStorage.setItem('school-notebook-selected-school',school.value));</script><dialog id="supervisor-dialog" aria-labelledby="supervisor-heading" style="border:1px solid #d9bf83;border-radius:22px;box-shadow:0 24px 80px #082f2560;padding:26px;width:min(92vw,420px);color:#07594b;background:#fffdf7;text-align:center"><button type="button" id="supervisor-close" aria-label="إغلاق" style="float:left;background:transparent;border:0;font-size:25px;cursor:pointer">×</button><h2 id="supervisor-heading">دخول المشرف</h2><p>سجّل الدخول بحساب Google المعتمد للمشرف. لا تُطلب كلمة مرور Google هنا.</p><div id="supervisor-google" style="display:flex;justify-content:center;min-height:50px"></div><p id="supervisor-status" role="status" style="font-size:.9rem;color:#536c61"></p></dialog><script src="school-edition/session-auth.js"></script><script>
 (function(){
  const holder=document.getElementById('teacher-google'),status=document.getElementById('teacher-status');
- async function checkFounderFirst(credential){
- const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-founder-dashboard',{
-  method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential})
- });
- if(response.ok){
-  const info=await response.json();
-  if(info.ok)return true;
- }
- if(response.status!==401&&response.status!==403)throw Error('تعذر التحقق من صلاحية المشرف. تحقق من الاتصال ثم أعد المحاولة.');
- return false;
-}
 async function verifiedTeacher(response){
- status.textContent='جارٍ التحقق من صلاحية المشرف ثم حساب المعلم...';
+ status.textContent='جارٍ التحقق من اعتماد حساب المعلم...';
  try{
   if(!response?.credential)throw Error('لم يكتمل تسجيل Google.');
-  if(await checkFounderFirst(response.credential)){
-   schoolAuthSave(response.credential);
-   location.replace('school-edition/founder-dashboard.html');return;
-  }
+
   const r=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{
    method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:response.credential})
   });
@@ -664,12 +650,11 @@ async function verifiedTeacher(response){
 }
  // Reuse a still-valid Google session on Android/iOS without prompting again.
  async function resumeApprovedSession(){
-  if(localStorage.getItem('school-notebook-passkey-enrolled-v1')==='1'||localStorage.getItem('school-notebook-supervisor-passkey-enrolled-v1')==='1')return;
+  if(localStorage.getItem('school-notebook-passkey-enrolled-v1')==='1')return;
   const credential=schoolAuthRestore();
   if(!credential)return;
   status.textContent='جارٍ استعادة جلسة الدخول المحفوظة...';
   try{
-   if(await checkFounderFirst(credential)){location.replace('school-edition/founder-dashboard.html');return;}
    const r=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential})});
    const j=await r.json();
    if(r.ok&&j.ok&&j.data?.approved){location.replace('school-edition/school-notebook.html');return;}
