@@ -112,7 +112,8 @@ function render(){
   }
   $('rows').append(tr);
  }
- }\n const canonical=all.filter(x=>x.reviewStatus==='published'&&x.classId&&!x.dutyPriority);
+ }
+ const canonical=all.filter(x=>x.reviewStatus==='published'&&x.classId&&!x.dutyPriority);
  const parallel=all.filter(x=>x.reviewStatus==='approved_parallel');
  const expected=school==='boys'?320:480;
  $('coverage').textContent='الحصص الأساسية: '+canonical.length+' من '+expected+' | التكليفات المتزامنة: '+parallel.length+(canonical.length<expected?' — تنبيه: بعض الحصص الأساسية لم تُحمّل بعد.':' — الجداول الأساسية مكتملة.');
