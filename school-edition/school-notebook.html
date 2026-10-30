@@ -4549,15 +4549,18 @@ async function activateTeacherPasskeyFromSettings(){
 </script><script type="module" src="./passkey-auth.js?v=20261029-3"></script><script id="teacher-supervisor-switch-check">
 (async function(){
  const button=document.getElementById('teacherSupervisorSwitch');
- if(!button||typeof schoolAuthRestore!=='function')return;
- const credential=schoolAuthRestore();
- if(!credential)return;
+ if(!button)return;
+ const google=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
  try{
+  // Google tokens expire quickly. A passkey session can also prove founder access.
+  const access=google?null:await schoolNotebookPasskeyToken();
+  if(!google&&!access)return;
   const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-founder-dashboard',{
-   method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential})
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify(google?{credential:google}:{access_token:access})
   });
   const result=await response.json();
   if(response.ok&&result.ok)button.hidden=false;
- }catch(e){/* Hide when eligibility cannot be verified. */}
+ }catch(e){/* No shortcut without a verified supervisor session. */}
 })();
 </script></body></html>
