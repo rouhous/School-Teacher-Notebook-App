@@ -46,12 +46,13 @@
 .teacher-week-slot .p-no{position:absolute;top:0;right:1px;font-size:6px;line-height:1;color:#618778}
 .teacher-week-slot .p-class{font-weight:800;font-size:clamp(8px,.67vw,11px);line-height:1;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .teacher-week-slot.is-empty .p-class{color:#b6c6ba;font-weight:400}
-.class-week-table{--teacher-col:clamp(90px,10%,145px)}
-.class-week-table tbody tr{height:42px}
-.class-week-table .teacher-week-slots{min-height:35px}
-.class-week-table .teacher-week-slot{min-height:35px;height:35px;flex-direction:column;gap:2px;padding:2px 1px}
-.class-week-table .teacher-week-slot .p-class{display:block;width:100%;text-align:center;font-size:clamp(7px,.63vw,10px);line-height:1.12;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.class-week-table .teacher-week-slot .p-teacher{display:block;width:100%;text-align:center;font-size:clamp(6px,.53vw,9px);line-height:1.12;color:#305a4c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.class-week-table{--class-column-width:68px}
+.class-week-table th.teacher-week-name{width:var(--class-column-width);min-width:0;max-width:var(--class-column-width);padding:3px 2px;text-align:center;white-space:normal;overflow-wrap:anywhere;font-weight:800}
+.class-week-table tbody tr{height:69px}
+.class-week-table .teacher-week-slots{min-height:65px}
+.class-week-table .teacher-week-slot{min-height:65px;height:65px;flex-direction:column;gap:3px;padding:3px 1px;overflow:hidden}
+.class-week-table .teacher-week-slot .p-class{display:block;width:100%;text-align:center;font-size:clamp(8px,.72vw,11px);line-height:1.15;font-weight:800;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;max-height:28px;overflow:hidden}
+.class-week-table .teacher-week-slot .p-teacher{display:block;width:100%;text-align:center;font-size:clamp(8px,.68vw,10px);line-height:1.16;color:#305a4c;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;max-height:39px;overflow:hidden}
 .class-week-table .teacher-week-slot.has-duty .p-teacher{color:#705114}
 .class-week-table tbody tr:nth-child(even) .teacher-week-slot.has-lesson{background:#aed8c0}
 .class-week-table tbody tr:nth-child(even) .teacher-week-slot.is-empty{background:#dae7de}
@@ -144,6 +145,9 @@ function renderClassWeek(all,chosen,chosenDays,days){
   index.get(key).push(x);
  }
  const ordered=[...classes].filter(cls=>!chosen||chosen===cls).sort((a,b)=>a.localeCompare(b,'ar',{numeric:true}));
+ // Reserve only enough width for the longest class identifier; give the five days the rest.
+ const longest=[...classes].reduce((m,cls)=>Math.max(m,[...cls].length),0);
+ table.style.setProperty('--class-column-width',Math.min(100,Math.max(45,16+longest*7))+'px');
  const frag=document.createDocumentFragment();
  for(const cls of ordered){
   const tr=document.createElement('tr'),heading=document.createElement('th');heading.className='teacher-week-name';heading.scope='row';heading.textContent=cls;tr.append(heading);
