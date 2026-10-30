@@ -22,6 +22,22 @@
 .teacher-week-table thead th:not(:first-child),.teacher-week-table tbody td{border-right:3px double #367a65}
 .teacher-week-table thead th:last-child,.teacher-week-table tbody td:last-child{border-left:3px double #367a65}
 .teacher-week-table tbody tr{height:25px}
+/* One numbered period header per day; aligned to the eight teacher cells. */
+.teacher-week-table thead tr:first-child{height:27px}
+.teacher-week-table thead tr:first-child th{height:27px;top:0}
+.teacher-week-table thead tr.teacher-week-period-row{height:23px}
+.teacher-week-table thead tr.teacher-week-period-row th{height:23px;top:27px;padding:0 2px;background:#d8e9df;color:#075343;border-bottom:3px solid #175c46;z-index:4}
+.teacher-week-table thead tr.teacher-week-period-row th.teacher-week-name{z-index:6;background:#c8e2d2}
+.teacher-week-periods{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:0;direction:rtl}
+.teacher-week-period{display:flex;align-items:center;justify-content:center;height:20px;min-width:0;font-weight:800;font-size:10px;border-left:2px solid #32785f}
+.teacher-week-period:last-child{border-left:0}
+.teacher-week-table tbody tr th.teacher-week-name,.teacher-week-table tbody tr td{border-bottom:2px solid #609783}
+.teacher-week-table tbody tr:nth-child(even) th.teacher-week-name,.teacher-week-table tbody tr:nth-child(even) td{border-bottom:2px solid #4b806a}
+.teacher-week-table .teacher-week-slots{gap:0}
+.teacher-week-table .teacher-week-slot{border:0;border-left:2px solid #5b927a;border-radius:0}
+.teacher-week-table .teacher-week-slot:last-child{border-left:0}
+.teacher-week-table tbody tr{height:23px}
+
 .teacher-week-slots{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:1px;direction:rtl}
 .teacher-week-slot{position:relative;min-width:0;min-height:20px;height:20px;padding:1px 0;border-radius:2px;background:#f2f5f2;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .teacher-week-slot.has-lesson{background:#c6e6d2;color:#064a36}
@@ -44,6 +60,18 @@ function renderGeneralTeacherWeek(all,chosenDays,days){
  $('cols').replaceChildren();$('rows').replaceChildren();
  const head=document.createElement('th');head.className='teacher-week-name';head.textContent='المعلم';head.scope='col';$('cols').append(head);
  for(const d of chosenDays)th(days[d]);
+ let periodsHead=document.getElementById('teacherWeekPeriodRow');
+ if(!periodsHead){periodsHead=document.createElement('tr');periodsHead.id='teacherWeekPeriodRow';$('cols').parentElement.append(periodsHead)}
+ periodsHead.className='teacher-week-period-row';periodsHead.replaceChildren();
+ const periodLabel=document.createElement('th');periodLabel.scope='row';periodLabel.className='teacher-week-name';periodLabel.textContent='الحصة';periodsHead.append(periodLabel);
+ for(const d of chosenDays){
+  const cell=document.createElement('th');cell.scope='col';cell.setAttribute('aria-label','حصص يوم '+days[d]);
+  const grid=document.createElement('div');grid.className='teacher-week-periods';
+  for(let p=1;p<=8;p++){
+   const number=document.createElement('span');number.className='teacher-week-period';number.textContent=p;grid.append(number);
+  }
+  cell.append(grid);periodsHead.append(cell);
+ }
  const teachers=new Map(),index=new Map();
  for(const x of all){
   if(!x.teacherId&&!x.teacherName)continue;
@@ -65,7 +93,6 @@ function renderGeneralTeacherWeek(all,chosenDays,days){
     box.className='teacher-week-slot '+(matches.length?'has-lesson':'is-empty');
     if(matches.some(x=>x.dutyPriority))box.classList.add('has-duty');
     if(matches.some(x=>x.reviewStatus&&x.reviewStatus!=='READY'&&x.reviewStatus!=='published'&&x.reviewStatus!=='approved_parallel'))box.classList.add('needs-review');
-    const number=document.createElement('span');number.className='p-no';number.textContent=p;box.append(number);
     const main=document.createElement('span');main.className='p-class';
     main.textContent=matches.length?matches.map(x=>x.classId||('ح'+(x.dutyPriority||''))).join(' / '):'—';
     box.append(main);
@@ -92,6 +119,7 @@ function render(){
  $('heading').textContent=(mode==='all'?'الجدول العام':mode==='class'?'جدول الصف':'جدول المعلم')+' — '+(day==='week'?'الأسبوع كاملًا':$('day').selectedOptions[0].textContent);
  if(mode==='all'){renderGeneralTeacherWeek(all,chosenDays,days)}else{
  $('timetableTable').classList.remove('teacher-week-table');$('timetableScroll').classList.remove('teacher-week-scroll');
+ document.getElementById('teacherWeekPeriodRow')?.remove();
  $('cols').replaceChildren();['الحصة',...chosenDays.map(i=>days[i])].forEach(th);
  $('rows').replaceChildren();
  for(let p=1;p<=maxPeriod;p++){
