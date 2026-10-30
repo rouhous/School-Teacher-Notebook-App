@@ -251,7 +251,7 @@ function batchReviewUI(){
   const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='عرض الأسماء والنص المستخرج وتصحيحه';details.append(summary);
   const names=document.createElement('pre');names.textContent=item.students.slice(0,40).map(x=>x.studentNumber+' — '+x.name+' — هاتف: '+(x.phone||'غير مستخرج')).join('\n')||'لا توجد أسماء موثوقة';details.append(names);
   const area=document.createElement('textarea');area.value=item.text;area.rows=5;area.style.width='100%';area.setAttribute('aria-label','نص '+item.name);details.append(area);
-  const reparse=document.createElement('button');reparse.type='button';reparse.textContent='إعادة تحليل هذا الملف';reparse.onclick=()=>{item.text=area.value;item.students=enrichPhones(parseStudentsFromText(item.text).filter(x=>x.studentNumber&&x.name),lastPdfPhoneMap);item.error='';batchReviewUI();prepareBatchRows()};details.append(reparse);
+  const reparse=document.createElement('button');reparse.type='button';reparse.textContent='إعادة تحليل هذا الملف';reparse.onclick=()=>{item.text=area.value;item.students=enrichPhones(parseStudentsFromText(item.text).filter(x=>x.studentNumber&&x.name),item.phoneMap);item.error='';batchReviewUI();prepareBatchRows()};details.append(reparse);
   card.append(details);box.append(card);
  });
 }
@@ -282,7 +282,7 @@ async function importStudentPdfBatch(files){
    if(file.size>12000000)throw Error('حجم الملف يتجاوز 12 ميجابايت');
    item.text=await pdfText(file);item.phoneMap=new Map(lastPdfPhoneMap);
    item.classId=detectClass(item.text,file.name);
-   item.students=parseStudentsFromText(item.text).filter(x=>x.studentNumber&&x.name);
+   item.students=enrichPhones(parseStudentsFromText(item.text).filter(x=>x.studentNumber&&x.name),item.phoneMap);
    if(!item.students.length)item.error='قد يكون PDF مصوّرًا؛ لا يمكن استخراج الأسماء آليًا من النص. راجع الملف.';
   }catch(e){item.error=e.message||'تعذر قراءة PDF'}
   pdfBatch.push(item);
