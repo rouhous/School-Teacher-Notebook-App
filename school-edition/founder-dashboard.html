@@ -120,7 +120,7 @@ header a.supervisor-behavior-link{display:inline-flex!important;align-items:cent
 <p id="supervisorPasskeyStatus" role="status" aria-live="polite"></p>
 </section><div id="data" hidden><section id="supervisorBehaviorInbox" aria-label="تقارير سلوك الطلاب">
 <h2>📬 صندوق تقارير سلوك الطلاب <span id="supervisorBehaviorCount" class="behavior-report-count">0</span></h2>
-<p class="behavior-report-guidance">تصل التقارير من المعلمين مباشرة. يُسجّل الاستلام أولًا، ثم يُسجّل الاطلاع عند فتح التقرير. تُعرض هذه الحالات للمعلم أيضًا.</p>
+<p class="behavior-report-guidance">يُؤكّد وصول التقرير تلقائيًا للمعلم بمجرد حفظه في الوارد. تتغير الحالة إلى «تم الاطلاع» فقط عند فتح المشرف التقرير.</p>
 <div class="behavior-report-controls">
 <button type="button" id="supervisorBehaviorRefresh">تحديث الوارد</button>
 <button type="button" id="supervisorBehaviorNotify">🔔 تفعيل إشعار وصول تقرير أثناء فتح البوابة</button>
@@ -161,7 +161,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  const count=document.getElementById('supervisorBehaviorCount');
  let reports=[],initialized=false,known=new Set(),running=false;
  const el=(tag,text)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;return x};
- const label=s=>s==='opened'?'✅ تم الاطلاع':s==='received'?'☑️ تم الاستلام':'📨 جديد ولم يُستلم';
+ const label=s=>s==='opened'?'✅ تم الاطلاع':'☑️ تم الوصول — بانتظار الاطلاع';
  async function send(action,extra={}){
   const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
   const access=credential?null:supervisorPasskeyToken;
@@ -175,8 +175,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   try{
    const res=await send(action,{reportId:id});
    report.status=res.status;
-   if(action==='receive')report.receivedAt=new Date().toISOString();
-   if(action==='open'){report.receivedAt=report.receivedAt||new Date().toISOString();report.openedAt=new Date().toISOString()}
+   if(action==='open')report.openedAt=new Date().toISOString();
    render();
    if(action==='open'){
     const target=[...list.querySelectorAll('.supervisor-behavior-item')].find(x=>x.dataset.reportId===String(id));
@@ -193,7 +192,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   card.append(note);
  }
  function render(){
-  const unread=reports.filter(x=>x.status==='submitted').length;
+  const unread=reports.filter(x=>x.status!=='opened').length;
   count.textContent=String(unread);badge.textContent=String(unread);badge.hidden=unread===0;
   list.replaceChildren();
   if(!reports.length){list.append(el('p','لا توجد تقارير واردة بعد.'));return}
@@ -204,11 +203,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    card.append(el('div','السلوك: '+r.behavior));
    card.append(el('strong',label(r.status)));
    const actions=el('div');actions.className='behavior-report-actions';
-   if(r.status==='submitted'){
-    const receive=el('button','☑️ استلام التقرير');receive.onclick=()=>mark(r.id,'receive',card,r);actions.append(receive);
-   }
    if(r.status!=='opened'){
-    const open=el('button','👁 فتح التقرير وتسجيل الاطلاع');open.onclick=()=>mark(r.id,'open',card,r);actions.append(open);
+    const open=el('button','👁 فتح التقرير');open.onclick=()=>mark(r.id,'open',card,r);actions.append(open);
    }else{
     const view=el('button','عرض التفاصيل');view.onclick=()=>showDetails(card,r);actions.append(view);
    }
@@ -221,7 +217,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    const result=await send('supervisor_list');
    reports=result.rows||[];
    const now=new Set(reports.map(r=>r.id));
-   const newCount=initialized?reports.filter(r=>r.status==='submitted'&&!known.has(r.id)).length:0;
+   const newCount=initialized?reports.filter(r=>r.status!=='opened'&&!known.has(r.id)).length:0;
    known=now;initialized=true;render();
    if(newCount&&document.visibilityState==='visible'){
     message.textContent='📬 وصل '+newCount+' تقرير جديد.';
