@@ -30,19 +30,6 @@ async function signIn(){
  if(result.error)throw result.error;
  const access=await token();
  if(!access)throw Error('تعذر إنشاء جلسة البصمة.');
- // Supervisor privilege is checked FIRST by the protected server endpoint.
- const supervisorResponse=await fetch(ROOT+'/functions/v1/school-founder-dashboard',{
-  method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({access_token:access})
- });
- if(supervisorResponse.ok){
-  const supervisor=await supervisorResponse.json();
-  if(supervisor.ok){
-   localStorage.setItem('school-notebook-supervisor-passkey-enrolled-v1','1');
-   return {role:'supervisor',access_token:access};
-  }
- }else if(supervisorResponse.status!==403&&supervisorResponse.status!==401){
-  throw Error('تعذر التحقق من صلاحيات المشرف. تحقق من الاتصال وأعد المحاولة.');
- }
  // Non-supervisors retain their normal teacher access; no new identities are created.
  const verify=await call('school-passkey-identity',{action:'resolve'},access);
  if(!verify?.data?.approved)throw Error('NOT_APPROVED');
@@ -93,7 +80,7 @@ if(document.getElementById('teacher-google')){
  const holder=document.getElementById('teacher-google');
  const entry=document.getElementById('teacher-passkey-entry');
  const enrolled=localStorage.getItem(ENROLLED_KEY)==='1'||localStorage.getItem('school-notebook-supervisor-passkey-enrolled-v1')==='1';
- const route=role=>location.replace(role==='supervisor'?'school-edition/founder-dashboard.html':'school-edition/school-notebook.html');
+ const route=role=>location.replace('school-edition/school-notebook.html');
  const action=async()=>route((await signIn()).role);
  if(enrolled&&entry){
   document.body.classList.add('teacher-passkey-mode');
@@ -124,19 +111,7 @@ if(document.getElementById('teacher-google')){
    try{
     const access=await token();
     if(access){
-     const supervisor=await fetch(ROOT+'/functions/v1/school-founder-dashboard',{
-      method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({access_token:access})
-     });
-     if(supervisor.ok&&(await supervisor.json()).ok){route('supervisor');return}
-     if([401,403].includes(supervisor.status)){
-      try{
-       const teacher=await call('school-passkey-identity',{action:'resolve'},access);
-       if(teacher.data?.approved){sessionStorage.setItem(SUBKEY,teacher.google_sub);route('teacher');return}
-      }catch(e){/* A valid local token without role authorization still needs re-authentication. */}
-     }else{
-      promptRequired=false;
-      status.textContent='تعذر الاتصال للتحقق من الجلسة. يمكنك المحاولة مجددًا.';
-     }
+     try{const teacher=await call('school-passkey-identity',{action:'resolve'},access);if(teacher.data?.approved){sessionStorage.setItem(SUBKEY,teacher.google_sub);route('teacher');return}}catch(e){/* Reauthenticate as teacher. */}
     }
    }catch(e){/* Request a fresh passkey assertion if a cached session cannot be restored. */}
    if(promptRequired&&document.visibilityState!=='hidden'&&!running){
