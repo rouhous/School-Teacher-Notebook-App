@@ -592,7 +592,7 @@ $('school').addEventListener('change',()=>{profileState.rows=[];$('reviewClasses
   finally{btn.disabled=false}
  };
  const approvedGirlsTiming=[['07:25','08:05'],['08:10','08:50'],['08:55','09:35'],['09:40','10:20'],['10:40','11:20'],['11:20','12:00'],['12:00','12:40'],['12:40','13:20']];
- function initialTiming(){root.replaceChildren();if(school.value==='girls'){approvedGirlsTiming.forEach(([a,b])=>addPeriod(a,b));status.textContent='نموذج توقيت مدرسة البنات 2026–2027 جاهز للمراجعة والاعتماد. الطابور 07:10–07:25 والفسحة 10:20–10:40 خارج الحصص.'}else{for(let i=0;i<8;i++)addPeriod();status.textContent='أدخل توقيت مدرسة البنين المعتمد.'}}
+ function initialTiming(){root.replaceChildren();approvedGirlsTiming.forEach(([a,b])=>addPeriod(a,b));status.textContent='التوقيت الموحد للمدرستين 2026–2027 جاهز للمراجعة والاعتماد لكل مدرسة. الطابور 07:10–07:25 والفسحة 10:20–10:40 خارج الحصص.'}
  school.addEventListener('change',initialTiming);initialTiming();
  showPanel();
 })();
