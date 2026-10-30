@@ -30,10 +30,25 @@ async function signIn(){
  if(result.error)throw result.error;
  const access=await token();
  if(!access)throw Error('تعذر إنشاء جلسة البصمة.');
+ // Supervisor privilege is checked FIRST by the protected server endpoint.
+ const supervisorResponse=await fetch(ROOT+'/functions/v1/school-founder-dashboard',{
+  method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({access_token:access})
+ });
+ if(supervisorResponse.ok){
+  const supervisor=await supervisorResponse.json();
+  if(supervisor.ok){
+   localStorage.setItem('school-notebook-supervisor-passkey-enrolled-v1','1');
+   return {role:'supervisor',access_token:access};
+  }
+ }else if(supervisorResponse.status!==403&&supervisorResponse.status!==401){
+  throw Error('تعذر التحقق من صلاحيات المشرف. تحقق من الاتصال وأعد المحاولة.');
+ }
+ // Non-supervisors retain their normal teacher access; no new identities are created.
  const verify=await call('school-passkey-identity',{action:'resolve'},access);
+ if(!verify?.data?.approved)throw Error('NOT_APPROVED');
  sessionStorage.setItem(SUBKEY,verify.google_sub);
  localStorage.setItem(ENROLLED_KEY,'1');
- return verify;
+ return {...verify,role:'teacher'};
 }
 async function existing(){
  const access=await token();
@@ -80,8 +95,7 @@ if(document.getElementById('teacher-google')){
  const enrolled=localStorage.getItem(ENROLLED_KEY)==='1';
  const action=async()=>{
   const result=await signIn();
-  if(!result?.data?.approved)throw Error('NOT_APPROVED');
-  location.replace('school-edition/school-notebook.html');
+  location.replace(result.role==='supervisor'?'school-edition/founder-dashboard.html':'school-edition/school-notebook.html');
  };
  const {b,msg}=makeButton('🔐 الدخول بالبصمة / Face ID',action,'login');
  holder.insertAdjacentElement('afterend',b);b.insertAdjacentElement('afterend',msg);
