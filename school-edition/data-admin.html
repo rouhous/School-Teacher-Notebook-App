@@ -53,6 +53,16 @@ main>h1{font-size:clamp(1.3rem,5vw,1.75rem)!important;margin:9px 0 2px!important
 .supervisor-back-button:hover{background:#0a755a!important;color:#fff!important}
 .supervisor-back-button:focus-visible{outline:3px solid #c7a05a!important;outline-offset:3px}
 @media(max-width:550px){.supervisor-back-button{min-height:40px!important;padding:8px 12px!important;font-size:13px!important}}
+</style><style id="school-timing-publication-20261030">
+#timingPublishPanel[hidden]{display:none!important}
+#timingRows{display:grid;gap:8px}
+.timing-period-row{display:grid;grid-template-columns:minmax(55px,.7fr) repeat(2,minmax(0,1fr)) 42px;gap:7px;align-items:end;padding:8px;border-radius:12px;background:#f3f8f4}
+.timing-period-row label{margin:0;font-size:12px}
+.timing-period-row input{margin-top:4px;width:100%;font-size:13px;padding:8px;min-height:38px}
+.timing-period-row button{min-height:38px;height:38px;margin:0;padding:4px;background:#f6e4de;color:#973d2f}
+.timing-action-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.timing-action-buttons button{flex:1 1 160px;margin:0}
+@media(max-width:420px){.timing-period-row{grid-template-columns:42px minmax(0,1fr) minmax(0,1fr) 36px;gap:4px}.timing-period-row label{font-size:11px}}
 </style></head><body><main><a class="supervisor-back-button" href="founder-dashboard.html"><span aria-hidden="true">↩</span> العودة إلى لوحة المشرف</a><h1>مركز البيانات المدرسية</h1><p class="intro">مراجعة واعتماد القوائم المدرسية واستيراد الملفات.</p><nav class="admin-tabs" aria-label="أقسام مركز البيانات"><button type="button" class="active" data-tab="review">بيانات الطلاب</button><button type="button" data-tab="import">استيراد الملفات</button><button type="button" data-tab="manage">نقل / حذف القوائم</button></nav><p id="status" role="status" style="text-align:center">جارٍ فتح بيانات المشرف…</p><div class="school-filter"><label for="school">المدرسة</label><select id="school"><option value="boys">مدرسة البنين — 71 للمراجعة</option><option value="girls">مدرسة البنات والمختلط — 161 للمراجعة</option></select></div><section class="card" id="rosterReviewPanel" data-panel="review"><h2>بيانات الطلاب وتعديلها</h2><p class="review-hint">راجع السجلات المنشورة وصحح الاسم والهاتف والمنطقة والصف دون إعادة الاستيراد. يبقى الرقم المدرسي ثابتًا للربط.</p><button id="loadPending" type="button">تحميل بيانات الطلاب</button><div class="school-filter"><label for="studentProfileClass">الصف</label><select id="studentProfileClass"><option value="">جميع الصفوف</option></select></div><input id="studentProfileSearch" type="search" placeholder="بحث بالاسم أو الرقم المدرسي" aria-label="بحث في بيانات الطلاب" /><p id="reviewMessage" role="status">سجّل الدخول كمشرف ثم اختر المدرسة.</p><div id="reviewClasses"></div></section><section class="card" data-panel="manage" hidden id="managePanel">
 <h2>نقل أو حذف قوائم الطلاب المنشورة</h2>
 <p class="notice">اختر المدرسة والصف والطلاب المحددين. «حذف» يعطّل السجلات دون محوها نهائيًا، و«نقل» يُغيّر المدرسة والصف دون إعادة استيراد PDF. لا يتم التنفيذ قبل المعاينة والتأكيد.</p>
@@ -66,7 +76,17 @@ main>h1{font-size:clamp(1.3rem,5vw,1.75rem)!important;margin:9px 0 2px!important
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><button type="button" id="managePreviewMerge" style="background:#086f58">معاينة النقل والدمج</button><button type="button" id="managePreviewDelete" style="background:#9c4c3a">معاينة الحذف</button></div>
 <div id="managePreview" role="status" aria-live="polite" class="notice" style="margin-top:12px">اختر الطلاب ثم عاين العملية قبل التأكيد.</div>
 <button type="button" id="manageExecute" disabled style="background:#8d3e31">تأكيد العملية المختارة</button>
-</section><section class="card"><h2>التقييمات الوزارية</h2><p>مراجعة وثائق التقييم PDF العربية والإنجليزية وإنشاء مسودة قابلة للتصحيح قبل الاعتماد.</p><a href="assessment-review.html">فتح مراجعة التقييمات الوزارية</a></section><section class="card" data-panel="import" hidden><h2>استيراد PDF أو CSV</h2><label for="kind">نوع البيانات</label><select id="kind"><option value="students">قوائم الطلاب</option><option value="timetable">حصص الجدول</option><option value="timing">التوقيت المدرسي (PDF أو صورة)</option></select><p class="notice compact-format" id="format">الطلاب: student_code,class_id,display_name — معرّف الطالب، الصف، الاسم.</p><label for="file">اختر عدة ملفات لقوائم الطلاب من الهاتف (PDF أو CSV) — حتى 20 ملفًا</label><p class="notice">يمكن تحديد ملفات متعددة من تطبيق «الملفات» على الهاتف في عملية واحدة. بعد الاختيار ستظهر مراجعة مستقلة لكل ملف قبل اعتماد البيانات.</p><input type="file" id="file" multiple accept=".csv,.pdf,.png,.jpg,.jpeg,.webp,application/pdf,text/csv,image/png,image/jpeg,image/webp"><details class="compact-help"><summary>تعليمات استيراد الملفات</summary><p>يمكن إدراج حتى 20 ملف PDF لقوائم الصفوف دفعة واحدة. يُحلّل كل ملف على حدة قبل النشر.</p></details><p id="previewStatus" role="status"></p><div id="batchReview" hidden></div><label for="teacher">معرّف المعلم (لجدول PDF فردي)</label><input id="teacher" placeholder="مثال: B07"><label for="class">الصف (لقائمة الطلاب PDF)</label><input id="class" placeholder="مثال: 9A"><p class="notice">عند قراءة PDF، راجع النص المستخرج والسجلات قبل النشر. لا يُنشر أي سجل غير مكتمل أو غير موثوق تلقائيًا.</p><textarea id="pdfText" style="width:100%;min-height:130px" placeholder="النص المستخرج من PDF، قابل للتصحيح" hidden></textarea><button id="parsePdf" type="button" hidden>تحليل النص بعد التصحيح</button><button id="ocrPdf" type="button" hidden>قراءة PDF أو الصورة بتقنية OCR</button><pre id="preview"></pre><button id="publish" disabled>اعتماد ونشر البيانات</button><p class="notice">يُحدّث استيراد الطلاب السجلات الموجودة باستخدام المعرّف نفسه. استيراد الحصص يضيف سجلات جديدة، ويمنع تكرار حصة المعلم في اليوم والفترة نفسها؛ لا يستبدل الجدول كاملًا تلقائيًا.</p></section></main><script src="./session-auth.js?v=20261030-session"></script><script>
+</section><section class="card"><h2>التقييمات الوزارية</h2><p>مراجعة وثائق التقييم PDF العربية والإنجليزية وإنشاء مسودة قابلة للتصحيح قبل الاعتماد.</p><a href="assessment-review.html">فتح مراجعة التقييمات الوزارية</a></section><section class="card" id="timingPublishPanel" data-panel="import" hidden>
+<h2>⏰ اعتماد التوقيت المدرسي</h2>
+<p class="notice">بعد مراجعة ملف PDF أو الصورة، أدخل وقت بداية ونهاية كل حصة. لا تُنشَر بيانات غير مقروءة تلقائيًا. يتيح الزر قراءة النسخة المعتمدة قبل استبدالها.</p>
+<div id="timingRows"></div>
+<div class="timing-action-buttons">
+<button type="button" id="addTimingPeriod">إضافة حصة</button>
+<button type="button" id="readTiming">عرض التوقيت المنشور</button>
+<button type="button" id="publishTiming">اعتماد ونشر التوقيت</button>
+</div>
+<p id="timingPublishStatus" role="status" aria-live="polite"></p>
+</section><section class="card" data-panel="import" hidden><h2>استيراد PDF أو CSV</h2><label for="kind">نوع البيانات</label><select id="kind"><option value="students">قوائم الطلاب</option><option value="timetable">حصص الجدول</option><option value="timing">التوقيت المدرسي (PDF أو صورة)</option></select><p class="notice compact-format" id="format">الطلاب: student_code,class_id,display_name — معرّف الطالب، الصف، الاسم.</p><label for="file">اختر عدة ملفات لقوائم الطلاب من الهاتف (PDF أو CSV) — حتى 20 ملفًا</label><p class="notice">يمكن تحديد ملفات متعددة من تطبيق «الملفات» على الهاتف في عملية واحدة. بعد الاختيار ستظهر مراجعة مستقلة لكل ملف قبل اعتماد البيانات.</p><input type="file" id="file" multiple accept=".csv,.pdf,.png,.jpg,.jpeg,.webp,application/pdf,text/csv,image/png,image/jpeg,image/webp"><details class="compact-help"><summary>تعليمات استيراد الملفات</summary><p>يمكن إدراج حتى 20 ملف PDF لقوائم الصفوف دفعة واحدة. يُحلّل كل ملف على حدة قبل النشر.</p></details><p id="previewStatus" role="status"></p><div id="batchReview" hidden></div><label for="teacher">معرّف المعلم (لجدول PDF فردي)</label><input id="teacher" placeholder="مثال: B07"><label for="class">الصف (لقائمة الطلاب PDF)</label><input id="class" placeholder="مثال: 9A"><p class="notice">عند قراءة PDF، راجع النص المستخرج والسجلات قبل النشر. لا يُنشر أي سجل غير مكتمل أو غير موثوق تلقائيًا.</p><textarea id="pdfText" style="width:100%;min-height:130px" placeholder="النص المستخرج من PDF، قابل للتصحيح" hidden></textarea><button id="parsePdf" type="button" hidden>تحليل النص بعد التصحيح</button><button id="ocrPdf" type="button" hidden>قراءة PDF أو الصورة بتقنية OCR</button><pre id="preview"></pre><button id="publish" disabled>اعتماد ونشر البيانات</button><p class="notice">يُحدّث استيراد الطلاب السجلات الموجودة باستخدام المعرّف نفسه. استيراد الحصص يضيف سجلات جديدة، ويمنع تكرار حصة المعلم في اليوم والفترة نفسها؛ لا يستبدل الجدول كاملًا تلقائيًا.</p></section></main><script src="./session-auth.js?v=20261030-session"></script><script>
 const $=id=>document.getElementById(id);let credential='',rows=[],pdfBatch=[];
 async function loadOCR(){if(window.Tesseract)return window.Tesseract;await new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';sc.onload=resolve;sc.onerror=reject;document.head.append(sc)});return window.Tesseract}
 $('ocrPdf').onclick=async()=>{const file=$('file').files[0];if(!file)return;const button=$('ocrPdf');button.disabled=true;let worker;try{if(!window.pdfjsLib)throw Error('تعذر تحميل PDF.js');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const isImage=file.type.startsWith('image/')||/\.(png|jpe?g|webp)$/i.test(file.name);const doc=isImage?null:await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;if(doc&&doc.numPages>15)throw Error('ملف كبير؛ قسمه إلى ملفات من 15 صفحة كحد أقصى.');const T=await loadOCR();worker=await T.createWorker('ara+eng',1,{langPath:'https://tessdata.projectnaptha.com/4.0.0',gzip:true});const parts=[];for(let i=1;i<=(doc?.numPages||1);i++){$('previewStatus').textContent='قراءة الصفحة '+i+' من '+(doc?.numPages||1);let source;if(isImage){source=await createImageBitmap(file)}else{const page=await doc.getPage(i),viewport=page.getViewport({scale:2}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;source=canvas}const result=await worker.recognize(source);parts.push(result.data.text);if(isImage)source.close()}$('pdfText').value=parts.join('\\n');$('previewStatus').textContent='اكتملت قراءة OCR. راجع النص وصححه قبل التحليل والنشر.'}catch(e){$('previewStatus').textContent='تعذر التعرف الضوئي: '+e.message}finally{if(worker)await worker.terminate();button.disabled=false}};
@@ -524,4 +544,54 @@ $('studentProfileClass').onchange=renderStudentProfiles;
 $('studentProfileSearch').oninput=renderStudentProfiles;
 $('school').addEventListener('change',()=>{profileState.rows=[];$('reviewClasses').replaceChildren();$('studentProfileClass').replaceChildren(new Option('جميع الصفوف',''));$('reviewMessage').textContent='اختر تحميل بيانات الطلاب للمدرسة المحددة.'});
 (async()=>{const auth=await schoolSupervisorSession();if(!auth){location.replace('../');return}credential=auth.credential||'';loadRosterReview();$('publish').disabled=!rows.length})();
+</script><script id="school-timing-publication-client">
+(function(){
+ const kind=document.getElementById('kind'),school=document.getElementById('school');
+ const root=document.getElementById('timingRows'),panel=document.getElementById('timingPublishPanel'),status=document.getElementById('timingPublishStatus');
+ const endpoint='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-supervisor-documents';
+ function addPeriod(start='',end=''){
+  const row=document.createElement('div');row.className='timing-period-row';
+  const num=document.createElement('strong');num.className='timing-period-label';
+  const a=document.createElement('label');a.textContent='البداية';const x=document.createElement('input');x.type='time';x.value=start;x.required=true;a.append(x);
+  const b=document.createElement('label');b.textContent='النهاية';const y=document.createElement('input');y.type='time';y.value=end;y.required=true;b.append(y);
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','حذف الحصة');
+  remove.onclick=()=>{row.remove();renumber()};
+  row.append(num,a,b,remove);root.append(row);renumber();
+ }
+ function renumber(){
+  [...root.children].forEach((row,i)=>row.querySelector('.timing-period-label').textContent='حصة '+(i+1));
+ }
+ function readRows(){
+  const entries=[...root.children].map((row,i)=>({period:i+1,start:row.querySelectorAll('input')[0].value,end:row.querySelectorAll('input')[1].value}));
+  if(!entries.length||entries.length>12)throw Error('أدخل بين حصة واحدة و12 حصة.');
+  for(let i=0;i<entries.length;i++){
+   const r=entries[i];if(!r.start||!r.end||r.end<=r.start)throw Error('راجع بداية ونهاية الحصة '+(i+1));
+   if(i&&r.start<entries[i-1].end)throw Error('يوجد تداخل بين الحصص '+i+' و'+(i+1));
+  }
+  return entries;
+ }
+ async function call(action,rows){
+  const auth=await schoolSupervisorSession();if(!auth)throw Error('انتهت جلسة المشرف.');
+  const r=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...auth,action,schoolId:school.value,rows})});
+  const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw Error(j.error||'تعذرت العملية');return j.data;
+ }
+ function showPanel(){panel.hidden=kind.value!=='timing'}
+ kind.addEventListener('change',showPanel);
+ const originalClick=document.getElementById('addTimingPeriod');originalClick.onclick=()=>{if(root.children.length>=12){status.textContent='الحد الأقصى 12 حصة';return}addPeriod()};
+ document.getElementById('readTiming').onclick=async()=>{
+  status.textContent='جارٍ تحميل النسخة المعتمدة…';
+  try{const d=await call('timing_read');root.replaceChildren();for(const r of d.periods||[])addPeriod(r.start,r.end);if(!root.children.length)addPeriod();status.textContent=d.revision?'تم تحميل الإصدار المعتمد '+d.revision+' للمراجعة.':'لا يوجد توقيت منشور لهذه المدرسة بعد.'}
+  catch(e){status.textContent='تعذر التحميل: '+e.message}
+ };
+ document.getElementById('publishTiming').onclick=async()=>{
+  let rows;try{rows=readRows()}catch(e){status.textContent=e.message;return}
+  if(!confirm('اعتماد ونشر توقيت '+rows.length+' حصة لمدرسة '+(school.value==='boys'?'البنين':'البنات')+'؟ سيتم استبدال التوقيت المنشور.'))return;
+  const btn=document.getElementById('publishTiming');btn.disabled=true;status.textContent='جارٍ حفظ التوقيت في الخادم…';
+  try{const d=await call('timing_publish',rows);status.textContent='✓ تم نشر التوقيت بنجاح، الإصدار '+d.revision+' ('+d.count+' حصة).'}
+  catch(e){status.textContent='لم يتم النشر: '+e.message}
+  finally{btn.disabled=false}
+ };
+ addPeriod();addPeriod();addPeriod();addPeriod();addPeriod();addPeriod();addPeriod();addPeriod();
+ showPanel();
+})();
 </script></body></html>
