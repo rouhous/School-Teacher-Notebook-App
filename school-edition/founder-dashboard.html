@@ -116,7 +116,70 @@ header a.supervisor-behavior-link{display:inline-flex!important;align-items:cent
 #supervisorBehaviorInbox .supervisor-behavior-note h3{font-size:1.05rem;color:#075c49;border-bottom:2px solid #c8a562;padding-bottom:9px;margin:0 0 12px}
 #supervisorBehaviorInbox .behavior-report-detail-line{padding:7px 3px;border-bottom:1px solid #eee8d6;overflow-wrap:anywhere;line-height:1.7}
 #supervisorBehaviorInbox .behavior-report-detail-line strong{color:#075c49}
-</style></head><body><main><header><a href="../">الرئيسية</a><h1>لوحة المشرف المدرسي</h1><p style="color:#886a35;margin:5px 0">إدارة المعلمين والبيانات والصلاحيات</p><p>إدارة المدرستين والحسابات المعتمدة</p><a href="roster-admin.html">تعديل أسماء المعلمين</a> <a href="data-admin.html" style="display:inline-block;padding:9px 13px;border-radius:10px;background:#075b49;color:white;text-decoration:none;margin:5px 0">مركز البيانات والاستيراد</a> <a href="supervisor-timetables.html" style="background:#075b49;color:white">متابعة الجداول اليومية</a> <a href="#supervisorBehaviorInbox" id="supervisorBehaviorNav" class="supervisor-behavior-link">📬 تقارير سلوك الطلاب <span id="supervisorBehaviorBadge" hidden>0</span></a> <a id="supervisorTeacherSwitch" class="portal-switch-link" href="school-notebook.html" aria-label="الانتقال إلى دفتر المعلم"><span aria-hidden="true">📘</span> الانتقال إلى دفتر المعلم</a></header><p id="status" role="status" style="text-align:center">جارٍ فتح جلسة المشرف المحفوظة…</p><div id="data" hidden><section id="supervisorBehaviorInbox" aria-label="تقارير سلوك الطلاب">
+</style><style id="supervisor-tabbed-navigation-20261030">
+body{background:#f2f6f1!important}
+main{max-width:1100px!important;margin:auto!important;padding:clamp(9px,2vw,23px)!important}
+header.supervisor-main-hero{text-align:right!important;border-radius:20px!important;padding:19px 22px!important;background:linear-gradient(125deg,#075343,#0f8266)!important;margin-bottom:13px!important}
+header.supervisor-main-hero h1{font-size:clamp(23px,4vw,33px)!important;margin:12px 0 2px!important}
+header.supervisor-main-hero p{font-size:13px!important;margin:4px 0!important}
+.supervisor-hero-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+header .supervisor-hero-row a{display:inline-flex!important;justify-content:center!important;align-items:center!important;width:auto!important;max-width:48%!important;min-height:37px!important;border-radius:10px;padding:7px 12px!important;background:#ffffff23!important;border:1px solid #ffffff48!important;color:#fff!important;text-decoration:none;font-size:13px!important;font-weight:750}
+header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!important;color:#075343!important;border-color:#e1c681!important}
+.supervisor-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;position:sticky;top:0;z-index:10;background:#f2f6f1;padding:7px 0 10px}
+.supervisor-tabs button{margin:0!important;padding:12px 6px!important;min-height:50px;border:1px solid #d2e0d6!important;background:white!important;color:#185e4c!important;border-radius:13px!important;font-size:clamp(11px,2.6vw,15px)!important;font-weight:800;line-height:1.4!important;box-shadow:0 3px 9px #123f2710}
+.supervisor-tabs button[aria-selected="true"]{background:#075b47!important;color:#fff!important;border-color:#075b47!important}
+.supervisor-tab-panel[hidden]{display:none!important}
+.supervisor-tab-panel{padding:10px!important;background:transparent!important;border:0!important;box-shadow:none!important;margin:0!important}
+.supervisor-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.supervisor-module{display:flex;flex-direction:column;align-items:flex-start;gap:7px;text-decoration:none!important;background:#fff!important;color:#075545!important;padding:16px!important;border-radius:17px!important;border:1px solid #d6e5dc!important;min-height:123px;box-shadow:0 4px 14px #1a563013!important}
+.supervisor-module:hover{border-color:#b99549!important;background:#fbfaf2!important}
+.supervisor-module .module-icon{font-size:25px}
+.supervisor-module strong{font-size:clamp(14px,3vw,18px)}
+.supervisor-module small{font-size:12px;color:#637c6e!important}
+.supervisor-school-description{font-size:13px;color:#607c70;line-height:1.7}
+#generalOperationsDetails[hidden]{display:none!important}
+#generalOperationsDetails{padding-top:3px}
+#generalOperationsDetails>section{margin:12px 0!important}
+#data>.supervisor-tab-panel,#data>#generalOperationsDetails{max-width:100%}
+@media(min-width:680px){.supervisor-module-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.supervisor-module{min-height:145px}}
+@media(max-width:400px){.supervisor-tabs{gap:5px}.supervisor-tabs button{padding:9px 3px!important}.supervisor-module{padding:13px!important;min-height:120px}}
+</style></head><body><main><header class="supervisor-main-hero">
+<div class="supervisor-hero-row"><a href="../" class="supervisor-home-shortcut">الرئيسية</a><a href="school-notebook.html" class="supervisor-teacher-shortcut">📘 دفتر المعلم</a></div>
+<h1>لوحة المشرف المدرسي</h1><p>الإدارة المدرسية من مكان واحد</p>
+</header>
+<nav class="supervisor-tabs" aria-label="أقسام لوحة المشرف" role="tablist">
+<button type="button" role="tab" data-supervisor-tab="general" aria-selected="true">العمليات العامة <span id="supervisorBehaviorBadge" hidden>0</span></button>
+<button type="button" role="tab" data-supervisor-tab="boys" aria-selected="false">مدرسة البنين</button>
+<button type="button" role="tab" data-supervisor-tab="girls" aria-selected="false">مدرسة البنات</button>
+</nav><p id="status" role="status" style="text-align:center">جارٍ فتح جلسة المشرف المحفوظة…</p><div id="data" hidden>
+<section class="supervisor-tab-panel" data-panel="general" id="supervisorGeneral" role="tabpanel">
+<div class="supervisor-module-grid">
+<a class="supervisor-module" href="roster-admin.html"><span class="module-icon">👩‍🏫</span><strong>إدارة المعلمين</strong><small>الأسماء والحسابات</small></a>
+<a class="supervisor-module" href="data-admin.html?tab=review"><span class="module-icon">🎓</span><strong>قوائم الطلاب</strong><small>البحث والتعديل والاتصال</small></a>
+<a class="supervisor-module" href="data-admin.html?tab=import"><span class="module-icon">📥</span><strong>الاستيراد والتقويم</strong><small>ملفات الطلاب والبيانات المعتمدة</small></a>
+<a class="supervisor-module" href="#supervisorBehaviorInbox"><span class="module-icon">📨</span><strong>التقارير السلوكية</strong><small>الوارد وحالات الاطلاع</small></a>
+</div>
+</section>
+<section class="supervisor-tab-panel" data-panel="boys" id="supervisorBoys" role="tabpanel" hidden>
+<h2>🏫 مدرسة البنين</h2>
+<p class="supervisor-school-description">الجداول والغياب وحصص الاحتياط وقوائم الطلاب الخاصة بمدرسة البنين.</p>
+<div class="supervisor-module-grid">
+<a class="supervisor-module" href="supervisor-timetables.html?school=boys"><span class="module-icon">🗓️</span><strong>الجداول المدرسية</strong><small>الحصص والمعلمون</small></a>
+<a class="supervisor-module" href="supervisor-timetables.html?school=boys#absencePanel"><span class="module-icon">🔄</span><strong>الغياب والاحتياط</strong><small>توزيع حصص الاحتياط</small></a>
+<a class="supervisor-module" href="data-admin.html?tab=review&school=boys"><span class="module-icon">👥</span><strong>طلاب البنين</strong><small>قوائم وبيانات الاتصال</small></a>
+<a class="supervisor-module" href="data-admin.html?tab=manage&school=boys"><span class="module-icon">🗂️</span><strong>إدارة القوائم</strong><small>نقل السجلات ومراجعتها</small></a>
+</div>
+</section>
+<section class="supervisor-tab-panel" data-panel="girls" id="supervisorGirls" role="tabpanel" hidden>
+<h2>🏫 مدرسة البنات</h2>
+<p class="supervisor-school-description">الجداول والغياب وحصص الاحتياط وقوائم الطلاب الخاصة بمدرسة البنات.</p>
+<div class="supervisor-module-grid">
+<a class="supervisor-module" href="supervisor-timetables.html?school=girls"><span class="module-icon">🗓️</span><strong>الجداول المدرسية</strong><small>الحصص والمعلمون</small></a>
+<a class="supervisor-module" href="supervisor-timetables.html?school=girls#absencePanel"><span class="module-icon">🔄</span><strong>الغياب والاحتياط</strong><small>توزيع حصص الاحتياط</small></a>
+<a class="supervisor-module" href="data-admin.html?tab=review&school=girls"><span class="module-icon">👥</span><strong>طلاب البنات</strong><small>قوائم وبيانات الاتصال</small></a>
+<a class="supervisor-module" href="data-admin.html?tab=manage&school=girls"><span class="module-icon">🗂️</span><strong>إدارة القوائم</strong><small>نقل السجلات ومراجعتها</small></a>
+</div>
+</section><div id="generalOperationsDetails"><section id="supervisorBehaviorInbox" aria-label="تقارير سلوك الطلاب">
 <h2>📬 صندوق تقارير سلوك الطلاب <span id="supervisorBehaviorCount" class="behavior-report-count">0</span></h2>
 <p class="behavior-report-guidance">يُؤكّد وصول التقرير تلقائيًا للمعلم بمجرد حفظه في الوارد. تتغير الحالة إلى «تم الاطلاع» فقط عند فتح المشرف التقرير.</p>
 <div class="behavior-report-controls">
@@ -125,7 +188,7 @@ header a.supervisor-behavior-link{display:inline-flex!important;align-items:cent
 </div>
 <p id="supervisorBehaviorMessage" role="status" aria-live="polite"></p>
 <div id="supervisorBehaviorList"></div>
-</section><div class="grid"><section><div>المعلمون في القوائم</div><div class="num" id="teachers">—</div></section><section><div>الحسابات المعتمدة</div><div class="num" id="approved">—</div></section><section><div>طلبات التسجيل المعلقة</div><div class="num" id="pending">—</div></section></div><section><h2>المدارس</h2><div id="schools"></div></section><section><h2>طلبات التسجيل</h2><div style="overflow-x:auto"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div><p id="empty"></p><button id="refresh">تحديث البيانات</button></section></div></main><script src="./session-auth.js?v=20261030-session"></script><script>
+</section><div class="grid"><section><div>المعلمون في القوائم</div><div class="num" id="teachers">—</div></section><section><div>الحسابات المعتمدة</div><div class="num" id="approved">—</div></section><section><div>طلبات التسجيل المعلقة</div><div class="num" id="pending">—</div></section></div><section><h2>المدارس</h2><div id="schools"></div></section><section><h2>طلبات التسجيل</h2><div style="overflow-x:auto"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div><p id="empty"></p><button id="refresh">تحديث البيانات</button></section></div></div></main><script src="./session-auth.js?v=20261030-session"></script><script>
 const $=id=>document.getElementById(id);let credential='',supervisorPasskeyToken='';
 const base='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
 async function request(endpoint,body){const r=await fetch(base+endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...(await schoolSupervisorSession()),...body})});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'تعذر الاتصال');return j.data}
@@ -249,5 +312,20 @@ $('refresh').onclick=refresh;
  window.addEventListener('supervisor-dashboard-ready',load);
  if(document.getElementById('data')&&!document.getElementById('data').hidden)load();
  setInterval(()=>{if(!document.hidden&&!document.getElementById('data').hidden)load()},30000);
+})();
+</script><script id="supervisor-tabs-controller">
+(function(){
+const buttons=[...document.querySelectorAll('[data-supervisor-tab]')];
+const panels=[...document.querySelectorAll('.supervisor-tab-panel')];
+const general=document.getElementById('generalOperationsDetails');
+function activate(key){
+ if(!['general','boys','girls'].includes(key))key='general';
+ for(const b of buttons){const active=b.dataset.supervisorTab===key;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1}
+ for(const p of panels)p.hidden=p.dataset.panel!==key;
+ general.hidden=key!=='general';
+ try{sessionStorage.setItem('school-supervisor-active-tab',key)}catch(e){}
+}
+for(const b of buttons)b.addEventListener('click',()=>activate(b.dataset.supervisorTab));
+activate(new URLSearchParams(location.search).get('tab')||sessionStorage.getItem('school-supervisor-active-tab')||'general');
 })();
 </script></body></html>
