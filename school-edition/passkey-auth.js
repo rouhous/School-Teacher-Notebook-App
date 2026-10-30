@@ -117,23 +117,31 @@ if(document.getElementById('teacher-google')){
    const help=document.getElementById('passkey-help');
    if(help)help.hidden=false;
   };
-  // First try an already valid session without showing any OS passkey chooser.
-  // A new passkey assertion still requires explicit confirmation by the device.
+  // A verified existing session needs no biometric prompt; otherwise request
+  // the saved passkey once at launch. Browsers may require a tap to proceed.
   (async()=>{
+   let promptRequired=true;
    try{
     const access=await token();
-    if(!access)return;
-    const supervisor=await fetch(ROOT+'/functions/v1/school-founder-dashboard',{
-     method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({access_token:access})
-    });
-    if(supervisor.ok&&(await supervisor.json()).ok){route('supervisor');return}
-    if(![401,403].includes(supervisor.status))return;
-    const teacher=await call('school-passkey-identity',{action:'resolve'},access);
-    if(teacher.data?.approved){
-     sessionStorage.setItem(SUBKEY,teacher.google_sub);
-     route('teacher');
+    if(access){
+     const supervisor=await fetch(ROOT+'/functions/v1/school-founder-dashboard',{
+      method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({access_token:access})
+     });
+     if(supervisor.ok&&(await supervisor.json()).ok){route('supervisor');return}
+     if([401,403].includes(supervisor.status)){
+      try{
+       const teacher=await call('school-passkey-identity',{action:'resolve'},access);
+       if(teacher.data?.approved){sessionStorage.setItem(SUBKEY,teacher.google_sub);route('teacher');return}
+      }catch(e){/* A valid local token without role authorization still needs re-authentication. */}
+     }else{
+      promptRequired=false;
+      status.textContent='تعذر الاتصال للتحقق من الجلسة. يمكنك المحاولة مجددًا.';
+     }
     }
-   }catch(e){/* Expired session: leave the compact fingerprint button ready. */}
+   }catch(e){/* Request a fresh passkey assertion if a cached session cannot be restored. */}
+   if(promptRequired&&document.visibilityState!=='hidden'&&!running){
+    go.click();
+   }
   })();
  }else{
   const {b,msg}=makeButton('🔐 الدخول بالبصمة / Face ID',action,'login');
