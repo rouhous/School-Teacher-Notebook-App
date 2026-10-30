@@ -528,6 +528,43 @@ body.teacher-passkey-mode #teacher-google+button+ p{display:none!important}
   body.teacher-passkey-mode .site.mobile-reference-ready .content{margin-top:calc(42svh + 10px)!important;margin-bottom:12px!important;max-width:calc(100% - 24px)!important}
   body.teacher-passkey-mode .site.mobile-reference-ready .panel{max-width:100%!important;min-height:0!important;height:auto!important}
 }
+</style><style id="remove-ghost-old-login-20261030">
+/* The decorative background artwork still contains a historic login-card drawing.
+   Shield it with a fully opaque real login panel; also suppress old live controls. */
+body.teacher-passkey-mode .site.mobile-reference-ready .content,
+body.teacher-passkey-mode .site.mobile-reference-ready .panel{
+ background-color:#fffaf2!important;
+ background-image:none!important;
+ opacity:1!important;
+ backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;
+}
+body.teacher-passkey-mode .site.mobile-reference-ready .content{
+ border-radius:20px!important;
+ box-shadow:0 5px 22px rgba(28,55,39,.15)!important;
+ overflow:hidden!important;
+}
+body.teacher-passkey-mode .site.mobile-reference-ready .panel{
+ border:1px solid #e2d2ae!important;
+ box-shadow:none!important;
+}
+body.teacher-passkey-mode #teacher-google,
+body.teacher-passkey-mode #passkey-help,
+body.teacher-passkey-mode #teacher-status,
+body.teacher-passkey-mode .panel .hint,
+body.teacher-passkey-mode .panel > .field,
+body.teacher-passkey-mode .panel > #teacher-google ~ button,
+body.teacher-passkey-mode .panel > #teacher-google ~ p:not(#teacher-passkey-direct-status):not(#teacher-status),
+body.teacher-passkey-mode #teacher-google + button,
+body.teacher-passkey-mode #teacher-google + button + p{
+ display:none!important;
+}
+body.teacher-passkey-mode #teacher-passkey-entry{
+ display:block!important;
+ background:#fffaf2!important;
+ opacity:1!important;
+}
+body.teacher-passkey-mode #teacher-passkey-entry[hidden]{display:none!important}
 </style></head><body><div id="school-launch-overlay" aria-label="دفتر المعلم المدرسي | وادي الحواسنة"><img src="./assets/school-icon-512.png" alt="شعار مدرسة وادي الحواسنة"><div class="school-launch-title">دفتر المعلم المدرسي | وادي الحواسنة</div></div><script>(function(){const e=document.getElementById('school-launch-overlay');function hide(){e.classList.add('school-launch-hide');setTimeout(()=>e.remove(),350)}window.addEventListener('load',hide,{once:true});setTimeout(hide,1800)})();</script><div class="site reference-ready mobile-reference-ready">
 <header class="masthead"><div class="official-banner-wrap"><img src="assets/official_school_banner.jpg" alt="شعارات رؤية عُمان 2040 ومدرسة وادي الحواسنة ووزارة التربية والتعليم" loading="eager" decoding="async"></div></header>
 <section class="hero"><div class="school-scene" aria-hidden="true"></div><div class="school-floating-icons" aria-hidden="true"><span>♧</span><span>☼</span><span>▣</span></div><span class="ambient left">▤</span><span class="ambient right">✧</span><div class="eyebrow">مرحبًا بك في</div><h1>دفتر المعلم المدرسي</h1><p>منصة إلكترونية ذكية لتنظيم عمل المعلمين<br>وتسهيل متابعة الحصص والواجبات والطلاب.</p><div class="rule" aria-hidden="true">◈</div></section>
