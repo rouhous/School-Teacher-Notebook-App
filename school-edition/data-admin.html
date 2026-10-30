@@ -174,7 +174,41 @@ function parseStudentsFromText(text){
   return unique.slice(0,500);
 }
 
-async function pdfText(file){if(!window.pdfjsLib)throw Error('تعذر تحميل قارئ PDF');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let out=[];for(let i=1;i<=doc.numPages;i++){const page=await doc.getPage(i),items=(await page.getTextContent()).items;out.push(pdfPageText({items}))}return out.join('\\n')}
+let lastPdfPhoneMap=new Map();
+function phonesByPdfCoordinates(items){
+ const lines=[];
+ for(const it of items||[]){
+  const y=Number(it.transform?.[5]);if(!Number.isFinite(y))continue;
+  const value=normalizeDigits(String(it.str||'')).replace(/[^0-9]/g,'');
+  if(!value)continue;
+  let row=lines.find(x=>Math.abs(x.y-y)<=3);
+  if(!row){row={y,parts:[]};lines.push(row)}
+  row.parts.push(value);
+ }
+ const found=new Map();
+ for(const line of lines){
+  const ids=line.parts.filter(x=>/^\d{10,15}$/.test(x));
+  const phones=line.parts.filter(x=>/^\d{8}$/.test(x));
+  if(ids.length===1&&phones.length===1)found.set(ids[0],phones[0]);
+ }
+ return found;
+}
+async function pdfText(file){
+ if(!window.pdfjsLib)throw Error('تعذر تحميل قارئ PDF');
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+ let out=[];lastPdfPhoneMap=new Map();
+ for(let i=1;i<=doc.numPages;i++){
+  const page=await doc.getPage(i),items=(await page.getTextContent()).items;
+  out.push(pdfPageText({items}));
+  for(const [id,phone] of phonesByPdfCoordinates(items))lastPdfPhoneMap.set(id,phone);
+ }
+ return out.join('\\n');
+}
+function enrichPhones(students,phoneMap){
+ for(const st of students){const phone=phoneMap.get(st.studentNumber);if(phone)st.phone=phone}
+ return students;
+}
 function parseScheduleLines(text){
  const lines=String(text||'').trim().split(/\r?\n/).filter(Boolean);
  const head=lines.shift()?.split(',').map(x=>x.trim().toLowerCase())||[];
@@ -209,11 +243,11 @@ function batchReviewUI(){
   const heading=document.createElement('strong');heading.textContent=(i+1)+'. '+item.name;card.append(heading);
   const label=document.createElement('label');label.textContent='الصف / الشعبة لهذا الملف';card.append(label);
   const input=document.createElement('input');input.value=item.classId;input.placeholder='مثال: 9A';input.setAttribute('aria-label','صف ملف '+item.name);input.oninput=()=>{item.classId=input.value.trim();prepareBatchRows()};card.append(input);
-  const count=document.createElement('p');count.textContent=item.error?'تعذر التحليل: '+item.error:'تم استخراج '+item.students.length+' طالبًا'+(item.students.length?' — راجع الأسماء والأرقام':' — يحتاج مراجعة');card.append(count);
+  const count=document.createElement('p');count.textContent=item.error?'تعذر التحليل: '+item.error:'تم استخراج '+item.students.length+' طالبًا، الهاتف: '+item.students.filter(x=>x.phone).length+' — راجع العدد والأسماء والهواتف والصف قبل الاعتماد';card.append(count);
   const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='عرض الأسماء والنص المستخرج وتصحيحه';details.append(summary);
   const names=document.createElement('pre');names.textContent=item.students.slice(0,40).map(x=>x.studentNumber+' — '+x.name+' — هاتف: '+(x.phone||'غير مستخرج')).join('\n')||'لا توجد أسماء موثوقة';details.append(names);
   const area=document.createElement('textarea');area.value=item.text;area.rows=5;area.style.width='100%';area.setAttribute('aria-label','نص '+item.name);details.append(area);
-  const reparse=document.createElement('button');reparse.type='button';reparse.textContent='إعادة تحليل هذا الملف';reparse.onclick=()=>{item.text=area.value;item.students=parseStudentsFromText(item.text).filter(x=>x.studentNumber&&x.name);item.error='';batchReviewUI();prepareBatchRows()};details.append(reparse);
+  const reparse=document.createElement('button');reparse.type='button';reparse.textContent='إعادة تحليل هذا الملف';reparse.onclick=()=>{item.text=area.value;item.students=enrichPhones(parseStudentsFromText(item.text).filter(x=>x.studentNumber&&x.name),lastPdfPhoneMap);item.error='';batchReviewUI();prepareBatchRows()};details.append(reparse);
   card.append(details);box.append(card);
  });
 }
@@ -239,10 +273,10 @@ async function importStudentPdfBatch(files){
  $('pdfText').hidden=true;$('parsePdf').hidden=true;$('ocrPdf').hidden=true;
  for(let i=0;i<files.length;i++){
   const file=files[i];$('previewStatus').textContent='تحليل قائمة '+(i+1)+' من '+files.length+': '+file.name;
-  const item={name:file.name,text:'',classId:'',students:[],error:''};
+  const item={name:file.name,text:'',classId:'',students:[],error:'',phoneMap:new Map()};
   try{
    if(file.size>12000000)throw Error('حجم الملف يتجاوز 12 ميجابايت');
-   item.text=await pdfText(file);
+   item.text=await pdfText(file);item.phoneMap=new Map(lastPdfPhoneMap);
    item.classId=detectClass(item.text,file.name);
    item.students=parseStudentsFromText(item.text).filter(x=>x.studentNumber&&x.name);
    if(!item.students.length)item.error='قد يكون PDF مصوّرًا؛ لا يمكن استخراج الأسماء آليًا من النص. راجع الملف.';
