@@ -1,33 +1,38 @@
 <!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#075b47"><title>متابعة الجداول اليومية | المشرف</title><style>
 *{box-sizing:border-box}body{margin:0;font:16px system-ui,Tahoma;background:linear-gradient(140deg,#e9f3eb,#fff8e9);color:#18483d}main{max-width:1150px;margin:auto;padding:16px}header,.card{background:#fff;border:1px solid #e4d5b6;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 5px 20px #123b2912}h1,h2{color:#075b47;margin:8px 0 16px}a{color:#075b47}select,button{font:inherit;border-radius:10px;border:1px solid #b5c9c0;padding:12px;max-width:100%}button{background:#075b47;color:white;cursor:pointer}.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}.filters label{display:flex;flex-direction:column;gap:5px;font-weight:700}.scroll{overflow:auto;max-height:70vh}table{border-collapse:collapse;width:100%;min-width:0;table-layout:fixed;font-size:clamp(.57rem,1.5vw,.77rem)}th,td{padding:5px 2px;text-align:center;border:1px solid #e1e8e3;vertical-align:top}th{background:#e4f0e9;position:sticky;top:0}td{height:40px;overflow-wrap:anywhere}.slot-main{font-weight:800;color:#075b47}.slot-sub{font-size:.68em;color:#61786c}.slot-conflict{background:#fff0ce}.scroll{overflow:auto;max-height:none}small{color:#60786d}.empty{padding:24px;text-align:center}#login{display:none}#login.show{display:block}#status{min-height:24px}@media(max-width:600px){main{padding:8px}header,.card{padding:12px}.filters{grid-template-columns:1fr 1fr}} .abs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:7px;max-height:240px;overflow:auto}.abs-grid label{display:flex;gap:7px;align-items:center;background:#f2f7f2;padding:8px;border-radius:9px}.cover-row{padding:10px;border-bottom:1px solid #dce6dc}.cover-row b{color:#075b47}.muted{color:#89672b;font-size:.85rem}input[type=date]{padding:10px;border:1px solid #b5c9c0;border-radius:10px;font:inherit} </style><style id="teacher-week-matrix-css">
+/* Read-only general timetable: teachers by row, five days by column, eight periods across. */
 @media(min-width:950px){
- main{max-width:none;width:98.5vw;padding:9px 12px}
- header,.card{padding:12px 15px;margin:8px 0;border-radius:13px}
- header h1{margin:4px 0 8px;font-size:1.35rem}
- header p{margin:5px 0}
- .filters{grid-template-columns:repeat(4,minmax(0,1fr))}
- .scroll.teacher-week-scroll{max-height:calc(100vh - 240px);min-height:250px;overflow:auto}
+ main{max-width:none;width:99vw;padding:5px 8px}
+ header,.card{padding:8px 11px;margin:5px 0;border-radius:10px}
+ header h1{margin:2px 0 5px;font-size:1.2rem}
+ header p{margin:3px 0;font-size:12px}
+ .filters{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+ .filters select{padding:5px}
+ .scroll.teacher-week-scroll{max-height:calc(100vh - 225px);min-height:220px;overflow:auto}
 }
-.teacher-week-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:clamp(9px,.82vw,12px)}
-.teacher-week-table th,.teacher-week-table td{padding:3px 4px;border:1px solid #dce8df;vertical-align:middle}
-.teacher-week-table thead th{position:sticky;top:0;background:#dcece3;color:#075b47;z-index:3;font-size:clamp(11px,1vw,14px);padding:8px 3px}
-.teacher-week-table th.teacher-week-name{width:clamp(124px,15%,220px);position:sticky;right:0;z-index:2;background:#eaf3ed;text-align:right;padding:6px 9px;line-height:1.3;overflow-wrap:break-word}
-.teacher-week-table thead th.teacher-week-name{z-index:5;background:#d6eadf}
-.teacher-week-table tbody tr:nth-child(even) td{background:#fafcf9}
-.teacher-week-table tbody tr:nth-child(even) th.teacher-week-name{background:#e2f0e7}
-.teacher-week-slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;direction:rtl}
-.teacher-week-slot{position:relative;min-width:0;min-height:29px;padding:2px 2px;border-radius:5px;background:#f2f5f2;border:1px solid #ebf0eb;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
-.teacher-week-slot.has-lesson{background:#e5f4ea;border-color:#bfdacb;color:#075b47}
-.teacher-week-slot.has-duty{background:#fff5dd;border-color:#ead5a7}
-.teacher-week-slot.needs-review{background:#fff0ce;border-color:#dbb867}
-.teacher-week-slot .p-no{position:absolute;top:1px;right:2px;font-size:8px;line-height:1;color:#73857a}
-.teacher-week-slot .p-class{font-weight:800;font-size:clamp(10px,.82vw,12px);line-height:1.15;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-.teacher-week-slot .p-subject{color:#57776a;font-size:clamp(8px,.65vw,10px);line-height:1.1;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.teacher-week-slot.is-empty .p-class{color:#bdcac0;font-weight:400}
-.teacher-week-table tr:hover th.teacher-week-name{background:#cfe6d7}
-@media(max-width:949px){.teacher-week-table{min-width:950px}.scroll.teacher-week-scroll{max-height:70vh;overflow:auto}}
-@media print{main{width:100%;max-width:none}.scroll.teacher-week-scroll{max-height:none;overflow:visible}.teacher-week-table{font-size:9px}.teacher-week-slot{min-height:25px}#absencePanel,#reload{display:none}}
-</style><script src="./session-auth.js"></script></head><body><main><header><a href="founder-dashboard.html">العودة إلى لوحة المشرف</a><h1>متابعة الجداول اليومية</h1><p>الجداول المستخرجة من ملفات المدرسة، مستقلة عن تسجيل المعلمين. الخانات الصفراء تحتاج مطابقة بالأصل قبل اعتمادها النهائي.</p></header><section class="card" id="login"><h2>تأكيد حساب المشرف</h2><div id="google"></div></section><section class="card"><div class="filters"><label>المدرسة<select id="school"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><label>اليوم<select id="day"><option value="week">الأسبوع كاملًا</option><option value="0">الأحد</option><option value="1">الاثنين</option><option value="2">الثلاثاء</option><option value="3">الأربعاء</option><option value="4">الخميس</option></select></label><label>نوع الجدول<select id="view"><option value="all">الجدول العام</option><option value="class">جدول الصف</option><option value="teacher">جدول المعلم</option></select></label><label>الصف / المعلم<select id="item" disabled><option value="">الكل</option></select></label></div><p id="coverage" style="color:#875c1e"></p><p id="status" role="status">جارٍ استعادة جلسة المشرف...</p><button id="reload" type="button">تحديث الجداول</button></section><section class="card" id="absencePanel"><h2>غياب المعلمين وتوزيع حصص الاحتياط</h2><p class="muted">التوزيع المقترح يعتمد على رموز الاحتياط A ثم B ثم C ثم D من الجداول المستخرجة، ويحتاج تأكيد المشرف قبل إبلاغ المعلمين.</p><label>تاريخ الغياب <input type="date" id="absenceDate"></label><p>حدد المعلمين الغائبين:</p><div class="abs-grid" id="absentTeachers"></div><p><button type="button" id="saveAbsences">حفظ الغياب وتوزيع الاحتياط</button> <button type="button" id="readAbsences">عرض توزيع اليوم</button></p><p id="coverStatus" role="status"></p><div id="coverResults"></div></section><section class="card"><h2 id="heading">الحصص</h2><div class="scroll" id="timetableScroll"><table id="timetableTable"><thead><tr id="cols"></tr></thead><tbody id="rows"></tbody></table></div></section></main><script src="https://accounts.google.com/gsi/client" async defer></script><script>
+.teacher-week-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:clamp(9px,.8vw,12px);--teacher-col:clamp(118px,14%,195px)}
+.teacher-week-table th,.teacher-week-table td{padding:1px 2px;border:0;vertical-align:middle}
+.teacher-week-table thead th{position:sticky;top:0;background:#0b5948;color:white;z-index:3;font-size:clamp(10px,.95vw,13px);padding:5px 2px}
+.teacher-week-table th.teacher-week-name{width:var(--teacher-col);position:sticky;right:0;z-index:2;text-align:right;padding:3px 6px;line-height:1.15;overflow-wrap:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#e1efe7;color:#084b3b;border-bottom:1px solid #c0d7c9}
+.teacher-week-table thead th.teacher-week-name{z-index:5;background:#074b3a;color:white}
+.teacher-week-table tbody td{background:#fbfdfb;border-bottom:1px solid #bdd2c5}
+.teacher-week-table tbody tr:nth-child(even) td{background:#e1eee6;border-bottom-color:#adcbb6}
+.teacher-week-table tbody tr:nth-child(even) th.teacher-week-name{background:#cce3d5;border-bottom-color:#adcbb6}
+.teacher-week-table tbody tr:hover td,.teacher-week-table tbody tr:hover th.teacher-week-name{background:#fff1cf}
+.teacher-week-table thead th:not(:first-child),.teacher-week-table tbody td{border-right:3px double #367a65}
+.teacher-week-table thead th:last-child,.teacher-week-table tbody td:last-child{border-left:3px double #367a65}
+.teacher-week-table tbody tr{height:25px}
+.teacher-week-slots{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:1px;direction:rtl}
+.teacher-week-slot{position:relative;min-width:0;min-height:20px;height:20px;padding:1px 0;border-radius:2px;background:#f2f5f2;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.teacher-week-slot.has-lesson{background:#c6e6d2;color:#064a36}
+.teacher-week-slot.has-duty{background:#f9dda2;color:#58400d}
+.teacher-week-slot.needs-review{background:#ffd2a5;color:#713b0b}
+.teacher-week-slot .p-no{position:absolute;top:0;right:1px;font-size:6px;line-height:1;color:#618778}
+.teacher-week-slot .p-class{font-weight:800;font-size:clamp(8px,.67vw,11px);line-height:1;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.teacher-week-slot.is-empty .p-class{color:#b6c6ba;font-weight:400}
+@media(max-width:949px){.teacher-week-table{min-width:1100px}.scroll.teacher-week-scroll{max-height:75vh;overflow:auto}}
+@media print{main{width:100%;max-width:none}.scroll.teacher-week-scroll{max-height:none;overflow:visible}.teacher-week-table{font-size:8px}.teacher-week-slot{min-height:16px;height:16px}#absencePanel,#reload{display:none}}
+</style><script src="./session-auth.js"></script></head><body><main><header><a href="founder-dashboard.html">العودة إلى لوحة المشرف</a><h1>متابعة الجداول اليومية</h1><p>الجداول المستخرجة من ملفات المدرسة، مستقلة عن تسجيل المعلمين. الخانات الصفراء تحتاج مطابقة بالأصل قبل اعتمادها النهائي.</p></header><section class="card" id="login"><h2>تأكيد حساب المشرف</h2><div id="google"></div></section><section class="card"><div class="filters"><label>المدرسة<select id="school"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><label>اليوم<select id="day"><option value="week">الأسبوع كاملًا</option><option value="0">الأحد</option><option value="1">الاثنين</option><option value="2">الثلاثاء</option><option value="3">الأربعاء</option><option value="4">الخميس</option></select></label><label>نوع الجدول<select id="view"><option value="all">الجدول العام</option><option value="class">جدول الصف</option><option value="teacher">جدول المعلم</option></select></label><label>الصف / المعلم<select id="item" disabled><option value="">الكل</option></select></label></div><p id="coverage" style="color:#875c1e"></p><p id="status" role="status">جارٍ استعادة جلسة المشرف...</p><button id="reload" type="button">تحديث الجداول</button></section><section class="card"><h2 id="heading">الحصص</h2><div class="scroll" id="timetableScroll"><table id="timetableTable"><thead><tr id="cols"></tr></thead><tbody id="rows"></tbody></table></div></section><section class="card" id="absencePanel"><h2>غياب المعلمين وتوزيع حصص الاحتياط</h2><p class="muted">التوزيع المقترح يعتمد على رموز الاحتياط A ثم B ثم C ثم D من الجداول المستخرجة، ويحتاج تأكيد المشرف قبل إبلاغ المعلمين.</p><label>تاريخ الغياب <input type="date" id="absenceDate"></label><p>حدد المعلمين الغائبين:</p><div class="abs-grid" id="absentTeachers"></div><p><button type="button" id="saveAbsences">حفظ الغياب وتوزيع الاحتياط</button> <button type="button" id="readAbsences">عرض توزيع اليوم</button></p><p id="coverStatus" role="status"></p><div id="coverResults"></div></section></main><script src="https://accounts.google.com/gsi/client" async defer></script><script>
 const $=id=>document.getElementById(id);let credential=schoolAuthRestore(),slots=[];
 function setStatus(s){$('status').textContent=s}
 function td(tr,s){const x=document.createElement('td');x.textContent=s==null?'—':String(s);tr.append(x)}
@@ -62,12 +67,9 @@ function renderGeneralTeacherWeek(all,chosenDays,days){
     if(matches.some(x=>x.reviewStatus&&x.reviewStatus!=='READY'&&x.reviewStatus!=='published'&&x.reviewStatus!=='approved_parallel'))box.classList.add('needs-review');
     const number=document.createElement('span');number.className='p-no';number.textContent=p;box.append(number);
     const main=document.createElement('span');main.className='p-class';
-    main.textContent=matches.length?matches.map(x=>x.classId||('احتياط '+(x.dutyPriority||''))).join(' / '):'—';
+    main.textContent=matches.length?matches.map(x=>x.classId||('ح'+(x.dutyPriority||''))).join(' / '):'—';
     box.append(main);
     if(matches.length){
-     const detail=document.createElement('span');detail.className='p-subject';
-     detail.textContent=matches.map(x=>x.dutyPriority?'احتياط '+x.dutyPriority:(x.subject||'')).join(' / ');
-     box.append(detail);
      box.title='الحصة '+p+' | '+name+' | '+days[d]+'\n'+matches.map(x=>(x.classId||'—')+' — '+(x.subject||'')+(x.dutyPriority?' | احتياط '+x.dutyPriority:'')).join('\n');
     }else box.title='الحصة '+p+' — فارغة';
     grid.append(box);
