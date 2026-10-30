@@ -176,20 +176,24 @@ function parseStudentsFromText(text){
 
 let lastPdfPhoneMap=new Map();
 function phonesByPdfCoordinates(items){
- const lines=[];
+ // In official Omani rosters the mobile-phone text baseline sits a few points
+ // below the student-number baseline, even though both belong to one table row.
+ const ids=[],phones=[];
  for(const it of items||[]){
-  const y=Number(it.transform?.[5]);if(!Number.isFinite(y))continue;
-  const value=normalizeDigits(String(it.str||'')).replace(/[^0-9]/g,'');
-  if(!value)continue;
-  let row=lines.find(x=>Math.abs(x.y-y)<=3);
-  if(!row){row={y,parts:[]};lines.push(row)}
-  row.parts.push(value);
+  const raw=normalizeDigits(String(it.str||'')).trim();
+  const value=raw.replace(/[^0-9]/g,'');
+  const x=Number(it.transform?.[4]),y=Number(it.transform?.[5]);
+  if(!Number.isFinite(x)||!Number.isFinite(y))continue;
+  if(/^\\d{11,15}$/.test(value)&&x>150)ids.push({value,x,y});
+  if(/^\\d{8}$/.test(value)&&x<150)phones.push({value,x,y});
  }
- const found=new Map();
- for(const line of lines){
-  const ids=line.parts.filter(x=>/^\d{10,15}$/.test(x));
-  const phones=line.parts.filter(x=>/^\d{8}$/.test(x));
-  if(ids.length===1&&phones.length===1)found.set(ids[0],phones[0]);
+ const found=new Map(),used=new Set();
+ for(const id of ids){
+  const candidates=phones.map((p,i)=>({...p,i,d:Math.abs(p.y-id.y)}))
+    .filter(p=>p.d<=11&&!used.has(p.i)).sort((a,b)=>a.d-b.d);
+  if(candidates.length===1||(candidates.length>1&&candidates[1].d-candidates[0].d>3)){
+   const p=candidates[0];found.set(id.value,p.value);used.add(p.i);
+  }
  }
  return found;
 }
