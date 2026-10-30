@@ -143,6 +143,13 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 #data>.supervisor-tab-panel,#data>#generalOperationsDetails{max-width:100%}
 @media(min-width:680px){.supervisor-module-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.supervisor-module{min-height:145px}}
 @media(max-width:400px){.supervisor-tabs{gap:5px}.supervisor-tabs button{padding:9px 3px!important}.supervisor-module{padding:13px!important;min-height:120px}}
+</style><style id="supervisor-compact-general-20261030">
+#supervisorPendingRequests{margin:12px 0;border:1px solid #dbe6dd;background:#fff;border-radius:14px;padding:12px}
+#supervisorPendingRequests summary{font-weight:750;color:#075b47;cursor:pointer;padding:8px 5px;list-style:revert}
+#supervisorPendingRequests .pending-chip{display:inline-flex;align-items:center;justify-content:center;border-radius:22px;padding:3px 9px;margin-inline-start:8px;background:#e9f4ed;color:#075b47}
+#supervisorPendingRequests:not([open]) .supervisor-table-scroll{display:none!important}
+#supervisorPendingRequests .supervisor-table-scroll{overflow-x:auto}
+#supervisorPendingRequests table{min-width:440px}
 </style></head><body><main><header class="supervisor-main-hero">
 <div class="supervisor-hero-row"><a href="../" class="supervisor-home-shortcut">الرئيسية</a><a href="school-notebook.html" class="supervisor-teacher-shortcut">📘 دفتر المعلم</a></div>
 <h1>لوحة المشرف المدرسي</h1><p>الإدارة المدرسية من مكان واحد</p>
@@ -189,12 +196,17 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 </div>
 <p id="supervisorBehaviorMessage" role="status" aria-live="polite"></p>
 <div id="supervisorBehaviorList"></div>
-</section><div class="grid"><section><div>المعلمون في القوائم</div><div class="num" id="teachers">—</div></section><section><div>الحسابات المعتمدة</div><div class="num" id="approved">—</div></section><section><div>طلبات التسجيل المعلقة</div><div class="num" id="pending">—</div></section></div><section><h2>المدارس</h2><div id="schools"></div></section><section><h2>طلبات التسجيل</h2><div style="overflow-x:auto"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div><p id="empty"></p><button id="refresh">تحديث البيانات</button></section></div></div></main><script src="./session-auth.js?v=20261030-session"></script><script>
+</section>
+<details id="supervisorPendingRequests" class="supervisor-secondary-options">
+<summary>طلبات اعتماد المعلمين <span id="pending" class="pending-chip">0</span></summary>
+<div class="supervisor-table-scroll"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div>
+<p id="empty"></p><button id="refresh" type="button">تحديث الطلبات</button>
+</details></div></div></main><script src="./session-auth.js?v=20261030-session"></script><script>
 const $=id=>document.getElementById(id);let credential='',supervisorPasskeyToken='';
 const base='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
 async function request(endpoint,body){const r=await fetch(base+endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...(await schoolSupervisorSession()),...body})});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'تعذر الاتصال');return j.data}
 function cell(tr,value){const td=document.createElement('td');td.textContent=value;tr.append(td)}
-function render(d){$('teachers').textContent=d.teacherCount;$('approved').textContent=d.approvedCount;$('pending').textContent=d.pending.length;$('schools').replaceChildren(...d.schools.map(x=>{const p=document.createElement('p');p.textContent=x.name;return p}));$('requests').replaceChildren(...d.pending.map(x=>{const tr=document.createElement('tr');cell(tr,x.schoolId==='boys'?'البنين':'البنات');cell(tr,x.teacherName);cell(tr,new Date(x.createdAt).toLocaleDateString('ar-OM'));const td=document.createElement('td');for(const [decision,label] of [['approve','اعتماد'],['reject','رفض']]){const b=document.createElement('button');b.textContent=label;b.onclick=()=>decide(x.id,decision);td.append(b)}tr.append(td);return tr}));$('empty').textContent=d.pending.length?'':'لا توجد طلبات معلقة حاليًا.';$('data').hidden=false;$('status').textContent='تم تحميل البيانات الفعلية بنجاح.';window.dispatchEvent(new Event('supervisor-dashboard-ready'))}
+function render(d){$('pending').textContent=d.pending.length;$('requests').replaceChildren(...d.pending.map(x=>{const tr=document.createElement('tr');cell(tr,x.schoolId==='boys'?'البنين':'البنات');cell(tr,x.teacherName);cell(tr,new Date(x.createdAt).toLocaleDateString('ar-OM'));const td=document.createElement('td');for(const [decision,label] of [['approve','اعتماد'],['reject','رفض']]){const b=document.createElement('button');b.textContent=label;b.onclick=()=>decide(x.id,decision);td.append(b)}tr.append(td);return tr}));$('empty').textContent=d.pending.length?'':'لا توجد طلبات معلقة حاليًا.';$('data').hidden=false;$('status').textContent='تم تحميل البيانات الفعلية بنجاح.';window.dispatchEvent(new Event('supervisor-dashboard-ready'))}
 async function refresh(){try{$('status').textContent='جارٍ تحديث البيانات...';render(await request('school-founder-dashboard',{}))}catch(e){$('status').textContent='تعذر تحميل البيانات: '+e.message}}
 async function decide(id,decision){if(!confirm(decision==='approve'?'تأكيد اعتماد المعلم؟':'تأكيد رفض الطلب؟'))return;try{$('status').textContent='جارٍ حفظ القرار...';await request('school-registration',{action:'decide',requestId:id,decision});await refresh()}catch(e){$('status').textContent='تعذر تنفيذ القرار: '+e.message}}
 $('refresh').onclick=refresh;
