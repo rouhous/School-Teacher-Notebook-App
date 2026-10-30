@@ -1217,72 +1217,7 @@ document.addEventListener('click',function(event){
  if(typeof showLessonNoteEditor==='function')showLessonNoteEditor(day,period);
  else console.error('Period note editor is not available');
 },true);
-<\/script><script type="module" src="./passkey-auth.js"><\/script><style id="published-teacher-documents-styles">
-#teacherPublishedDocs{width:min(95vw,560px);max-height:85dvh;overflow:auto;border:1px solid #b4cabc;border-radius:17px;padding:17px;background:#fffdf6;color:#145642;box-shadow:0 15px 55px #123c2e48}
-#teacherPublishedDocs::backdrop{background:#072b2288}
-#teacherPublishedDocs .published-doc-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
-#teacherPublishedDocs label{display:grid;gap:5px;font-weight:700;font-size:12px}
-#teacherPublishedDocs select{min-width:0;width:100%;padding:9px;border:1px solid #c1d4c8;border-radius:10px}
-#teacherPublishedDocs button{margin:5px 3px}
-#teacherPublishedDocs pre{font:13px/1.8 Tahoma,sans-serif;background:#f1f7f2;padding:12px;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere}
-</style>
-<dialog id="teacherPublishedDocs" aria-labelledby="teacherPublishedDocsHeading">
-<h3 id="teacherPublishedDocsHeading">وثائق المشرف المعتمدة</h3>
-<p>للاطلاع فقط: لا تتغير درجات الطلاب أو أوقات الحصص تلقائيًا في هذه المرحلة.</p>
-<div class="published-doc-controls">
-<label>المادة <select id="publishedSubject"><option value="english">اللغة الإنجليزية</option><option value="islamic">التربية الإسلامية</option></select></label>
-<label>الصف <select id="publishedGrade"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select></label>
-<label>الفصل <select id="publishedSemester"><option value="1">الأول</option><option value="2">الثاني</option></select></label>
-<label>المدرسة <select id="publishedSchool"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label>
-</div>
-<button id="teacherReadPublishedAssessments" type="button" class="btn btn-primary btn-sm">عرض التقويم</button>
-<button id="teacherReadPublishedTiming" type="button" class="btn btn-outline btn-sm">عرض توقيت الحصص</button>
-<button id="teacherPublishedDocsClose" type="button" class="btn btn-ghost btn-sm">إغلاق</button>
-<pre id="teacherPublishedDocsResult" role="status">اختر الوثيقة لعرض آخر إصدار معتمد.</pre>
-</dialog>
-<script id="teacher-published-documents-client">
-(function(){
- const dialog=document.getElementById('teacherPublishedDocs');
- const result=document.getElementById('teacherPublishedDocsResult');
- document.getElementById('teacherPublishedDocsOpen').addEventListener('click',()=>dialog.showModal());
- document.getElementById('teacherPublishedDocsClose').addEventListener('click',()=>dialog.close());
- const endpoint='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-published-documents';
- async function ask(action){
-  const payload={action,subject:document.getElementById('publishedSubject').value,grade:Number(document.getElementById('publishedGrade').value),semester:Number(document.getElementById('publishedSemester').value),schoolId:document.getElementById('publishedSchool').value};
-  async function request(auth){
-   const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...auth,...payload})});
-   const body=await response.json().catch(()=>({}));if(!response.ok||!body.ok)throw Error(body.error||'تعذر قراءة الوثيقة');return body.data;
-  }
-  const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
-  try{
-   if(credential)return await request({credential});
-  }catch(e){
-   if(!/TOKEN|EXPIRED|401|INVALID/i.test(String(e.message)))throw e;
-  }
-  const access=await schoolNotebookPasskeyToken();
-  if(!access)throw Error('انتهت جلسة المعلم. ادخل من الشاشة الرئيسية.');
-  return request({access_token:access});
- }
- document.getElementById('teacherReadPublishedAssessments').onclick=async()=>{
-  result.textContent='جارٍ قراءة التقويم المعتمد…';
-  try{
-   const data=await ask('assessment_read');
-   result.textContent=data.revision
-    ?'الإصدار '+data.revision+'\nالمصدر: '+(data.source||'وثيقة مراجعة')+'\n'+data.assessments.map(x=>'• '+x.name+' — '+x.max+' درجة').join('\n')
-    :'لا يوجد تقويم منشور لهذه المادة والصف والفصل.';
-  }catch(e){result.textContent='تعذر العرض: '+e.message}
- };
- document.getElementById('teacherReadPublishedTiming').onclick=async()=>{
-  result.textContent='جارٍ قراءة التوقيت المعتمد…';
-  try{
-   const data=await ask('timing_read');
-   result.textContent=data.revision
-    ?'الإصدار '+data.revision+'\n'+data.periods.map(x=>'الحصة '+x.period+': '+x.start+' – '+x.end).join('\n')
-    :'لا يوجد توقيت معتمد لهذه المدرسة.';
-  }catch(e){result.textContent='تعذر العرض: '+e.message}
- };
-})();
-</script></body></html>`);
+<\/script><script type="module" src="./passkey-auth.js"><\/script></body></html>`);
   w.document.close();
 }
 function sendAttendanceToNoorExtension(){
@@ -4724,6 +4659,71 @@ async function activateTeacherPasskeyFromSettings(){
     container.append(item);
    }
   }catch(e){loading.textContent='تعذّر تحميل التقارير: '+e.message}
+ };
+})();
+</script><style id="published-teacher-documents-styles">
+#teacherPublishedDocs{width:min(95vw,560px);max-height:85dvh;overflow:auto;border:1px solid #b4cabc;border-radius:17px;padding:17px;background:#fffdf6;color:#145642;box-shadow:0 15px 55px #123c2e48}
+#teacherPublishedDocs::backdrop{background:#072b2288}
+#teacherPublishedDocs .published-doc-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+#teacherPublishedDocs label{display:grid;gap:5px;font-weight:700;font-size:12px}
+#teacherPublishedDocs select{min-width:0;width:100%;padding:9px;border:1px solid #c1d4c8;border-radius:10px}
+#teacherPublishedDocs button{margin:5px 3px}
+#teacherPublishedDocs pre{font:13px/1.8 Tahoma,sans-serif;background:#f1f7f2;padding:12px;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere}
+</style>
+<dialog id="teacherPublishedDocs" aria-labelledby="teacherPublishedDocsHeading">
+<h3 id="teacherPublishedDocsHeading">وثائق المشرف المعتمدة</h3>
+<p>للاطلاع فقط: لا تتغير درجات الطلاب أو أوقات الحصص تلقائيًا في هذه المرحلة.</p>
+<div class="published-doc-controls">
+<label>المادة <select id="publishedSubject"><option value="english">اللغة الإنجليزية</option><option value="islamic">التربية الإسلامية</option></select></label>
+<label>الصف <select id="publishedGrade"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select></label>
+<label>الفصل <select id="publishedSemester"><option value="1">الأول</option><option value="2">الثاني</option></select></label>
+<label>المدرسة <select id="publishedSchool"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label>
+</div>
+<button id="teacherReadPublishedAssessments" type="button" class="btn btn-primary btn-sm">عرض التقويم</button>
+<button id="teacherReadPublishedTiming" type="button" class="btn btn-outline btn-sm">عرض توقيت الحصص</button>
+<button id="teacherPublishedDocsClose" type="button" class="btn btn-ghost btn-sm">إغلاق</button>
+<pre id="teacherPublishedDocsResult" role="status">اختر الوثيقة لعرض آخر إصدار معتمد.</pre>
+</dialog>
+<script id="teacher-published-documents-client">
+(function(){
+ const dialog=document.getElementById('teacherPublishedDocs');
+ const result=document.getElementById('teacherPublishedDocsResult');
+ document.getElementById('teacherPublishedDocsOpen').addEventListener('click',()=>dialog.showModal());
+ document.getElementById('teacherPublishedDocsClose').addEventListener('click',()=>dialog.close());
+ const endpoint='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-published-documents';
+ async function ask(action){
+  const payload={action,subject:document.getElementById('publishedSubject').value,grade:Number(document.getElementById('publishedGrade').value),semester:Number(document.getElementById('publishedSemester').value),schoolId:document.getElementById('publishedSchool').value};
+  async function request(auth){
+   const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...auth,...payload})});
+   const body=await response.json().catch(()=>({}));if(!response.ok||!body.ok)throw Error(body.error||'تعذر قراءة الوثيقة');return body.data;
+  }
+  const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
+  try{
+   if(credential)return await request({credential});
+  }catch(e){
+   if(!/TOKEN|EXPIRED|401|INVALID/i.test(String(e.message)))throw e;
+  }
+  const access=await schoolNotebookPasskeyToken();
+  if(!access)throw Error('انتهت جلسة المعلم. ادخل من الشاشة الرئيسية.');
+  return request({access_token:access});
+ }
+ document.getElementById('teacherReadPublishedAssessments').onclick=async()=>{
+  result.textContent='جارٍ قراءة التقويم المعتمد…';
+  try{
+   const data=await ask('assessment_read');
+   result.textContent=data.revision
+    ?'الإصدار '+data.revision+'\nالمصدر: '+(data.source||'وثيقة مراجعة')+'\n'+data.assessments.map(x=>'• '+x.name+' — '+x.max+' درجة').join('\n')
+    :'لا يوجد تقويم منشور لهذه المادة والصف والفصل.';
+  }catch(e){result.textContent='تعذر العرض: '+e.message}
+ };
+ document.getElementById('teacherReadPublishedTiming').onclick=async()=>{
+  result.textContent='جارٍ قراءة التوقيت المعتمد…';
+  try{
+   const data=await ask('timing_read');
+   result.textContent=data.revision
+    ?'الإصدار '+data.revision+'\n'+data.periods.map(x=>'الحصة '+x.period+': '+x.start+' – '+x.end).join('\n')
+    :'لا يوجد توقيت معتمد لهذه المدرسة.';
+  }catch(e){result.textContent='تعذر العرض: '+e.message}
  };
 })();
 </script></body></html>
