@@ -95,7 +95,22 @@ body.supervisor-passkey-mode #signin:has(+*){display:none!important}
 body.supervisor-passkey-mode #supervisorPasskeyRegister{display:none!important}
 #supervisorPasskeyFallback{background:#fff;color:#07594a;border:1px solid #c8b381}
 #supervisorPasskeyFallback[hidden]{display:none!important}
-</style></head><body><main><header><a href="../">الرئيسية</a><h1>لوحة المشرف المدرسي</h1><p style="color:#886a35;margin:5px 0">إدارة المعلمين والبيانات والصلاحيات</p><p>إدارة المدرستين والحسابات المعتمدة</p><a href="roster-admin.html">تعديل أسماء المعلمين</a> <a href="data-admin.html" style="display:inline-block;padding:9px 13px;border-radius:10px;background:#075b49;color:white;text-decoration:none;margin:5px 0">مركز البيانات والاستيراد</a> <a href="supervisor-timetables.html" style="background:#075b49;color:white">متابعة الجداول اليومية</a> <a id="supervisorTeacherSwitch" class="portal-switch-link" href="school-notebook.html" aria-label="الانتقال إلى دفتر المعلم"><span aria-hidden="true">📘</span> الانتقال إلى دفتر المعلم</a></header><section><h2>الدخول الآمن</h2><div id="signin"></div><button type="button" id="googleQuickEntry" style="display:none;margin:7px 0;padding:9px 14px;background:#e9f3ed;color:#07594a;border:1px solid #b5d1c1;border-radius:12px;font-size:14px">الدخول السريع بحساب Google المحفوظ</button><p id="status" role="status">جارٍ تحميل تسجيل الدخول باستخدام Google...</p><small id="help"></small></section><section id="supervisorPasskeyPanel" aria-label="الدخول بالبصمة أو مفتاح المرور">
+</style><style id="supervisor-behavior-report-style">
+header a.supervisor-behavior-link{display:inline-flex!important;align-items:center;gap:7px;text-decoration:none;font-weight:800;border:1px solid #b0d0bd!important;background:#145d4b!important;color:white!important;border-radius:12px;padding:10px 13px;margin:5px}
+#supervisorBehaviorBadge,.behavior-report-count{display:inline-flex;justify-content:center;align-items:center;min-width:26px;padding:3px 7px;border-radius:30px;background:#ad651e;color:#fff;font:800 13px Tahoma}
+#supervisorBehaviorInbox .behavior-report-guidance{font-size:13px;color:#517366;line-height:1.8}
+#supervisorBehaviorInbox .behavior-report-controls{display:flex;gap:8px;flex-wrap:wrap}
+#supervisorBehaviorInbox .behavior-report-controls button{font-size:13px}
+.supervisor-behavior-item{margin:10px 0;padding:13px;border:1px solid #b7d5c5;border-radius:14px;background:#f8fbf9;line-height:1.7}
+.supervisor-behavior-item[data-state="submitted"]{border-right:5px solid #c58732}
+.supervisor-behavior-item[data-state="received"]{border-right:5px solid #2c8879}
+.supervisor-behavior-item[data-state="opened"]{border-right:5px solid #a9c8b7}
+.supervisor-behavior-meta{font-size:12px;color:#517466;margin:5px 0}
+.supervisor-behavior-item .behavior-report-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.supervisor-behavior-item .behavior-report-actions button{font-size:13px;padding:8px 12px;min-height:35px}
+.supervisor-behavior-note{padding:11px;background:#fff9e9;border-radius:9px;border:1px solid #e4d6aa;margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:650px){#supervisorBehaviorInbox .behavior-report-controls button{width:100%}header a.supervisor-behavior-link{width:min(100%,300px)!important;max-width:100%!important;justify-content:center}}
+</style></head><body><main><header><a href="../">الرئيسية</a><h1>لوحة المشرف المدرسي</h1><p style="color:#886a35;margin:5px 0">إدارة المعلمين والبيانات والصلاحيات</p><p>إدارة المدرستين والحسابات المعتمدة</p><a href="roster-admin.html">تعديل أسماء المعلمين</a> <a href="data-admin.html" style="display:inline-block;padding:9px 13px;border-radius:10px;background:#075b49;color:white;text-decoration:none;margin:5px 0">مركز البيانات والاستيراد</a> <a href="supervisor-timetables.html" style="background:#075b49;color:white">متابعة الجداول اليومية</a> <a href="#supervisorBehaviorInbox" id="supervisorBehaviorNav" class="supervisor-behavior-link">📬 تقارير سلوك الطلاب <span id="supervisorBehaviorBadge" hidden>0</span></a> <a id="supervisorTeacherSwitch" class="portal-switch-link" href="school-notebook.html" aria-label="الانتقال إلى دفتر المعلم"><span aria-hidden="true">📘</span> الانتقال إلى دفتر المعلم</a></header><section><h2>الدخول الآمن</h2><div id="signin"></div><button type="button" id="googleQuickEntry" style="display:none;margin:7px 0;padding:9px 14px;background:#e9f3ed;color:#07594a;border:1px solid #b5d1c1;border-radius:12px;font-size:14px">الدخول السريع بحساب Google المحفوظ</button><p id="status" role="status">جارٍ تحميل تسجيل الدخول باستخدام Google...</p><small id="help"></small></section><section id="supervisorPasskeyPanel" aria-label="الدخول بالبصمة أو مفتاح المرور">
 <h2>الدخول بالبصمة</h2>
 <p class="supervisor-passkey-help">يمكن استخدام بصمة الإصبع أو Face ID أو قفل الجهاز بعد التفعيل الأول بحساب Google.</p>
 <div class="supervisor-passkey-actions">
@@ -103,12 +118,21 @@ body.supervisor-passkey-mode #supervisorPasskeyRegister{display:none!important}
 <button type="button" id="supervisorPasskeyRegister" hidden>تفعيل البصمة لهذا الحساب</button>
 </div>
 <p id="supervisorPasskeyStatus" role="status" aria-live="polite"></p>
-</section><div id="data" hidden><div class="grid"><section><div>المعلمون في القوائم</div><div class="num" id="teachers">—</div></section><section><div>الحسابات المعتمدة</div><div class="num" id="approved">—</div></section><section><div>طلبات التسجيل المعلقة</div><div class="num" id="pending">—</div></section></div><section><h2>المدارس</h2><div id="schools"></div></section><section><h2>طلبات التسجيل</h2><div style="overflow-x:auto"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div><p id="empty"></p><button id="refresh">تحديث البيانات</button></section></div></main><script src="https://accounts.google.com/gsi/client" async defer></script><script src="./session-auth.js"></script><script>
+</section><div id="data" hidden><section id="supervisorBehaviorInbox" aria-label="تقارير سلوك الطلاب">
+<h2>📬 صندوق تقارير سلوك الطلاب <span id="supervisorBehaviorCount" class="behavior-report-count">0</span></h2>
+<p class="behavior-report-guidance">تصل التقارير من المعلمين مباشرة. يُسجّل الاستلام أولًا، ثم يُسجّل الاطلاع عند فتح التقرير. تُعرض هذه الحالات للمعلم أيضًا.</p>
+<div class="behavior-report-controls">
+<button type="button" id="supervisorBehaviorRefresh">تحديث الوارد</button>
+<button type="button" id="supervisorBehaviorNotify">🔔 تفعيل إشعار وصول تقرير أثناء فتح البوابة</button>
+</div>
+<p id="supervisorBehaviorMessage" role="status" aria-live="polite"></p>
+<div id="supervisorBehaviorList"></div>
+</section><div class="grid"><section><div>المعلمون في القوائم</div><div class="num" id="teachers">—</div></section><section><div>الحسابات المعتمدة</div><div class="num" id="approved">—</div></section><section><div>طلبات التسجيل المعلقة</div><div class="num" id="pending">—</div></section></div><section><h2>المدارس</h2><div id="schools"></div></section><section><h2>طلبات التسجيل</h2><div style="overflow-x:auto"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div><p id="empty"></p><button id="refresh">تحديث البيانات</button></section></div></main><script src="https://accounts.google.com/gsi/client" async defer></script><script src="./session-auth.js"></script><script>
 const $=id=>document.getElementById(id);let credential='',supervisorPasskeyToken='';
 const base='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
 async function request(endpoint,body){const r=await fetch(base+endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...(credential?{credential}:{access_token:supervisorPasskeyToken}),...body})});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'تعذر الاتصال');return j.data}
 function cell(tr,value){const td=document.createElement('td');td.textContent=value;tr.append(td)}
-function render(d){document.querySelector('#signin')?.closest('section')?.setAttribute('hidden','');$('teachers').textContent=d.teacherCount;$('approved').textContent=d.approvedCount;$('pending').textContent=d.pending.length;$('schools').replaceChildren(...d.schools.map(x=>{const p=document.createElement('p');p.textContent=x.name;return p}));$('requests').replaceChildren(...d.pending.map(x=>{const tr=document.createElement('tr');cell(tr,x.schoolId==='boys'?'البنين':'البنات');cell(tr,x.teacherName);cell(tr,new Date(x.createdAt).toLocaleDateString('ar-OM'));const td=document.createElement('td');for(const [decision,label] of [['approve','اعتماد'],['reject','رفض']]){const b=document.createElement('button');b.textContent=label;b.onclick=()=>decide(x.id,decision);td.append(b)}tr.append(td);return tr}));$('empty').textContent=d.pending.length?'':'لا توجد طلبات معلقة حاليًا.';$('data').hidden=false;$('status').textContent='تم تحميل البيانات الفعلية بنجاح.';if(credential){window.supervisorGoogleVerified=true;window.dispatchEvent(new Event('supervisor-google-verified'));$('supervisorPasskeyLogin').hidden=true}else{$('supervisorPasskeyLogin').hidden=true;$('supervisorPasskeyRegister').hidden=true}}
+function render(d){document.querySelector('#signin')?.closest('section')?.setAttribute('hidden','');$('teachers').textContent=d.teacherCount;$('approved').textContent=d.approvedCount;$('pending').textContent=d.pending.length;$('schools').replaceChildren(...d.schools.map(x=>{const p=document.createElement('p');p.textContent=x.name;return p}));$('requests').replaceChildren(...d.pending.map(x=>{const tr=document.createElement('tr');cell(tr,x.schoolId==='boys'?'البنين':'البنات');cell(tr,x.teacherName);cell(tr,new Date(x.createdAt).toLocaleDateString('ar-OM'));const td=document.createElement('td');for(const [decision,label] of [['approve','اعتماد'],['reject','رفض']]){const b=document.createElement('button');b.textContent=label;b.onclick=()=>decide(x.id,decision);td.append(b)}tr.append(td);return tr}));$('empty').textContent=d.pending.length?'':'لا توجد طلبات معلقة حاليًا.';$('data').hidden=false;$('status').textContent='تم تحميل البيانات الفعلية بنجاح.';window.dispatchEvent(new Event('supervisor-dashboard-ready'));if(credential){window.supervisorGoogleVerified=true;window.dispatchEvent(new Event('supervisor-google-verified'));$('supervisorPasskeyLogin').hidden=true}else{$('supervisorPasskeyLogin').hidden=true;$('supervisorPasskeyRegister').hidden=true}}
 async function refresh(){try{$('status').textContent='جارٍ تحديث البيانات...';render(await request('school-founder-dashboard',{}))}catch(e){$('status').textContent='تعذر تحميل البيانات: '+e.message}}
 async function decide(id,decision){if(!confirm(decision==='approve'?'تأكيد اعتماد المعلم؟':'تأكيد رفض الطلب؟'))return;try{$('status').textContent='جارٍ حفظ القرار...';await request('school-registration',{action:'decide',requestId:id,decision});await refresh()}catch(e){$('status').textContent='تعذر تنفيذ القرار: '+e.message}}
 function onGoogle(r){schoolAuthSave(r.credential);supervisorPasskeyToken='';credential=r.credential;document.querySelector('#signin')?.closest('section')?.setAttribute('hidden','');refresh()}$('refresh').onclick=refresh;
@@ -128,4 +152,94 @@ const w=document.createElement('div');w.className='supervisor-table-scroll';t.pa
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixTables);else fixTables();
 })();
-</script><script type="module" src="./supervisor-passkey.js?v=20261030-auto"></script></body></html>
+</script><script type="module" src="./supervisor-passkey.js?v=20261030-auto"></script><script id="supervisor-behavior-report-client">
+(function(){
+ const endpoint='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-behavior-reports';
+ const list=document.getElementById('supervisorBehaviorList');
+ const message=document.getElementById('supervisorBehaviorMessage');
+ const badge=document.getElementById('supervisorBehaviorBadge');
+ const count=document.getElementById('supervisorBehaviorCount');
+ let reports=[],initialized=false,known=new Set(),running=false;
+ const el=(tag,text)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;return x};
+ const label=s=>s==='opened'?'✅ تم الاطلاع':s==='received'?'☑️ تم الاستلام':'📨 جديد ولم يُستلم';
+ async function send(action,extra={}){
+  const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
+  const access=credential?null:supervisorPasskeyToken;
+  if(!credential&&!access)throw Error('يجب تسجيل الدخول بحساب المشرف');
+  const r=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...(credential?{credential}:{access_token:access}),action,...extra})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok)throw Error(j.error||'تعذر تحميل تقارير الطلاب');
+  return j;
+ }
+ async function mark(id,action,card,report){
+  try{
+   const res=await send(action,{reportId:id});
+   report.status=res.status;
+   if(action==='receive')report.receivedAt=new Date().toISOString();
+   if(action==='open'){report.receivedAt=report.receivedAt||new Date().toISOString();report.openedAt=new Date().toISOString()}
+   render();
+   if(action==='open'){
+    const target=[...list.querySelectorAll('.supervisor-behavior-item')].find(x=>x.dataset.reportId===String(id));
+    if(target)showDetails(target,report);
+   }
+  }catch(e){message.textContent='تعذّر تحديث حالة التقرير: '+e.message}
+ }
+ function showDetails(card,report){
+  const existing=card.querySelector('.supervisor-behavior-note');
+  if(existing){existing.remove();return}
+  const note=el('div',report.note||'لم يضف المعلم ملاحظة إضافية.');
+  note.className='supervisor-behavior-note';
+  const head=el('strong','ملاحظات المعلم:');note.prepend(head,el('hr'));
+  card.append(note);
+ }
+ function render(){
+  const unread=reports.filter(x=>x.status==='submitted').length;
+  count.textContent=String(unread);badge.textContent=String(unread);badge.hidden=unread===0;
+  list.replaceChildren();
+  if(!reports.length){list.append(el('p','لا توجد تقارير واردة بعد.'));return}
+  for(const r of reports){
+   const card=el('article');card.className='supervisor-behavior-item';card.dataset.state=r.status;card.dataset.reportId=String(r.id);
+   card.append(el('strong',(r.kind==='positive'?'✅ ':'📘 ')+r.studentName+' — الصف '+r.classId));
+   const meta=el('div',r.senderName+' · '+(r.schoolId==='boys'?'مدرسة البنين':'مدرسة البنات')+' · '+new Date(r.createdAt).toLocaleString('ar-OM'));meta.className='supervisor-behavior-meta';card.append(meta);
+   card.append(el('div','السلوك: '+r.behavior));
+   card.append(el('strong',label(r.status)));
+   const actions=el('div');actions.className='behavior-report-actions';
+   if(r.status==='submitted'){
+    const receive=el('button','☑️ استلام التقرير');receive.onclick=()=>mark(r.id,'receive',card,r);actions.append(receive);
+   }
+   if(r.status!=='opened'){
+    const open=el('button','👁 فتح التقرير وتسجيل الاطلاع');open.onclick=()=>mark(r.id,'open',card,r);actions.append(open);
+   }else{
+    const view=el('button','عرض التفاصيل');view.onclick=()=>showDetails(card,r);actions.append(view);
+   }
+   card.append(actions);list.append(card);
+  }
+ }
+ async function load(){
+  if(running)return;running=true;
+  try{
+   const result=await send('supervisor_list');
+   reports=result.rows||[];
+   const now=new Set(reports.map(r=>r.id));
+   const newCount=initialized?reports.filter(r=>r.status==='submitted'&&!known.has(r.id)).length:0;
+   known=now;initialized=true;render();
+   if(newCount&&document.visibilityState==='visible'){
+    message.textContent='📬 وصل '+newCount+' تقرير جديد.';
+    if('Notification' in window&&Notification.permission==='granted'){
+     try{new Notification('تقارير سلوك الطلاب',{body:'وصل تقرير جديد إلى بوابة المشرف. افتح الوارد للاطلاع.'})}catch(e){}
+    }
+   }else message.textContent='آخر تحديث: '+new Date().toLocaleTimeString('ar-OM');
+  }catch(e){message.textContent='تعذّر تحديث الوارد: '+e.message}
+  finally{running=false}
+ }
+ document.getElementById('supervisorBehaviorRefresh').onclick=load;
+ document.getElementById('supervisorBehaviorNotify').onclick=async()=>{
+  if(!('Notification' in window)){message.textContent='المتصفح لا يدعم إشعارات سطح المكتب. يستمر التنبيه داخل لوحة المشرف.';return}
+  try{const permission=await Notification.requestPermission();message.textContent=permission==='granted'?'تم تفعيل إشعارات المتصفح أثناء فتح بوابة المشرف.':'يمكنك متابعة التقارير الجديدة من عدّاد الوارد.'}
+  catch(e){message.textContent='لم تتوفر صلاحية الإشعارات، ويمكن متابعة الوارد من هنا.'}
+ };
+ window.addEventListener('supervisor-dashboard-ready',load);
+ if(document.getElementById('data')&&!document.getElementById('data').hidden)load();
+ setInterval(()=>{if(!document.hidden&&!document.getElementById('data').hidden)load()},30000);
+})();
+</script></body></html>
