@@ -76,10 +76,38 @@ function makeButton(label,action,phase){
 }
 if(document.getElementById('teacher-google')){
  const holder=document.getElementById('teacher-google');
- const {b,msg}=makeButton('🔐 الدخول بالبصمة / Face ID',async()=>{
-  await signIn();
-  location.assign('school-edition/school-notebook.html');
- },'login');
+ const entry=document.getElementById('teacher-passkey-entry');
+ const enrolled=localStorage.getItem(ENROLLED_KEY)==='1';
+ const action=async()=>{
+  const result=await signIn();
+  if(!result?.data?.approved)throw Error('NOT_APPROVED');
+  location.replace('school-edition/school-notebook.html');
+ };
+ const {b,msg}=makeButton('🔐 الدخول بالبصمة / Face ID',action,'login');
  holder.insertAdjacentElement('afterend',b);b.insertAdjacentElement('afterend',msg);
- // Instructions are available on demand in the expandable help section.
+ if(enrolled&&entry){
+  document.body.classList.add('teacher-passkey-mode');
+  entry.hidden=false;b.hidden=true;msg.hidden=true;
+  const status=document.getElementById('teacher-passkey-direct-status');
+  const go=document.getElementById('teacher-passkey-direct');
+  const fallback=document.getElementById('teacher-passkey-google-fallback');
+  let running=false;
+  const authenticate=async()=>{
+   if(running)return;running=true;go.disabled=true;
+   status.textContent='جارٍ طلب تأكيد بصمة الجهاز...';
+   try{await action()}
+   catch(e){status.textContent=friendlyPasskeyError(e,'login')+' يمكنك إعادة المحاولة أو استخدام Google.'}
+   finally{running=false;go.disabled=false}
+  };
+  go.onclick=authenticate;
+  fallback.onclick=()=>{
+   document.body.classList.remove('teacher-passkey-mode');entry.hidden=true;
+   b.hidden=false;msg.hidden=false;
+   document.getElementById('teacher-status').textContent='يمكنك اختيار حساب Google للتسجيل من جديد.';
+  };
+  // Try to open the platform prompt immediately. Browsers that require a
+  // user gesture will leave the visible passkey button ready for one tap.
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>authenticate(),{once:true});
+  else authenticate();
+ }
 }
