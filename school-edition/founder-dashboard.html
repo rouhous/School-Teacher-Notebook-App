@@ -209,9 +209,7 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 <a class="supervisor-module" href="data-admin.html?tab=review&school=girls"><span class="module-icon">👥</span><strong>طلاب البنات</strong><small>قوائم وبيانات الاتصال</small></a>
 <a class="supervisor-module" href="data-admin.html?tab=manage&school=girls"><span class="module-icon">🗂️</span><strong>إدارة القوائم</strong><small>نقل السجلات ومراجعتها</small></a>
 </div>
-</section><div id="generalOperationsDetails"><details id="behaviorReportsDetails" class="supervisor-secondary-options">
-<summary>📨 التقارير السلوكية الواردة</summary>
-<section id="supervisorBehaviorInbox" aria-label="تقارير سلوك الطلاب">
+</section><div id="generalOperationsDetails"><section id="supervisorBehaviorInbox" hidden aria-label="تقارير سلوك الطلاب">
 <h2>📬 صندوق تقارير سلوك الطلاب <span id="supervisorBehaviorCount" class="behavior-report-count">0</span></h2>
 <p class="behavior-report-guidance">يُؤكّد وصول التقرير تلقائيًا للمعلم بمجرد حفظه في الوارد. تتغير الحالة إلى «تم الاطلاع» فقط عند فتح المشرف التقرير.</p>
 <div class="behavior-report-controls">
@@ -220,7 +218,7 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 </div>
 <p id="supervisorBehaviorMessage" role="status" aria-live="polite"></p>
 <div id="supervisorBehaviorList"></div>
-</section></details>
+</section>
 <details id="supervisorPendingRequests" class="supervisor-secondary-options">
 <summary>طلبات اعتماد المعلمين <span id="pending" class="pending-chip">0</span></summary>
 <div class="supervisor-table-scroll"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div>
@@ -366,7 +364,9 @@ for(const b of buttons)b.addEventListener('click',()=>activate(b.dataset.supervi
 const reportShortcut=document.querySelector('a[href="#supervisorBehaviorInbox"]');
 if(reportShortcut)reportShortcut.addEventListener('click',()=>{
  activate('general');
- document.getElementById('behaviorReportsDetails').open=true;
+ const inbox=document.getElementById('supervisorBehaviorInbox');
+ inbox.hidden=false;
+ requestAnimationFrame(()=>inbox.scrollIntoView({behavior:'smooth',block:'start'}));
 });
 activate(new URLSearchParams(location.search).get('tab')||sessionStorage.getItem('school-supervisor-active-tab')||'general');
 })();
