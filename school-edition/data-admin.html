@@ -20,7 +20,7 @@ main{max-width:850px;padding:10px 12px 22px!important;margin:auto!important}
 main>a:first-child{min-height:32px!important;padding:5px 12px!important;font-size:13px!important}
 main>h1{font-size:clamp(1.3rem,5vw,1.75rem)!important;margin:9px 0 2px!important}
 .intro{margin:0 0 9px;color:#547165;font-size:13px;line-height:1.4}
-.admin-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:9px 0}
+.admin-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:9px 0}
 .admin-tabs button{margin:0!important;min-height:41px!important;padding:7px 4px!important;background:#e4eee8!important;color:#07594a!important;border:1px solid #cbded2!important}
 .admin-tabs button.active{background:#07594a!important;color:white!important}
 .card{padding:12px!important;margin:8px 0!important;border-radius:15px!important}
@@ -35,7 +35,7 @@ main>h1{font-size:clamp(1.3rem,5vw,1.75rem)!important;margin:9px 0 2px!important
 .review-hint{margin:3px 0 7px;font-size:12px;color:#50695e}
 #rosterReviewPanel>button{margin:5px 0!important;min-height:41px!important}
 #reviewMessage{font-size:12px;line-height:1.5;margin:7px 0}
-[data-panel="import"][hidden],[data-panel="manage"][hidden]{display:none!important}
+[data-panel="import"][hidden],[data-panel="manage"][hidden],[data-panel="timing"][hidden]{display:none!important}
 [data-panel="review"][hidden]{display:none!important}
 .compact-help{margin:9px 0;color:#526e63;font-size:13px}
 .compact-format{font-size:12px;padding:8px!important}
@@ -437,7 +437,7 @@ $('manageExecute').onclick=async()=>{
 document.querySelectorAll('.admin-tabs button').forEach(button=>button.addEventListener('click',()=>{
  document.querySelectorAll('.admin-tabs button').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-selected',String(b===button))});
  document.querySelectorAll('[data-panel]').forEach(panel=>panel.hidden=panel.dataset.panel!==button.dataset.tab);
-  if(typeof showPanel==='function')showPanel();
+  
 }));
 const reviewEndpoint='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-roster-review';
 async function reviewCall(action,classId='',studentCode='',displayName=''){
