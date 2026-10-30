@@ -4277,7 +4277,8 @@ async function syncManaged(){
     const code=String(st.studentCode||'');
     const prior=(code?studentByCode.get(String(st.schoolId||'')+'|'+code):null)||previousStudents.find(x=>String(x.classId)===String(ids.get(key))&&((code&&String(x.studentNumber||'')===code)||x.name===String(st.name)));
     const id=prior?.id||'school-student-'+key+'|'+(code||st.name);
-    nextStudents.push({...prior,id,name:String(st.name),schoolId:String(st.schoolId||''),classId:ids.get(key),studentNumber:code});
+    const importedPhone=String(st.phone||st.phoneNumber||st.mobile||st.mobileNumber||st.guardianPhone||st.parentPhone||st.telephone||st.tel||st['رقم الهاتف']||st['هاتف ولي الأمر']||'').trim();
+    nextStudents.push({...prior,id,name:String(st.name),schoolId:String(st.schoolId||''),classId:ids.get(key),studentNumber:code,phone:importedPhone||String(prior?.phone||'')});
   }
   // Never erase the teacher's existing work when the central roster is temporarily empty.
   if(nextStudents.length){
