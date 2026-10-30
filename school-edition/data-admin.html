@@ -176,16 +176,17 @@ function parseStudentsFromText(text){
 
 let lastPdfPhoneMap=new Map();
 function phonesByPdfCoordinates(items){
- // In official Omani rosters the mobile-phone text baseline sits a few points
- // below the student-number baseline, even though both belong to one table row.
- const ids=[],phones=[];
+ const ids=[], phones=[];
  for(const it of items||[]){
-  const raw=normalizeDigits(String(it.str||'')).trim();
-  const value=raw.replace(/[^0-9]/g,'');
-  const x=Number(it.transform?.[4]),y=Number(it.transform?.[5]);
+  // A PDF text item often includes "area+phone" or "name+student code".
+  // Extract numeric RUNS before assigning by page position.
+  const raw=normalizeDigits(String(it.str||''));
+  const x=Number(it.transform?.[4]), y=Number(it.transform?.[5]);
   if(!Number.isFinite(x)||!Number.isFinite(y))continue;
-  if(/^\\d{11,15}$/.test(value)&&x>150)ids.push({value,x,y});
-  if(/^\\d{8}$/.test(value)&&x<150)phones.push({value,x,y});
+  for(const value of (raw.match(/(?<!\d)\d{8,15}(?!\d)/g)||[])){
+   if(value.length>=11&&x>150)ids.push({value,x,y});
+   else if(value.length===8&&x<150)phones.push({value,x,y});
+  }
  }
  const found=new Map(),used=new Set();
  for(const id of ids){
