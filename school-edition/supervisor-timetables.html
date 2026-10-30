@@ -46,6 +46,16 @@
 .teacher-week-slot .p-no{position:absolute;top:0;right:1px;font-size:6px;line-height:1;color:#618778}
 .teacher-week-slot .p-class{font-weight:800;font-size:clamp(8px,.67vw,11px);line-height:1;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .teacher-week-slot.is-empty .p-class{color:#b6c6ba;font-weight:400}
+.class-week-table{--teacher-col:clamp(90px,10%,145px)}
+.class-week-table tbody tr{height:42px}
+.class-week-table .teacher-week-slots{min-height:35px}
+.class-week-table .teacher-week-slot{min-height:35px;height:35px;flex-direction:column;gap:2px;padding:2px 1px}
+.class-week-table .teacher-week-slot .p-class{display:block;width:100%;text-align:center;font-size:clamp(7px,.63vw,10px);line-height:1.12;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.class-week-table .teacher-week-slot .p-teacher{display:block;width:100%;text-align:center;font-size:clamp(6px,.53vw,9px);line-height:1.12;color:#305a4c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.class-week-table .teacher-week-slot.has-duty .p-teacher{color:#705114}
+.class-week-table tbody tr:nth-child(even) .teacher-week-slot.has-lesson{background:#aed8c0}
+.class-week-table tbody tr:nth-child(even) .teacher-week-slot.is-empty{background:#dae7de}
+@media(max-width:949px){.class-week-table{min-width:1300px}}
 @media(max-width:949px){.teacher-week-table{min-width:1100px}.scroll.teacher-week-scroll{max-height:75vh;overflow:auto}}
 @media print{main{width:100%;max-width:none}.scroll.teacher-week-scroll{max-height:none;overflow:visible}.teacher-week-table{font-size:8px}.teacher-week-slot{min-height:16px;height:16px}#absencePanel,#reload{display:none}}
 </style><script src="./session-auth.js"></script></head><body><main><header><a href="founder-dashboard.html">العودة إلى لوحة المشرف</a><h1>متابعة الجداول اليومية</h1><p>الجداول المستخرجة من ملفات المدرسة، مستقلة عن تسجيل المعلمين. الخانات الصفراء تحتاج مطابقة بالأصل قبل اعتمادها النهائي.</p></header><section class="card" id="login"><h2>تأكيد حساب المشرف</h2><div id="google"></div></section><section class="card"><div class="filters"><label>المدرسة<select id="school"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></label><label>اليوم<select id="day"><option value="week">الأسبوع كاملًا</option><option value="0">الأحد</option><option value="1">الاثنين</option><option value="2">الثلاثاء</option><option value="3">الأربعاء</option><option value="4">الخميس</option></select></label><label>نوع الجدول<select id="view"><option value="all">الجدول العام</option><option value="class">جدول الصف</option><option value="teacher">جدول المعلم</option></select></label><label>الصف / المعلم<select id="item" disabled><option value="">الكل</option></select></label></div><p id="coverage" style="color:#875c1e"></p><p id="status" role="status">جارٍ استعادة جلسة المشرف...</p><button id="reload" type="button">تحديث الجداول</button></section><section class="card"><h2 id="heading">الحصص</h2><div class="scroll" id="timetableScroll"><table id="timetableTable"><thead><tr id="cols"></tr></thead><tbody id="rows"></tbody></table></div></section><section class="card" id="absencePanel"><h2>غياب المعلمين وتوزيع حصص الاحتياط</h2><p class="muted">التوزيع المقترح يعتمد على رموز الاحتياط A ثم B ثم C ثم D من الجداول المستخرجة، ويحتاج تأكيد المشرف قبل إبلاغ المعلمين.</p><label>تاريخ الغياب <input type="date" id="absenceDate"></label><p>حدد المعلمين الغائبين:</p><div class="abs-grid" id="absentTeachers"></div><p><button type="button" id="saveAbsences">حفظ الغياب وتوزيع الاحتياط</button> <button type="button" id="readAbsences">عرض توزيع اليوم</button></p><p id="coverStatus" role="status"></p><div id="coverResults"></div></section></main><script src="https://accounts.google.com/gsi/client" async defer></script><script>
@@ -56,7 +66,7 @@ function th(s){const x=document.createElement('th');x.textContent=s;$('cols').ap
 function label(x){return x==null||x===''?'—':String(x)}
 function renderGeneralTeacherWeek(all,chosenDays,days){
  const table=$('timetableTable'),scroll=$('timetableScroll');
- table.classList.add('teacher-week-table');scroll.classList.add('teacher-week-scroll');
+ table.classList.add('teacher-week-table');table.classList.remove('class-week-table');scroll.classList.add('teacher-week-scroll');
  $('cols').replaceChildren();$('rows').replaceChildren();
  const head=document.createElement('th');head.className='teacher-week-name';head.textContent='المعلم';head.scope='col';$('cols').append(head);
  for(const d of chosenDays)th(days[d]);
@@ -108,6 +118,56 @@ function renderGeneralTeacherWeek(all,chosenDays,days){
  $('rows').append(frag);
  if(!ordered.length){const tr=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=chosenDays.length+1;cell.className='empty';cell.textContent='لم تُحمّل جداول معلمين لهذه المدرسة.';tr.append(cell);$('rows').append(tr)}
 }
+function renderClassWeek(all,chosen,chosenDays,days){
+ const table=$('timetableTable'),scroll=$('timetableScroll');
+ table.classList.add('teacher-week-table','class-week-table');scroll.classList.add('teacher-week-scroll');
+ $('cols').replaceChildren();$('rows').replaceChildren();
+ const header=document.createElement('th');header.className='teacher-week-name';header.scope='col';header.textContent='الصف';$('cols').append(header);
+ for(const d of chosenDays)th(days[d]);
+ let numberRow=document.getElementById('teacherWeekPeriodRow');
+ if(!numberRow){numberRow=document.createElement('tr');numberRow.id='teacherWeekPeriodRow';$('cols').parentElement.append(numberRow)}
+ numberRow.className='teacher-week-period-row';numberRow.replaceChildren();
+ const numberLabel=document.createElement('th');numberLabel.className='teacher-week-name';numberLabel.scope='row';numberLabel.textContent='الحصة';numberRow.append(numberLabel);
+ for(const d of chosenDays){
+  const cell=document.createElement('th');cell.scope='col';cell.setAttribute('aria-label','حصص يوم '+days[d]);
+  const grid=document.createElement('div');grid.className='teacher-week-periods';
+  for(let p=1;p<=8;p++){const num=document.createElement('span');num.className='teacher-week-period';num.textContent=p;grid.append(num)}
+  cell.append(grid);numberRow.append(cell)
+ }
+ const classes=new Set(),index=new Map();
+ for(const x of all){
+  const cls=String(x.classId||'').trim();
+  if(!cls||x.dutyPriority)continue;
+  classes.add(cls);
+  const key=cls+'|'+Number(x.weekday)+'|'+Number(x.period);
+  if(!index.has(key))index.set(key,[]);
+  index.get(key).push(x);
+ }
+ const ordered=[...classes].filter(cls=>!chosen||chosen===cls).sort((a,b)=>a.localeCompare(b,'ar',{numeric:true}));
+ const frag=document.createDocumentFragment();
+ for(const cls of ordered){
+  const tr=document.createElement('tr'),heading=document.createElement('th');heading.className='teacher-week-name';heading.scope='row';heading.textContent=cls;tr.append(heading);
+  for(const d of chosenDays){
+   const td=document.createElement('td'),grid=document.createElement('div');grid.className='teacher-week-slots';
+   for(let p=1;p<=8;p++){
+    const matches=index.get(cls+'|'+d+'|'+p)||[],box=document.createElement('div');
+    box.className='teacher-week-slot '+(matches.length?'has-lesson':'is-empty');
+    if(matches.length>1||matches.some(x=>x.reviewStatus&&x.reviewStatus!=='READY'&&x.reviewStatus!=='published'&&x.reviewStatus!=='approved_parallel'))box.classList.add('needs-review');
+    const subject=document.createElement('span');subject.className='p-class';
+    subject.textContent=matches.length?matches.map(x=>x.subject||'—').join(' / '):'—';box.append(subject);
+    if(matches.length){
+     const teacher=document.createElement('span');teacher.className='p-teacher';teacher.textContent=matches.map(x=>x.teacherName||x.teacherId||'—').join(' / ');box.append(teacher);
+     box.title='الصف '+cls+' — '+days[d]+' — الحصة '+p+'\n'+matches.map(x=>(x.subject||'—')+' — '+(x.teacherName||x.teacherId||'—')).join('\n');
+    }else box.title='الصف '+cls+' — '+days[d]+' — الحصة '+p+' فارغة';
+    grid.append(box)
+   }
+   td.append(grid);tr.append(td)
+  }
+  frag.append(tr)
+ }
+ $('rows').append(frag);
+ if(!ordered.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=chosenDays.length+1;td.className='empty';td.textContent='لا توجد صفوف مطابقة لهذا الاختيار.';tr.append(td);$('rows').append(tr)}
+}
 function render(){
  const school=$('school').value,day=$('day').value,mode=$('view').value,chosen=$('item').value;
  const all=slots.filter(x=>x.schoolId===school);
@@ -117,8 +177,8 @@ function render(){
  const maxPeriod=Math.max(8,...subset.map(x=>Number(x.period)||0));
  const chosenDays=day==='week'?[0,1,2,3,4]:[Number(day)];
  $('heading').textContent=(mode==='all'?'الجدول العام':mode==='class'?'جدول الصف':'جدول المعلم')+' — '+(day==='week'?'الأسبوع كاملًا':$('day').selectedOptions[0].textContent);
- if(mode==='all'){renderGeneralTeacherWeek(all,chosenDays,days)}else{
- $('timetableTable').classList.remove('teacher-week-table');$('timetableScroll').classList.remove('teacher-week-scroll');
+ if(mode==='all'){renderGeneralTeacherWeek(all,chosenDays,days)}else if(mode==='class'){renderClassWeek(all,chosen,chosenDays,days)}else{
+ $('timetableTable').classList.remove('teacher-week-table','class-week-table');$('timetableScroll').classList.remove('teacher-week-scroll');
  document.getElementById('teacherWeekPeriodRow')?.remove();
  $('cols').replaceChildren();['الحصة',...chosenDays.map(i=>days[i])].forEach(th);
  $('rows').replaceChildren();
