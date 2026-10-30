@@ -391,7 +391,7 @@ select{max-width:100%;touch-action:auto}
 
 </header>
 <main>
-<div id="sc-home" class="screen active"><div style="display:flex;justify-content:flex-start;padding:8px 16px"><button type="button" id="teacherChangeAccountOpen" style="border:1px solid #d8c28b;border-radius:12px;background:#fff9e8;color:#075a4c;padding:10px 16px;font-size:14px;font-weight:700">تحديث حساب Google</button></div><div id="homeBody"></div></div>
+<div id="sc-home" class="screen active"><div id="homeBody"></div></div>
 <div id="sc-classes" class="screen">
 <div class="section-title"><span data-i18n="myClasses">صفوفي</span>
 </div>
@@ -1217,7 +1217,7 @@ document.addEventListener('click',function(event){
  if(typeof showLessonNoteEditor==='function')showLessonNoteEditor(day,period);
  else console.error('Period note editor is not available');
 },true);
-<\/script><script type="module" src="./passkey-auth.js"><\/script><dialog id="teacherChangeAccountDialog" dir="rtl" style="width:min(94vw,460px);border:1px solid #b9d6ca;border-radius:18px;padding:22px;color:#07594b;background:#fff;box-shadow:0 15px 60px #102c2555"><h3>تحديث حساب Google للمعلم</h3><p style="line-height:1.8">سجّل الدخول بحساب Google الجديد أدناه. بعد التحقق من الحسابين، ينتقل اعتمادك وجدولك وصفوفك إلى البريد الجديد، ويُوقف دخول الحساب القديم كمعلم. لا تتغير صلاحيات المشرف.</p><p style="font-size:13px;color:#8c5a24">استخدم حساب Google مختلفًا عن الحساب الحالي. قد تحتاج إلى اختيار «استخدام حساب آخر».</p><div id="teacherChangeAccountGoogle" style="display:flex;justify-content:center;margin:15px 0"></div><p id="teacherChangeAccountStatus" role="status"></p><button type="button" id="teacherChangeAccountClose" style="padding:10px 20px;border-radius:10px;border:1px solid #abc8bb;background:white;color:#07594b">إغلاق</button></dialog>
+<\/script><script type="module" src="./passkey-auth.js"><\/script><button type="button" id="teacherChangeAccountOpen" hidden>تحديث حساب Google</button><dialog id="teacherChangeAccountDialog" dir="rtl" style="width:min(94vw,460px);border:1px solid #b9d6ca;border-radius:18px;padding:22px;color:#07594b;background:#fff;box-shadow:0 15px 60px #102c2555"><h3>تحديث حساب Google للمعلم</h3><p style="line-height:1.8">سجّل الدخول بحساب Google الجديد أدناه. بعد التحقق من الحسابين، ينتقل اعتمادك وجدولك وصفوفك إلى البريد الجديد، ويُوقف دخول الحساب القديم كمعلم. لا تتغير صلاحيات المشرف.</p><p style="font-size:13px;color:#8c5a24">استخدم حساب Google مختلفًا عن الحساب الحالي. قد تحتاج إلى اختيار «استخدام حساب آخر».</p><div id="teacherChangeAccountGoogle" style="display:flex;justify-content:center;margin:15px 0"></div><p id="teacherChangeAccountStatus" role="status"></p><button type="button" id="teacherChangeAccountClose" style="padding:10px 20px;border-radius:10px;border:1px solid #abc8bb;background:white;color:#07594b">إغلاق</button></dialog>
 <script>(function(){
 const dlg=document.getElementById('teacherChangeAccountDialog'),status=document.getElementById('teacherChangeAccountStatus'),holder=document.getElementById('teacherChangeAccountGoogle');let busy=false;
 document.getElementById('teacherChangeAccountClose').onclick=()=>dlg.close();
@@ -1830,6 +1830,11 @@ function parseStudentsFromText(text){
 function openM(type,data){const box=document.getElementById('modalBox');let h='';if(type==='settings'){h=`<div class="modal-head"><h3>${t('settings')}</h3><button class="modal-x" onclick="closeM()">×</button></div>
 <p style="font-size:.72rem;color:var(--mu);text-align:center;margin:4px 0 10px">إصدار إعدادات المعلم: 2026.10.29-2</p>
 ${cloudSettingsHTML()}
+<div class="form-group" style="padding:14px;border:1px solid var(--bd);border-radius:14px;margin:12px 0;background:var(--card,#fff)">
+<label style="font-weight:800">🔄 تحديث حساب Google</label>
+<p style="font-size:.8rem;color:var(--mu);line-height:1.7;margin:8px 0">تغيير حساب Google المعتمد مع الاحتفاظ ببيانات المعلم.</p>
+<button type="button" class="btn btn-primary btn-block" onclick="closeM();document.getElementById('teacherChangeAccountOpen').click()">تحديث حساب Google</button>
+</div>
 <div class="form-group" style="padding:14px;border:1px solid var(--bd);border-radius:14px;margin:12px 0;background:var(--card,#fff)">
  <label style="font-weight:800">🔐 ${db.lang==='ar'?'البصمة / Face ID':'Fingerprint / Face ID'}</label>
  <p style="font-size:.8rem;color:var(--mu);line-height:1.7;margin:8px 0">${db.lang==='ar'?'فعّل مفتاح مرور لهذا الجهاز بعد تسجيل الدخول بحساب Google المعتمد، لتتمكن من الدخول دون تكرار تسجيل Google.':'Register a passkey for this device after signing in with your approved Google account.'}</p>
