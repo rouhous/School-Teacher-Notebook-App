@@ -89,7 +89,8 @@ function render(){
  const chosenDays=day==='week'?[0,1,2,3,4]:[Number(day)];
  $('heading').textContent=(mode==='all'?'الجدول العام':mode==='class'?'جدول الصف':'جدول المعلم')+' — '+(day==='week'?'الأسبوع كاملًا':$('day').selectedOptions[0].textContent);
  if(mode==='all'){renderGeneralTeacherWeek(all,chosenDays,days)}else{
- $('timetableTable').classList.remove('teacher-week-table');$('timetableScroll').classList.remove('teacher-week-scroll');\n $('cols').replaceChildren();['الحصة',...chosenDays.map(i=>days[i])].forEach(th);
+ $('timetableTable').classList.remove('teacher-week-table');$('timetableScroll').classList.remove('teacher-week-scroll');
+ $('cols').replaceChildren();['الحصة',...chosenDays.map(i=>days[i])].forEach(th);
  $('rows').replaceChildren();
  for(let p=1;p<=maxPeriod;p++){
   const tr=document.createElement('tr');const n=document.createElement('th');n.textContent='ح'+p;tr.append(n);
