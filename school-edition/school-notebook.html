@@ -3763,7 +3763,7 @@ function chooseStudentReportShare(sid){
  box.innerHTML='<div class="modal-head"><h3>مشاركة تقرير الطالب</h3><button class="modal-x" onclick="closeM()">×</button></div>'+
  (hasPhone?'<button class="btn btn-primary btn-block" onclick="openStudentWhatsApp(\''+sid+'\')">📱 فتح واتساب الرقم المسجل</button><p style="font-size:.8rem;color:var(--mu);margin:8px 0">لفتح المحادثة أولاً. إرفاق ملف PDF يتم من المشاركة أو يدوياً داخل واتساب.</p>':'<p>رقم الهاتف غير متوفر في بيانات هذا الطالب.</p>')+
  '<button class="btn btn-outline btn-block" onclick="shareStudentPdf(\''+sid+'\')">↗ مشاركة التقرير PDF</button>';
- document.getElementById('modal')?.classList.add('open');
+ document.getElementById('modalBg')?.classList.add('open');
 }
 async function shareStudentPdf(sid){
   const isAll=sid==='all',cid=document.getElementById('stuClass')?.value||'';
