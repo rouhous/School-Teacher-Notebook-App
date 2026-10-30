@@ -525,7 +525,7 @@ body.teacher-passkey-mode #teacher-google+button,
 body.teacher-passkey-mode #teacher-google+button+ p{display:none!important}
 @media(max-width:800px){
   .site.mobile-reference-ready:has(body.teacher-passkey-mode) .content{padding-bottom:8px!important}
-  body.teacher-passkey-mode .site.mobile-reference-ready .content{margin-top:calc(42svh + 21px)!important;margin-bottom:12px!important;max-width:calc(100% - 24px)!important}
+  body.teacher-passkey-mode .site.mobile-reference-ready .content{margin-bottom:12px!important;max-width:calc(100% - 24px)!important}
   body.teacher-passkey-mode .site.mobile-reference-ready .panel{max-width:100%!important;min-height:0!important;height:auto!important}
 }
 </style><style id="remove-ghost-old-login-20261030">
@@ -584,11 +584,18 @@ body.teacher-passkey-mode .site.mobile-reference-ready .panel{
   box-shadow:0 7px 21px rgba(14,65,47,.18)!important;
  }
 }
-</style><style id="mobile-login-position-direct-20261030">
+</style><style id="mobile-passkey-responsive-position-v1">
+/* Single source of truth for the saved-passkey card across phone viewport heights. */
 @media(max-width:800px){
  body.teacher-passkey-mode .site.mobile-reference-ready .content{
-  margin-top:calc(42svh + 21px)!important;
+  margin:calc(42svh + 16px) auto 12px!important;
   transform:none!important;
+  max-width:min(430px,calc(100% - 24px))!important;
+ }
+ body.teacher-passkey-mode .site.mobile-reference-ready .panel{
+  min-height:0!important;
+  height:auto!important;
+  overflow:visible!important;
  }
 }
 </style></head><body><div id="school-launch-overlay" aria-label="دفتر المعلم المدرسي | وادي الحواسنة"><img src="./assets/school-icon-512.png" alt="شعار مدرسة وادي الحواسنة"><div class="school-launch-title">دفتر المعلم المدرسي | وادي الحواسنة</div></div><script>(function(){const e=document.getElementById('school-launch-overlay');function hide(){e.classList.add('school-launch-hide');setTimeout(()=>e.remove(),350)}window.addEventListener('load',hide,{once:true});setTimeout(hide,1800)})();</script><div class="site reference-ready mobile-reference-ready">
