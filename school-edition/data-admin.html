@@ -505,6 +505,10 @@ async function loadRosterReview(){
 }
 const requested=new URLSearchParams(location.search);
 if(['boys','girls'].includes(requested.get('school')))$('school').value=requested.get('school');
+if(['students','timetable','timing'].includes(requested.get('kind'))){
+ $('kind').value=requested.get('kind');
+ $('kind').dispatchEvent(new Event('change'));
+}
 const requestedTab=requested.get('tab');
 if(['review','import','manage'].includes(requestedTab)){
  const button=document.querySelector('[data-tab="'+requestedTab+'"]');
