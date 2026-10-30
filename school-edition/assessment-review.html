@@ -3,7 +3,7 @@
 .supervisor-back-button:hover{background:#0a755a!important;color:#fff!important}
 .supervisor-back-button:focus-visible{outline:3px solid #c7a05a!important;outline-offset:3px}
 @media(max-width:550px){.supervisor-back-button{min-height:40px!important;padding:8px 12px!important;font-size:13px!important}}
-</style><main><a class="supervisor-back-button" href="founder-dashboard.html"><span aria-hidden="true">↩</span> العودة إلى لوحة المشرف</a><h1>إدارة التقييمات الوزارية</h1><p class="warn">مرحلة التحليل والمراجعة: لا تُنشر أي تغييرات للمعلمين قبل تفعيل التحقق والصلاحيات على الخادم.</p><section class="card"><label>المادة</label><select id="subject"><option value="english">اللغة الإنجليزية</option><option value="islamic">التربية الإسلامية</option></select><label>الصف</label><select id="grade"></select><label>الفصل الدراسي</label><select id="semester"><option value="1">الأول</option><option value="2">الثاني</option></select><label>وثيقة الوزارة PDF</label><input id="pdf" type="file" accept=".pdf,application/pdf"><button id="extract">قراءة الوثيقة ومعاينة التقييمات</button><p id="status" role="status"></p></section><section class="card" id="review" hidden><h2>مراجعة بنود التقييم</h2><p>يمكن تعديل الأسماء والدرجات قبل حفظ المسودة. البنود غير الواضحة تحتاج تدقيقًا من المشرف.</p><table><thead><tr><th>التقييم</th><th>الدرجة</th><th>حذف من المسودة</th></tr></thead><tbody id="rows"></tbody></table><button id="add">إضافة بند</button><button id="draft">تصدير المسودة JSON</button><button disabled title="يستلزم ربط واجهة اعتماد آمنة بالخادم">اعتماد ونشر للمعلمين — غير مفعّل</button></section></main><script>
+</style><main><a class="supervisor-back-button" href="founder-dashboard.html"><span aria-hidden="true">↩</span> العودة إلى لوحة المشرف</a><h1>إدارة التقييمات الوزارية</h1><p class="warn">مرحلة التحليل والمراجعة: لا تُنشر أي تغييرات للمعلمين قبل تفعيل التحقق والصلاحيات على الخادم.</p><section class="card"><label>المادة</label><select id="subject"><option value="english">اللغة الإنجليزية</option><option value="islamic">التربية الإسلامية</option></select><label>الصف</label><select id="grade"></select><label>الفصل الدراسي</label><select id="semester"><option value="1">الأول</option><option value="2">الثاني</option></select><label>وثيقة الوزارة PDF</label><input id="pdf" type="file" accept=".pdf,application/pdf"><button id="extract">قراءة الوثيقة ومعاينة التقييمات</button><p id="status" role="status"></p></section><section class="card" id="review" hidden><h2>مراجعة بنود التقييم</h2><p>يمكن تعديل الأسماء والدرجات قبل حفظ المسودة. البنود غير الواضحة تحتاج تدقيقًا من المشرف.</p><table><thead><tr><th>التقييم</th><th>الدرجة</th><th>حذف من المسودة</th></tr></thead><tbody id="rows"></tbody></table><button id="add">إضافة بند</button><button id="draft">تصدير المسودة JSON</button><button id="publishAssessment" type="button">اعتماد ونشر وثيقة التقويم</button><button type="button" id="readAssessment">عرض النسخة المنشورة</button><p id="publishStatus" role="status"></p></section></main><script>
 const $=x=>document.getElementById(x);let records=[],source='';
 function grades(){const s=$('subject').value;$('grade').innerHTML=Array.from({length:s==='english'?6:8},(_,i)=>{const g=i+5;return '<option value="'+g+'">'+g+'</option>'}).join('')}
 $('subject').onchange=grades;grades();
@@ -16,4 +16,30 @@ function render(){ $('review').hidden=false;$('rows').innerHTML='';records.forEa
 $('extract').onclick=async()=>{const f=$('pdf').files[0];if(!f)return $('status').textContent='اختر ملف PDF';try{$('status').textContent='جارٍ تحليل النص...';pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const doc=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;let texts=[];for(let p=1;p<=doc.numPages;p++){const page=await doc.getPage(p);const t=await page.getTextContent();texts.push(t.items.map(x=>x.str).join(' '))}const all=texts.join(' ');const grade=Number($('grade').value),sem=$('semester').value,eng=$('subject').value==='english';source=f.name;let template;if(eng){if(!/Student Assessment Handbook|SUMMARY of MARKS AWARDED/i.test(all))throw Error('لم يُتعرف على دليل تقييم الإنجليزية');if(grade===10)template=english10;else if(grade===9)template=english9;else throw Error('هذا النموذج التجريبي لا يستخرج درجات الصفوف 5–8 بعد؛ يلزم فحص استماراتها منفردة');}else{if(!/تقويم|التقويم|القرآن/.test(all))throw Error('لم يُتعرف على وثيقة التربية الإسلامية');template=grade<=9?islamic59:grade<=11?islamic1011:islamic12;}records=template.map(([name,max])=>({name,max}));render();$('status').textContent='مسودة مستندة إلى جداول الوثيقة: '+records.length+' بندًا. راجع البنود، خاصة اختلاف الفصل '+sem+'. لم يتم نشر شيء.';}catch(e){$('status').textContent='تعذر الاستخراج: '+e.message}};
 $('add').onclick=()=>{records.push({name:'',max:0});render()};
 $('draft').onclick=()=>{if(records.some(x=>!x.name.trim()||!Number.isFinite(x.max)||x.max<0||x.max>100))return alert('راجع أسماء البنود والدرجات');const payload={subject:$('subject').value,grade:Number($('grade').value),semester:Number($('semester').value),source,approved:false,assessments:records};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));a.download='assessment-draft-'+payload.subject+'-g'+payload.grade+'-s'+payload.semester+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+</script><script src="./session-auth.js?v=20261030-session"></script>
+<script id="publish-assessment-secure">
+(function(){
+ const endpoint='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-supervisor-documents';
+ async function invoke(action,rows){
+  const auth=await schoolSupervisorSession();if(!auth)throw Error('انتهت الجلسة. افتح الصفحة الرئيسية.');
+  const r=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...auth,action,subject:$('subject').value,grade:Number($('grade').value),semester:Number($('semester').value),source,rows})});
+  const j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'تعذر الاتصال بالخادم');return j.data;
+ }
+ $('publishAssessment').onclick=async()=>{
+  const status=$('publishStatus');
+  const values=records.map(x=>({name:String(x.name).trim(),max:Number(x.max)}));
+  if(!values.length||values.some(x=>x.name.length<2||!Number.isFinite(x.max)||x.max<0||x.max>100)){status.textContent='راجع بنود التقويم والدرجات أولًا.';return}
+  const total=values.reduce((a,b)=>a+b.max,0);
+  if(!confirm('اعتماد ونشر '+values.length+' بنود للتقويم، بمجموع '+total+' درجة؟ سيتم استبدال النسخة المنشورة لهذا الصف والفصل.'))return;
+  const btn=$('publishAssessment');btn.disabled=true;status.textContent='جارٍ حفظ واعتماد النسخة في قاعدة المدرسة…';
+  try{const result=await invoke('assessment_publish',values);status.textContent='✓ تم اعتماد الوثيقة وحفظ الإصدار '+result.revision+' بنجاح.'}
+  catch(e){status.textContent='لم يتم النشر: '+e.message}
+  finally{btn.disabled=false}
+ };
+ $('readAssessment').onclick=async()=>{
+  const status=$('publishStatus');status.textContent='جارٍ قراءة النسخة المعتمدة…';
+  try{const result=await invoke('assessment_read');status.textContent=result.revision?'الإصدار المنشور: '+result.revision+' — '+(result.assessments||[]).map(x=>x.name+' ('+x.max+')').join('، '):'لا توجد وثيقة معتمدة لهذه المادة والصف والفصل.'}
+  catch(e){status.textContent=e.message}
+ };
+})();
 </script></html>
