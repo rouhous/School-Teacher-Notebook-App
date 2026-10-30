@@ -64,7 +64,4 @@ if(register){
  };
 }
 window.addEventListener('supervisor-google-verified',()=>{if(register)register.hidden=false});
-if(typeof schoolAuthRestore==='function'&&schoolAuthRestore()&&register){
- // The register button remains hidden until the server confirms supervisor rights.
- register.hidden=true;
-}
+if(register&&window.supervisorGoogleVerified===true)register.hidden=false;
