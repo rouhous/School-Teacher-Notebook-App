@@ -84,11 +84,22 @@ header>a:not(:first-child){box-sizing:border-box!important;max-inline-size:calc(
 #supervisorPasskeyPanel #supervisorPasskeyStatus{min-height:1.4em;margin:9px 0 0;text-align:center;font-size:13px;color:#265e50}
 #supervisorPasskeyPanel button[hidden]{display:none!important}
 @media(max-width:600px){#supervisorPasskeyPanel .supervisor-passkey-actions{flex-direction:column}#supervisorPasskeyPanel button{width:100%;min-width:0}}
+</style><style id="supervisor-remembered-passkey-style">
+body.supervisor-passkey-mode #supervisorPasskeyPanel{margin-top:14px;padding:23px 15px;border:2px solid #d8b16d;border-radius:19px}
+body.supervisor-passkey-mode #supervisorPasskeyPanel h2{font-size:1.35rem;text-align:center}
+body.supervisor-passkey-mode #supervisorPasskeyPanel .supervisor-passkey-help{text-align:center}
+body.supervisor-passkey-mode #supervisorPasskeyPanel .supervisor-passkey-actions{flex-direction:column}
+body.supervisor-passkey-mode #supervisorPasskeyPanel .supervisor-passkey-actions button{width:min(100%,340px)}
+body.supervisor-passkey-mode #signin{display:none!important}
+body.supervisor-passkey-mode #signin:has(+*){display:none!important}
+body.supervisor-passkey-mode #supervisorPasskeyRegister{display:none!important}
+#supervisorPasskeyFallback{background:#fff;color:#07594a;border:1px solid #c8b381}
+#supervisorPasskeyFallback[hidden]{display:none!important}
 </style></head><body><main><header><a href="../">الرئيسية</a><h1>لوحة المشرف المدرسي</h1><p style="color:#886a35;margin:5px 0">إدارة المعلمين والبيانات والصلاحيات</p><p>إدارة المدرستين والحسابات المعتمدة</p><a href="roster-admin.html">تعديل أسماء المعلمين</a> <a href="data-admin.html" style="display:inline-block;padding:9px 13px;border-radius:10px;background:#075b49;color:white;text-decoration:none;margin:5px 0">مركز البيانات والاستيراد</a> <a href="supervisor-timetables.html" style="background:#075b49;color:white">متابعة الجداول اليومية</a> <a id="supervisorTeacherSwitch" class="portal-switch-link" href="school-notebook.html" aria-label="الانتقال إلى دفتر المعلم"><span aria-hidden="true">📘</span> الانتقال إلى دفتر المعلم</a></header><section><h2>الدخول الآمن</h2><div id="signin"></div><button type="button" id="googleQuickEntry" style="display:none;margin:7px 0;padding:9px 14px;background:#e9f3ed;color:#07594a;border:1px solid #b5d1c1;border-radius:12px;font-size:14px">الدخول السريع بحساب Google المحفوظ</button><p id="status" role="status">جارٍ تحميل تسجيل الدخول باستخدام Google...</p><small id="help"></small></section><section id="supervisorPasskeyPanel" aria-label="الدخول بالبصمة أو مفتاح المرور">
 <h2>الدخول بالبصمة</h2>
 <p class="supervisor-passkey-help">يمكن استخدام بصمة الإصبع أو Face ID أو قفل الجهاز بعد التفعيل الأول بحساب Google.</p>
 <div class="supervisor-passkey-actions">
-<button type="button" id="supervisorPasskeyLogin">🔐 الدخول بالبصمة / Face ID</button>
+<button type="button" id="supervisorPasskeyLogin">🔐 الدخول بالبصمة / Face ID</button><button type="button" id="supervisorPasskeyFallback" hidden>استخدام حساب Google بدلًا من ذلك</button>
 <button type="button" id="supervisorPasskeyRegister" hidden>تفعيل البصمة لهذا الحساب</button>
 </div>
 <p id="supervisorPasskeyStatus" role="status" aria-live="polite"></p>
@@ -104,7 +115,7 @@ function onGoogle(r){schoolAuthSave(r.credential);supervisorPasskeyToken='';cred
 window.supervisorPasskeyLogin=async function(access){supervisorPasskeyToken=access;credential='';await refresh();if($('data').hidden)throw Error('تعذر إثبات صلاحية المشرف');};
 let tries=0;const timer=setInterval(()=>{if(window.google?.accounts?.id){clearInterval(timer);try{google.accounts.id.initialize({auto_select:true,client_id:'825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com',callback:onGoogle});if(!schoolAuthRestore())google.accounts.id.renderButton($('signin'),{theme:'outline',size:'large',width:260});$('status').textContent='سجّل الدخول بحساب Google المؤسس.'}catch(e){$('status').textContent='تعذر تهيئة تسجيل Google.'}}else if(++tries>=40){clearInterval(timer);$('status').textContent='تعذر تحميل زر Google.';$('help').textContent='جرّب فتح الصفحة في Chrome أو تعطيل حماية Brave لهذا الموقع، ثم أعد تحميل الصفحة.'}},250);
 </script><script>if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
-const restoredCredential=schoolAuthRestore();if(restoredCredential){document.querySelector('#signin')?.closest('section')?.setAttribute('hidden','');onGoogle({credential:restoredCredential});}
+const restoredCredential=schoolAuthRestore();if(restoredCredential&&localStorage.getItem('school-notebook-supervisor-passkey-enrolled-v1')!=='1'){document.querySelector('#signin')?.closest('section')?.setAttribute('hidden','');onGoogle({credential:restoredCredential});}
 </script><script>
 (function(){const b=document.getElementById('googleQuickEntry');if(!b)return;let tries=0;const timer=setInterval(()=>{if(window.google?.accounts?.id){clearInterval(timer);b.style.display='inline-block';b.onclick=()=>{try{google.accounts.id.prompt()}catch(e){b.textContent='استخدم زر Google لتسجيل الدخول'}}}else if(++tries>60)clearInterval(timer)},250)})();
 </script><script>
@@ -117,4 +128,4 @@ const w=document.createElement('div');w.className='supervisor-table-scroll';t.pa
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixTables);else fixTables();
 })();
-</script><script type="module" src="./supervisor-passkey.js?v=20261030"></script></body></html>
+</script><script type="module" src="./supervisor-passkey.js?v=20261030-auto"></script></body></html>
