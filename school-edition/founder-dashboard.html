@@ -164,7 +164,7 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 #behaviorReportsDetails summary{cursor:pointer;font-weight:800;color:#075a47;padding:9px 4px}
 #behaviorReportsDetails #supervisorBehaviorInbox{box-shadow:none;border:0;padding:10px 0;margin:0!important}
 #behaviorReportsDetails:not([open]) #supervisorBehaviorInbox{display:none!important}
-</style></head><body><main><header class="supervisor-main-hero">
+</style><style id="behavior-standalone-style">body.behavior-standalone .supervisor-tabs,body.behavior-standalone .supervisor-module-grid,body.behavior-standalone #supervisorPendingRequests,body.behavior-standalone #supervisorBoys,body.behavior-standalone #supervisorGirls{display:none!important}body.behavior-standalone #generalOperationsDetails{display:block!important}body.behavior-standalone #supervisorBehaviorInbox{display:block!important;margin-top:12px}.behavior-return{display:inline-block;padding:12px 17px;border-radius:12px;background:#075b47;color:white;text-decoration:none;font-weight:700;margin:10px 0}</style></head><body><main><header class="supervisor-main-hero">
 <div class="supervisor-hero-row"><a href="../" class="supervisor-home-shortcut">الرئيسية</a><a href="school-notebook.html" class="supervisor-teacher-shortcut">📘 دفتر المعلم</a></div>
 <h1>لوحة المشرف المدرسي</h1><p>الإدارة المدرسية من مكان واحد</p>
 </header>
@@ -177,10 +177,10 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 <div class="supervisor-module-grid">
 <a class="supervisor-module" href="roster-admin.html"><span class="module-icon">👩‍🏫</span><strong>إدارة المعلمين</strong><small>الأسماء والحسابات</small></a>
 <a class="supervisor-module" href="data-admin.html?tab=review"><span class="module-icon">🎓</span><strong>قوائم الطلاب</strong><small>البحث والتعديل والاتصال</small></a>
-<a class="supervisor-module" href="data-admin.html?tab=import&kind=timing"><span class="module-icon">⏰</span><strong>التوقيت المدرسي الموحد</strong><small>إدراج واعتماد توقيت المدرستين من العمليات العامة</small></a>
+<a class="supervisor-module" href="data-admin.html?tab=timing"><span class="module-icon">⏰</span><strong>التوقيت المدرسي الموحد</strong><small>إدراج واعتماد توقيت المدرستين من العمليات العامة</small></a>
 <a class="supervisor-module" href="data-admin.html?tab=import"><span class="module-icon">📥</span><strong>استيراد البيانات</strong><small>الملفات والقوائم المعتمدة</small></a>
 <a class="supervisor-module" href="assessment-review.html"><span class="module-icon">📝</span><strong>وثائق التقويم</strong><small>الاطلاع على الوثائق وإعداد مسودات المراجعة</small></a>
-<a class="supervisor-module" href="#supervisorBehaviorInbox"><span class="module-icon">📨</span><strong>التقارير السلوكية</strong><small>الوارد وحالات الاطلاع</small></a>
+<a class="supervisor-module" href="founder-dashboard.html?view=behavior"><span class="module-icon">📨</span><strong>التقارير السلوكية</strong><small>الوارد وحالات الاطلاع</small></a>
 <button type="button" class="supervisor-module supervisor-settings-link" id="supervisorSecurityOpen"><span class="module-icon">🔐</span><strong>إعدادات الدخول</strong><small>تفعيل بصمة المشرف على هذا الجهاز</small></button>
 </div>
 <details class="supervisor-security-settings" id="supervisorSecuritySettings">
@@ -361,14 +361,11 @@ function activate(key){
  try{sessionStorage.setItem('school-supervisor-active-tab',key)}catch(e){}
 }
 for(const b of buttons)b.addEventListener('click',()=>activate(b.dataset.supervisorTab));
-const reportShortcut=document.querySelector('a[href="#supervisorBehaviorInbox"]');
-if(reportShortcut)reportShortcut.addEventListener('click',()=>{
- activate('general');
- const inbox=document.getElementById('supervisorBehaviorInbox');
- inbox.hidden=false;
- requestAnimationFrame(()=>inbox.scrollIntoView({behavior:'smooth',block:'start'}));
-});
 activate(new URLSearchParams(location.search).get('tab')||sessionStorage.getItem('school-supervisor-active-tab')||'general');
+if(new URLSearchParams(location.search).get('view')==='behavior'){
+ activate('general');document.body.classList.add('behavior-standalone');document.getElementById('supervisorBehaviorInbox').hidden=false;
+ const back=document.createElement('a');back.href='founder-dashboard.html?tab=general';back.className='behavior-return';back.textContent='↩ العودة إلى العمليات العامة';document.querySelector('#generalOperationsDetails').prepend(back);
+}
 })();
 </script><script>
 document.getElementById('supervisorSecurityOpen').addEventListener('click',()=>{
