@@ -399,7 +399,7 @@ select{max-width:100%;touch-action:auto}
 </div>
 <div id="sc-att" class="screen">
 <div class="section-title"><span data-i18n="attendance">تسجيل الحضور</span>
-<div style="display:flex;gap:6px;align-items:center"><button class="btn btn-ghost btn-sm" onclick="exportAttCsv()" title="تصدير الحضور إلى Excel (CSV)" aria-label="تصدير الحضور إلى Excel (CSV)"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#16834a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h11l5 5v13H4z"/><path d="M15 3v5h5"/><path d="m8 11 6 7m0-7-6 7"/></svg></button><button class="btn btn-ghost btn-sm" onclick="exportAttReport()" title="طباعة سجل الحضور" aria-label="طباعة سجل الحضور">🖨️</button><button class="btn btn-ghost btn-sm" onclick="shareNotebookPdf('attendance')" title="مشاركة PDF" aria-label="مشاركة PDF"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg></button><button class="btn btn-ghost btn-sm" onclick="reviewAttendanceForNoor()">↗ مراجعة في نور</button></div>
+<div style="display:flex;gap:6px;align-items:center"><button class="btn btn-ghost btn-sm" onclick="exportAttCsv()" title="تصدير الحضور إلى Excel (CSV)" aria-label="تصدير الحضور إلى Excel (CSV)"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#16834a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h11l5 5v13H4z"/><path d="M15 3v5h5"/><path d="m8 11 6 7m0-7-6 7"/></svg></button><button class="btn btn-ghost btn-sm" onclick="exportAttReport()" title="طباعة سجل الحضور" aria-label="طباعة سجل الحضور">🖨️</button><button class="btn btn-ghost btn-sm" onclick="shareNotebookPdf('attendance')" title="مشاركة PDF" aria-label="مشاركة PDF"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg></button><button class="btn btn-ghost btn-sm" onclick="sendAttendanceToNoorExtension()">⇄ Noor</button></div>
 </div>
 <div class="date-nav">
   <button class="btn-icon" onclick="shiftAttDate(-1)" aria-label="prev">‹</button>
@@ -451,15 +451,6 @@ select{max-width:100%;touch-action:auto}
 <a class="btn btn-outline btn-block" href="https://pext-hrss.mol.gov.om/OA_HTML/AppsLocalLogin.jsp" target="mawridTeacherPortal">👥 مورد — الموارد البشرية</a>
 <a class="btn btn-outline btn-block" href="https://pext-hrss.mol.gov.om/OA_HTML/RF.jsp?function_id=12238&amp;resp_id=50923&amp;resp_appl_id=800&amp;security_group_id=0&amp;lang_code=US" target="mawridTeacherPortal">🏖️ مورد — تقديم طلب إجازة</a>
 <a class="btn btn-outline btn-block" href="https://lms.moe.gov.om/" target="noorTeacherPortal">📚 نور — المنصة التعليمية</a>
-<div style="border:1px solid #d6e4dc;border-radius:12px;padding:12px">
-<strong>📋 نور — تسجيل الغياب حسب الصف</strong>
-<p style="font-size:.78rem;color:var(--mu);margin:7px 0">اختصارات للمجموعات المحددة فقط، وليست روابط عامة لجميع شعب الصف.</p>
-<div style="display:grid;gap:8px">
-<a class="btn btn-outline btn-block" href="https://lms.moe.gov.om/teacher/absences/daily_attendance/cid:9487183" target="noorTeacherPortal">الصف التاسع — الغياب</a>
-<a class="btn btn-outline btn-block" href="https://lms.moe.gov.om/teacher/absences/daily_attendance/cid:9486728" target="noorTeacherPortal">الصف الحادي عشر — الغياب</a>
-<a class="btn btn-outline btn-block" href="https://lms.moe.gov.om/teacher/absences/daily_attendance/cid:9486709" target="noorTeacherPortal">الصف الثاني عشر — الغياب</a>
-</div>
-</div>
 <a class="btn btn-ghost btn-block" href="https://lms-docs.moe.gov.om/" target="noorDocsPortal">📖 دليل نور الرسمي — مراجعة إجراءات الغياب والدرجات</a>
 <div style="border:1px solid #d6e4dc;border-radius:12px;padding:12px;margin-top:10px">
 <strong>🧪 تجربة الربط مع نور — دون إرسال رسمي</strong>
@@ -1284,23 +1275,6 @@ document.addEventListener('click',function(event){
 },true);
 <\/script><script type="module" src="./passkey-auth.js"><\/script></body></html>`);
   w.document.close();
-}
-function reviewAttendanceForNoor(){
- const cid=document.getElementById('attClass')?.value,pid=document.getElementById('attPeriod')?.value,ds=attDateStr();
- if(!cid||!pid){toast('اختر الصف والحصة أولًا');return}
- const cls=(db.classes||[]).find(c=>String(c.id)===String(cid));
- const grade=String(typeof schoolGradeLabel==='function'?schoolGradeLabel(cls?.name||''):'').match(/9|11|12/)?.[0];
- const noorCid={'9':'9487183','11':'9486728','12':'9486709'}[grade];
- const students=linkedStudentsForClass(cid);
- const rec=(db.attendance||{})[cid+'_'+ds+'_'+pid]||{};
- const absent=students.filter(st=>rec[st.id]==='absent');
- const late=students.filter(st=>rec[st.id]==='late');
- const excused=students.filter(st=>rec[st.id]==='excused');
- const unmarked=students.filter(st=>!rec[st.id]);
- if(!noorCid){alert('لا يوجد رابط نور معتمد لهذه المجموعة بعد. افتح نور من لوحة الاختصارات وحدد المجموعة الصحيحة.');return}
- const lines=['مراجعة الغياب في نور','الصف: '+(cls?.name||''),'التاريخ: '+ds,'الحصة: '+(db.periods||[]).find(p=>String(p.id)===String(pid))?.nameAr,'عدد الطلاب: '+students.length,'غائبون: '+absent.length,'متأخرون: '+late.length,'بعذر: '+excused.length,'دون تسجيل: '+unmarked.length,'','أسماء الغائبين في الدفتر:',...(absent.map(st=>'• '+st.name)),'','لا يتم إرسال أي بيانات تلقائيًا. تأكد من تطابق مجموعة نور مع صف الدفتر والتاريخ والحصة قبل إدخال الغياب.'];
- if(!navigator.onLine){alert(lines.join('\\n')+'\\n\\nأنت غير متصل بالإنترنت. السجل محفوظ في الدفتر؛ أعد المحاولة عند الاتصال.');return}
- if(confirm(lines.join('\\n')+'\\n\\nفتح نور للمراجعة؟'))window.open('https://lms.moe.gov.om/teacher/absences/daily_attendance/cid:'+noorCid,'noorTeacherPortal');
 }
 function sendAttendanceToNoorExtension(){
   const cid=document.getElementById('attClass')?.value;
