@@ -1289,14 +1289,18 @@ function reviewAttendanceForNoor(){
  const cid=document.getElementById('attClass')?.value,pid=document.getElementById('attPeriod')?.value,ds=attDateStr();
  if(!cid||!pid){toast('اختر الصف والحصة أولًا');return}
  const cls=(db.classes||[]).find(c=>String(c.id)===String(cid));
- const grade=String(cls?.name||'').match(/(?:^|\\D)(9|11|12)(?:\\D|$)/)?.[1];
+ const grade=String(typeof schoolGradeLabel==='function'?schoolGradeLabel(cls?.name||''):'').match(/9|11|12/)?.[0];
  const noorCid={'9':'9487183','11':'9486728','12':'9486709'}[grade];
- const students=(db.students||[]).filter(st=>String(st.classId)===String(cid));
- const rec=db.attendance[cid+'_'+ds+'_'+pid]||{};
- const absent=students.filter(st=>['absent','a','غياب','غائب'].includes(String(rec[st.id]||'').toLowerCase()));
- if(!noorCid){alert('لم يُربط هذا الصف برابط نور بعد. افتح نور من تبويب البوابة وحدد المجموعة الصحيحة.');return}
- const msg='مراجعة الغياب في نور\\nالصف: '+(cls?.name||'')+'\\nالتاريخ: '+ds+'\\nعدد الطلاب في الدفتر: '+students.length+'\\nعدد الغائبين المعروفين: '+absent.length+'\\n\\nلن تُرسل البيانات تلقائيًا. تأكد من مطابقة المجموعة والتاريخ والحصة في نور، ثم أدخل الغياب هناك. هل تريد فتح نور؟';
- if(confirm(msg))window.open('https://lms.moe.gov.om/teacher/absences/daily_attendance/cid:'+noorCid,'noorTeacherPortal');
+ const students=linkedStudentsForClass(cid);
+ const rec=(db.attendance||{})[cid+'_'+ds+'_'+pid]||{};
+ const absent=students.filter(st=>rec[st.id]==='absent');
+ const late=students.filter(st=>rec[st.id]==='late');
+ const excused=students.filter(st=>rec[st.id]==='excused');
+ const unmarked=students.filter(st=>!rec[st.id]);
+ if(!noorCid){alert('لا يوجد رابط نور معتمد لهذه المجموعة بعد. افتح نور من لوحة الاختصارات وحدد المجموعة الصحيحة.');return}
+ const lines=['مراجعة الغياب في نور','الصف: '+(cls?.name||''),'التاريخ: '+ds,'الحصة: '+(db.periods||[]).find(p=>String(p.id)===String(pid))?.nameAr,'عدد الطلاب: '+students.length,'غائبون: '+absent.length,'متأخرون: '+late.length,'بعذر: '+excused.length,'دون تسجيل: '+unmarked.length,'','أسماء الغائبين في الدفتر:',...(absent.map(st=>'• '+st.name)),'','لا يتم إرسال أي بيانات تلقائيًا. تأكد من تطابق مجموعة نور مع صف الدفتر والتاريخ والحصة قبل إدخال الغياب.'];
+ if(!navigator.onLine){alert(lines.join('\\n')+'\\n\\nأنت غير متصل بالإنترنت. السجل محفوظ في الدفتر؛ أعد المحاولة عند الاتصال.');return}
+ if(confirm(lines.join('\\n')+'\\n\\nفتح نور للمراجعة؟'))window.open('https://lms.moe.gov.om/teacher/absences/daily_attendance/cid:'+noorCid,'noorTeacherPortal');
 }
 function sendAttendanceToNoorExtension(){
   const cid=document.getElementById('attClass')?.value;
