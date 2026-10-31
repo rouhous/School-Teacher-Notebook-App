@@ -2641,8 +2641,17 @@ function bandsForSubject(subject){
 function loadCatalogPresetUI(classId){
   const prev=document.getElementById('importPreview');
   if(!prev)return;
-  const subj=document.getElementById('presetSubject')?.value||'دراسات اجتماعية';
-  const band=document.getElementById('presetBand')?.value||bandsForSubject(subj)[0];
+  const cls=db.classes.find(c=>String(c.id)===String(classId));
+  const grade=Number((String(cls?.grade||cls?.gradeLevel||cls?.name||'').match(/\\d+/)||[])[0])||0;
+  const inferred=schoolAssessmentSubject(cls?.subject||classDisplaySubject(cls)||'');
+  const subjectOptions=catalogSubjects();
+  const initialSubject=subjectOptions.includes(inferred)?inferred:'إنجليزي';
+  const subj=document.getElementById('presetSubject')?.value||initialSubject;
+  const allowedBands=bandsForSubject(subj);
+  const correctBand=allowedBands.find(b=>b===String(grade))||allowedBands.find(b=>{const m=b.match(/^(\\d+)-(\\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
+  const selectedBand=document.getElementById('presetBand')?.value;
+  const band=selectedBand&&allowedBands.includes(selectedBand)?selectedBand:(correctBand||allowedBands[0]);
+  if(grade&&correctBand&&band!==correctBand){toast('نموذج التقويم لا يطابق صف الفصل المحدد');return}
   const assessments=resolveAssessmentPreset(subj,band);
   if(!assessments){toast(db.lang==='ar'?'لا يوجد نموذج لهذه المادة/الصف':'No preset');return}
   const cMax=assessments.filter(a=>a.type!=='exam').reduce((s,a)=>s+a.max,0);
