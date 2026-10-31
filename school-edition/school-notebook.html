@@ -4264,7 +4264,11 @@ async function fetchApproved(path){
 }
 async function syncManaged(){
  try{
-  const [table,roster]=await Promise.all([fetchApproved('school-teacher-timetable'),fetchApproved('school-teacher-students')]);
+  const [tableResult,rosterResult]=await Promise.allSettled([fetchApproved('school-teacher-timetable'),fetchApproved('school-teacher-students')]);
+  if(tableResult.status!=='fulfilled')throw tableResult.reason;
+  const table=tableResult.value;
+  const roster=rosterResult.status==='fulfilled'?rosterResult.value:[];
+  if(rosterResult.status==='rejected')console.warn('Approved student roster unavailable; timetable will still load and existing local students will be preserved',rosterResult.reason);
   if(!table?.approved)throw Error('الحساب غير معتمد لعرض الجدول');
   if(!Array.isArray(roster))throw Error('قائمة الطلاب غير صالحة؛ لن يتم تغيير البيانات المحلية');
   managedSchedule=Array.isArray(table.slots)?table.slots:[];
