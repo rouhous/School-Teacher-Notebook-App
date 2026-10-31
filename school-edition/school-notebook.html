@@ -2645,8 +2645,9 @@ function loadCatalogPresetUI(classId){
   const grade=Number((String(cls?.grade||cls?.gradeLevel||cls?.name||'').match(/\\d+/)||[])[0])||0;
   const inferred=schoolAssessmentSubject(cls?.subject||classDisplaySubject(cls)||'');
   const subjectOptions=catalogSubjects();
-  const initialSubject=subjectOptions.includes(inferred)?inferred:'إنجليزي';
+  const initialSubject=subjectOptions.includes(inferred)?inferred:'';
   const subj=document.getElementById('presetSubject')?.value||initialSubject;
+  if(!subj){toast('تعذر تحديد مادة الصف؛ يرجى مراجعة ربط المادة بالفصل');return}
   const allowedBands=bandsForSubject(subj);
   const correctBand=allowedBands.find(b=>b===String(grade))||allowedBands.find(b=>{const m=b.match(/^(\\d+)-(\\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
   const selectedBand=document.getElementById('presetBand')?.value;
