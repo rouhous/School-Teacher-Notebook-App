@@ -696,11 +696,7 @@ function go(s){
  if(!['att','grades','students'].includes(s))return;
  const id=s==='att'?'attBody':s==='grades'?'gradesBody':'stuBody';
  const target=document.getElementById(id);
- const diagnostic=document.createElement('div');diagnostic.className='school-section-audit';diagnostic.style.cssText='margin:12px 0;padding:10px;border:1px solid #c5ad6b;border-radius:10px;font-size:13px;white-space:pre-wrap;color:#12574b';
- const classes=activeTeacherClasses();
- diagnostic.textContent='البيانات المحمّلة: '+classes.length+' صفوف، '+db.students.length+' طالبًا، '+db.assessments.length+' بند تقييم';
  screen.querySelectorAll('.school-section-audit').forEach(x=>x.remove());
- const heading=screen.querySelector('.section-title');if(heading)heading.insertAdjacentElement('afterend',diagnostic);else screen.prepend(diagnostic);
  try{
   if(s==='att'){const d=document.getElementById('attDate');if(d&&!d.value)d.value=db.attDate||todayStr();fillAtt()}
   else if(s==='grades'){fillGrade();loadGrades()}
