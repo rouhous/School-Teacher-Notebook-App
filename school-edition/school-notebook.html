@@ -4429,6 +4429,19 @@ async function syncManaged(){
   // Persist the approved timetable even when no student list has been returned.
   save();
   replaceHome();
+  const approvedLessons=db.schedule.filter(s=>s.type==='lesson').length;
+  const studentCount=db.students.length;
+  const classCount=db.classes.filter(cls=>db.schedule.some(s=>s.type==='lesson'&&String(s.classId)===String(cls.id))).length;
+  const assessmentCount=db.assessments.filter(a=>db.classes.some(cls=>String(cls.id)===String(a.classId))).length;
+  const syncIssue=rosterResult.status==='rejected'?'تعذر جلب قائمة الطلاب من الخادم: '+String(rosterResult.reason?.message||rosterResult.reason):(!managedRoster.length?'أعاد الخادم قائمة طلاب فارغة لهذا الحساب.':'');
+  if(syncIssue||!studentCount||!assessmentCount){
+    const body=document.getElementById('homeBody');
+    if(body){
+      const notice=document.createElement('div');notice.className='school-managed-notice';notice.style.cssText='padding:12px;margin:12px 0;border:1px solid #d8b768;border-radius:12px;white-space:pre-wrap';
+      notice.textContent='تشخيص ربط المعلم (للمراجعة فقط)\\nالحصص: '+approvedLessons+' | الصفوف: '+classCount+' | الطلاب: '+studentCount+' | بنود التقييم: '+assessmentCount+(syncIssue?'\\n'+syncIssue:'')+'\\nلن تُحذف أي بيانات. يمكن إعادة المحاولة من هنا.';
+      const retry=document.createElement('button');retry.type='button';retry.className='btn btn-primary';retry.textContent='إعادة تحميل الطلاب والتقييم';retry.onclick=()=>{retry.disabled=true;syncManaged()};notice.append(document.createElement('div'),retry);body.prepend(notice);
+    }
+  }
  }catch(e){loaded=true;replaceHome();const body=document.getElementById('homeBody');if(body){const notice=document.createElement('div');notice.className='school-managed-notice';notice.textContent='تعذر تحميل بيانات المعلم: '+String(e.message||e)+' — لم تُحذف البيانات المحلية.';const retry=document.createElement('button');retry.type='button';retry.className='btn btn-primary';retry.textContent='إعادة محاولة تحميل الجدول والطلاب';retry.onclick=()=>{retry.disabled=true;syncManaged()};notice.append(document.createElement('div'),retry);body.prepend(notice);}console.error('Teacher approved data sync failed',e);}
 }
 // Read-only linkage audit. Counts only; no student names or identifiers leave the device.
