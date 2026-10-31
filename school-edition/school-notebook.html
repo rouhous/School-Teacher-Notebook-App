@@ -2642,16 +2642,16 @@ function loadCatalogPresetUI(classId){
   const prev=document.getElementById('importPreview');
   if(!prev)return;
   const cls=db.classes.find(c=>String(c.id)===String(classId));
-  const grade=Number((String(cls?.grade||cls?.gradeLevel||cls?.name||'').match(/\\d+/)||[])[0])||0;
-  const inferred=schoolAssessmentSubject(cls?.subject||classDisplaySubject(cls)||'');
+  const grade=Number((String(cls?.grade||cls?.gradeLevel||cls?.name||'').match(/\d+/)||[])[0])||0;
+  const inferred=cls?schoolAssessmentSubject(cls.subject||classDisplaySubject(cls)||''):'';
   const subjectOptions=catalogSubjects();
   const initialSubject=subjectOptions.includes(inferred)?inferred:'';
-  const subj=document.getElementById('presetSubject')?.value||initialSubject;
+  const subj=initialSubject||document.getElementById('presetSubject')?.value||'';
   if(!subj){toast('تعذر تحديد مادة الصف؛ يرجى مراجعة ربط المادة بالفصل');return}
   const allowedBands=bandsForSubject(subj);
-  const correctBand=allowedBands.find(b=>b===String(grade))||allowedBands.find(b=>{const m=b.match(/^(\\d+)-(\\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
-  const selectedBand=document.getElementById('presetBand')?.value;
-  const band=selectedBand&&allowedBands.includes(selectedBand)?selectedBand:(correctBand||allowedBands[0]);
+  const correctBand=allowedBands.find(b=>b===String(grade))||allowedBands.find(b=>{const m=b.match(/^(\d+)-(\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
+  const selectedBand=document.getElementById('presetSubject')?.value===subj?document.getElementById('presetBand')?.value:'';
+  const band=correctBand||(selectedBand&&allowedBands.includes(selectedBand)?selectedBand:allowedBands[0]);
   if(grade&&correctBand&&band!==correctBand){toast('نموذج التقويم لا يطابق صف الفصل المحدد');return}
   const assessments=resolveAssessmentPreset(subj,band);
   if(!assessments){toast(db.lang==='ar'?'لا يوجد نموذج لهذه المادة/الصف':'No preset');return}
