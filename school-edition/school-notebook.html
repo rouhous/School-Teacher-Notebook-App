@@ -399,7 +399,7 @@ select{max-width:100%;touch-action:auto}
 </div>
 <div id="sc-att" class="screen">
 <div class="section-title"><span data-i18n="attendance">تسجيل الحضور</span>
-<div style="display:flex;gap:6px;align-items:center"><button class="btn btn-ghost btn-sm" onclick="exportAttCsv()" title="تصدير الحضور إلى Excel (CSV)" aria-label="تصدير الحضور إلى Excel (CSV)"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#16834a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h11l5 5v13H4z"/><path d="M15 3v5h5"/><path d="m8 11 6 7m0-7-6 7"/></svg></button><button class="btn btn-ghost btn-sm" onclick="exportAttReport()" title="طباعة سجل الحضور" aria-label="طباعة سجل الحضور">🖨️</button><button class="btn btn-ghost btn-sm" onclick="shareNotebookPdf('attendance')" title="مشاركة PDF" aria-label="مشاركة PDF"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg></button><button class="btn btn-ghost btn-sm" onclick="sendAttendanceToNoorExtension()">⇄ Noor</button></div>
+<div style="display:flex;gap:6px;align-items:center"><button class="btn btn-ghost btn-sm" onclick="exportAttCsv()" title="تصدير الحضور إلى Excel (CSV)" aria-label="تصدير الحضور إلى Excel (CSV)"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#16834a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h11l5 5v13H4z"/><path d="M15 3v5h5"/><path d="m8 11 6 7m0-7-6 7"/></svg></button><button class="btn btn-ghost btn-sm" onclick="exportAttReport()" title="طباعة سجل الحضور" aria-label="طباعة سجل الحضور">🖨️</button><button class="btn btn-ghost btn-sm" onclick="shareNotebookPdf('attendance')" title="مشاركة PDF" aria-label="مشاركة PDF"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg></button><button class="btn btn-ghost btn-sm" onclick="reviewAttendanceForNoor()">↗ مراجعة في نور</button></div>
 </div>
 <div class="date-nav">
   <button class="btn-icon" onclick="shiftAttDate(-1)" aria-label="prev">‹</button>
@@ -1284,6 +1284,19 @@ document.addEventListener('click',function(event){
 },true);
 <\/script><script type="module" src="./passkey-auth.js"><\/script></body></html>`);
   w.document.close();
+}
+function reviewAttendanceForNoor(){
+ const cid=document.getElementById('attClass')?.value,pid=document.getElementById('attPeriod')?.value,ds=attDateStr();
+ if(!cid||!pid){toast('اختر الصف والحصة أولًا');return}
+ const cls=(db.classes||[]).find(c=>String(c.id)===String(cid));
+ const grade=String(cls?.name||'').match(/(?:^|\\D)(9|11|12)(?:\\D|$)/)?.[1];
+ const noorCid={'9':'9487183','11':'9486728','12':'9486709'}[grade];
+ const students=(db.students||[]).filter(st=>String(st.classId)===String(cid));
+ const rec=db.attendance[cid+'_'+ds+'_'+pid]||{};
+ const absent=students.filter(st=>['absent','a','غياب','غائب'].includes(String(rec[st.id]||'').toLowerCase()));
+ if(!noorCid){alert('لم يُربط هذا الصف برابط نور بعد. افتح نور من تبويب البوابة وحدد المجموعة الصحيحة.');return}
+ const msg='مراجعة الغياب في نور\\nالصف: '+(cls?.name||'')+'\\nالتاريخ: '+ds+'\\nعدد الطلاب في الدفتر: '+students.length+'\\nعدد الغائبين المعروفين: '+absent.length+'\\n\\nلن تُرسل البيانات تلقائيًا. تأكد من مطابقة المجموعة والتاريخ والحصة في نور، ثم أدخل الغياب هناك. هل تريد فتح نور؟';
+ if(confirm(msg))window.open('https://lms.moe.gov.om/teacher/absences/daily_attendance/cid:'+noorCid,'noorTeacherPortal');
 }
 function sendAttendanceToNoorExtension(){
   const cid=document.getElementById('attClass')?.value;
