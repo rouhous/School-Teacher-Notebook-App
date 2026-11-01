@@ -911,6 +911,7 @@ sched.forEach(s=>{
     <div class="period-info"><div class="subj">${escHTML(s.subject||periodName(per)||'')}</div><div class="cls">${escHTML(cls?.name||'')}</div></div>
     ${badge}</div>`;
 });
+html+='<footer style="text-align:center;margin:24px auto 12px;padding:12px 8px;color:var(--mu);font-size:.74rem;line-height:1.9;border-top:1px solid #e2e8f0" aria-label="حقوق التطبيق">تطوير: Houssem Lotfi Rouatbi · حسام لطفي الرواتبي<br>© 2026–2027 جميع الحقوق محفوظة</footer>';
 body.innerHTML=html;
 }
 
