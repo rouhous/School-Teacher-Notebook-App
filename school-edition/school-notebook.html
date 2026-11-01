@@ -4211,29 +4211,49 @@ document.querySelectorAll('#viewPills button').forEach(b=>b.classList.toggle('ac
 renderHome();
 scheduleAlarmChecker();
 </script>
+
 <script>
-document.addEventListener('DOMContentLoaded',()=>{
- if(!window.schoolOfflinePin)return;
- const panel=document.createElement('section');
- panel.style.cssText='margin:12px;padding:12px;border:1px solid #a7d7c6;border-radius:12px;background:#f1faf6;text-align:center';
- const title=document.createElement('strong');title.textContent='تفعيل الدخول دون إنترنت لمدة 24 ساعة';
- const input=document.createElement('input');input.type='password';input.inputMode='numeric';input.maxLength=10;input.placeholder='رمز من 6 إلى 10 أرقام';input.style.cssText='display:block;width:100%;padding:10px;margin:10px 0';
- const button=document.createElement('button');button.textContent='حفظ رمز الدخول المحلي';button.type='button';
- const status=document.createElement('p');status.setAttribute('role','status');
- panel.append(title,input,button,status);
- document.body.append(panel);
- button.onclick=async()=>{
-  try{
-   if(!navigator.onLine||!schoolNotebookCredential)throw Error('يلزم الدخول باستخدام Google مع اتصال بالإنترنت.');
-   const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:schoolNotebookCredential})});
-   const data=await response.json();
-   if(!response.ok||!data.ok||!data.data?.approved)throw Error('لم يتم التحقق من اعتماد الحساب.');
-   await schoolOfflinePin.enroll(schoolNotebookSubject,input.value);
-   input.value='';
-   status.textContent='تم تفعيل الرمز على هذا الجهاز لمدة 24 ساعة.';
-  }catch(e){status.textContent=e.message}
- };
-});
+(function(){
+ async function setupPin(change){
+  if(!window.schoolOfflinePin||!schoolNotebookSubject)return;
+  if(!change&&schoolOfflinePin.read())return;
+  if(!navigator.onLine){if(change)alert('تغيير الرمز يتطلب الاتصال بالإنترنت.');return}
+  const overlay=document.createElement('div');
+  overlay.id='schoolOfflinePinSetup';
+  overlay.style.cssText='position:fixed;inset:0;background:#001a1599;z-index:2147483647;display:grid;place-items:center;padding:20px';
+  const card=document.createElement('div');
+  card.style.cssText='width:min(100%,360px);padding:22px;border-radius:18px;background:white;color:#134e4a;text-align:center;box-shadow:0 12px 40px #0003';
+  const heading=document.createElement('h3');heading.textContent=change?'تغيير رمز الدخول المحلي':'إنشاء رمز الدخول دون إنترنت';
+  const info=document.createElement('p');info.textContent='أدخل رمزًا من 6 إلى 10 أرقام، ثم أكّده. صالح لمدة 24 ساعة من آخر تحقق بالإنترنت.';
+  function field(placeholder){const i=document.createElement('input');i.type='password';i.inputMode='numeric';i.maxLength=10;i.autocomplete='new-password';i.placeholder=placeholder;i.style.cssText='display:block;width:100%;padding:12px;margin:10px 0;border:1px solid #b6ccc4;border-radius:9px';return i}
+  const first=field('رمز الدخول الجديد');const second=field('تأكيد رمز الدخول');
+  const save=document.createElement('button');save.type='button';save.textContent='حفظ الرمز';save.style.cssText='padding:11px 22px;background:#0f766e;color:white;border:0;border-radius:10px';
+  const cancel=document.createElement('button');cancel.type='button';cancel.textContent='لاحقًا';cancel.style.cssText='padding:11px;margin-inline-start:10px;border:1px solid #ddd;border-radius:10px;background:white';
+  const message=document.createElement('p');message.setAttribute('role','status');
+  card.append(heading,info,first,second,save,cancel,message);overlay.append(card);document.body.append(overlay);
+  cancel.onclick=()=>overlay.remove();
+  save.onclick=async()=>{
+   try{
+    if(first.value!==second.value)throw Error('الرمزان غير متطابقين.');
+    if(!/^[0-9]{6,10}$/.test(first.value))throw Error('الرمز يجب أن يتكون من 6 إلى 10 أرقام.');
+    save.disabled=true;
+    const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:schoolNotebookCredential})});
+    const data=await response.json();
+    if(!response.ok||!data.ok||!data.data?.approved)throw Error('يلزم تسجيل الدخول بحساب Google المعتمد.');
+    await schoolOfflinePin.enroll(schoolNotebookSubject,first.value);
+    overlay.remove();
+   }catch(e){message.textContent=e.message}finally{save.disabled=false}
+  };
+ }
+ window.schoolChangeOfflinePin=()=>setupPin(true);
+ window.schoolOfferOfflinePin=()=>setupPin(false);
+ document.addEventListener('DOMContentLoaded',()=>{
+  const button=document.createElement('button');button.type='button';button.textContent='تغيير رمز الدخول دون إنترنت';button.style.cssText='display:block;margin:12px auto;padding:10px;border:1px solid #0f766e;border-radius:10px;background:#fff;color:#0f766e';
+  button.onclick=()=>setupPin(true);
+  const settings=document.getElementById('teacherPasskeySettingsStatus')?.parentElement;
+  if(settings)settings.append(button);
+ });
+})();
 </script>
 <script>
 (async()=>{
@@ -4248,6 +4268,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(!response.ok||!result.ok||!result.data?.approved)throw Error('NOT_APPROVED');
   window.schoolOfflinePin?.refresh(schoolNotebookSubject);
   cover.remove();
+  if(schoolNotebookCredential)setTimeout(()=>window.schoolOfferOfflinePin?.(),400);
  }catch(e){
   cover.textContent='تعذر التحقق من حساب المعلم. يرجى تسجيل الدخول من مساحة المعلم.';
   const a=document.createElement('a');a.href='../';a.textContent='العودة إلى تسجيل الدخول';cover.append(document.createElement('p'),a);
