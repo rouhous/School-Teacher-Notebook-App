@@ -1395,6 +1395,8 @@ function ensureOfficialAssessments(classId){
  let changed=false;
  // Trial English: discard outdated assessment columns and their marks, rebuild from canonical preset.
  if(subj==='إنجليزي'){
+  // Imported English columns are authoritative for this class; do not overwrite after Save.
+  if(db.englishAssessmentManualImportAt&&db.assessments.some(x=>String(x.classId)===String(classId)))return;
   const current=db.assessments.filter(x=>String(x.classId)===String(classId));
   const canonical=preset.map(x=>({name:x.name,max:Number(x.max),type:x.type}));
   const matches=current.length===canonical.length&&canonical.every(x=>current.some(y=>y.name===x.name&&Number(y.max)===x.max&&y.type===x.type));
@@ -3647,6 +3649,17 @@ function loadEnglishPresetUI(classId,grade){
 
 function applyGradesImport(classId){
   if(!classId){toast(t('classLabel'));return}
+  const targetClass=db.classes.find(c=>String(c.id)===String(classId));
+  const grade=Number((String(targetClass?.grade||targetClass?.gradeLevel||targetClass?.name||'').match(/\\d+/)||[])[0])||0;
+  const importedSubject=document.getElementById('presetSubject')?.value||'';
+  const english=schoolAssessmentSubject(targetClass?.subject||classDisplaySubject(targetClass)||'')==='إنجليزي'||importedSubject==='إنجليزي';
+  if(english){
+   const old=db.assessments.filter(a=>String(a.classId)===String(classId));
+   const oldIds=new Set(old.map(a=>String(a.id)));
+   db.assessments=db.assessments.filter(a=>String(a.classId)!==String(classId));
+   for(const key of Object.keys(db.grades||{}))if([...oldIds].some(id=>key.startsWith(id+'_')))delete db.grades[key];
+   if(targetClass)targetClass.subject='إنجليزي';
+  }
   const nA=+(document.getElementById('gAssessCount')?.value||0);const created=[];
   for(let i=0;i<nA;i++){
     const name=document.getElementById('gAssess'+i)?.value?.trim();
@@ -3661,7 +3674,7 @@ function applyGradesImport(classId){
       created[i]=existing.id;
     } else {
       const id=uid();
-      db.assessments.push({id,classId,name,max:Number.isFinite(max)&&max>0?max:10,type});
+      db.assessments.push({id,classId,name,max:Number.isFinite(max)&&max>0?max:10,type,...(english?{official:true,officialKey:'إنجليزي|'+grade+'|'+name}: {})});
       created[i]=id;
     }
   }
@@ -3676,6 +3689,7 @@ function applyGradesImport(classId){
       if(assessId&&Number.isFinite(value)&&value>=0){const a=db.assessments.find(x=>x.id===assessId);if(!a||value<=Number(a.max))db.grades[assessId+'_'+st.id]=value;}
     }
   }
+  if(english)db.englishAssessmentManualImportAt=new Date().toISOString();
   db.onboarded=true;save();closeM();go('grades');
   setTimeout(()=>{const sel=document.getElementById('gradeClass');if(sel)sel.value=classId;loadGrades()},50);
   toast('✓ '+t('parseOk')+' ('+created.filter(Boolean).length+')');
