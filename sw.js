@@ -1,4 +1,4 @@
-const VERSION='school-pwa-v25-resilient-shell-assets';
+const VERSION='school-pwa-v26-english-reset';
 const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png','./school-edition/school-notebook.html','./school-edition/session-auth.js','./school-edition/manifest.webmanifest'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(VERSION).then(async cache=>{
