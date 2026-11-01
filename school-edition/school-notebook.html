@@ -361,6 +361,41 @@ select{max-width:100%;touch-action:auto}
 .behavior-report-item{border:1px solid #d3e4d9;border-radius:12px;padding:12px;margin:8px 0;background:#f7faf7;font-size:.85rem;line-height:1.7}
 .behavior-report-item strong{display:block;color:#075c49}
 .behavior-report-state{font-size:.84rem;font-weight:800;color:#126752}
+</style><style id="compact-attendance-layout">
+#sc-att .att-actions{margin-bottom:5px;justify-content:flex-end}
+#sc-att .att-date-heading{display:none}
+#sc-att .att-date-nav{max-width:560px;margin:0 0 8px auto;gap:5px}
+#sc-att .att-date-nav input[type=date]{height:42px;padding:5px 8px;min-width:0}
+#sc-att .att-date-nav .btn-icon{height:42px;width:40px}
+#sc-att .att-control-line{display:flex;align-items:flex-end;gap:10px;margin-bottom:7px}
+#sc-att .att-class-control{flex:0 1 38%;min-width:95px;margin-bottom:0}
+#sc-att .att-period-control{flex:1;min-width:0;margin-bottom:0}
+#sc-att .att-control-line label{margin-bottom:3px;font-size:.77rem}
+#sc-att #attClass{height:43px;padding:6px 9px}
+#sc-att #attPeriodChips{margin-bottom:0;gap:5px;align-items:center;min-height:43px}
+#sc-att #attPeriodChips .chip{padding:6px 9px}
+#sc-att .att-summary{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px;margin:5px 0 8px}
+#sc-att .att-summary .s{padding:6px 2px;border-radius:10px;min-width:0}
+#sc-att .att-summary .s .n{font-size:1.05rem}
+#sc-att .att-summary .s .l{font-size:.63rem;margin-top:0}
+@media(min-width:850px){
+ #sc-att{display:none}
+ #sc-att.active{display:block}
+ #sc-att .att-actions{margin-bottom:2px}
+ #sc-att .att-date-nav{max-width:390px}
+ #sc-att .att-control-line{width:58%;display:inline-flex;vertical-align:middle}
+ #sc-att .att-summary{width:40%;display:inline-grid!important;vertical-align:middle;margin-inline-start:1%}
+ #sc-att .att-class-control{flex-basis:30%}
+}
+@media(max-width:480px){
+ #sc-att .att-actions{margin-bottom:4px}
+ #sc-att .att-actions .btn{padding:6px 8px}
+ #sc-att .att-date-nav{max-width:100%}
+ #sc-att .att-control-line{gap:6px}
+ #sc-att .att-class-control{flex-basis:33%;min-width:90px}
+ #sc-att .att-period-control{flex:1}
+ #sc-att #attPeriodChips .chip{padding:5px 7px;font-size:.72rem}
+}
 </style></head>
 <body data-lang="ar"><div id="schoolAuthCover"><div>جارٍ التحقق من حساب المعلم المدرسي…<p><a href="../">العودة إلى تسجيل الدخول</a></p></div></div>
 <div id="appLock" class="app-lock" aria-hidden="false">
@@ -399,20 +434,20 @@ select{max-width:100%;touch-action:auto}
 <div id="classesBody"></div>
 </div>
 <div id="sc-att" class="screen">
-<div class="section-title"><span data-i18n="attendance">تسجيل الحضور</span>
+<div class="section-title att-actions"><span class="att-date-heading" aria-hidden="true"></span>
 <div style="display:flex;gap:6px;align-items:center"><button class="btn btn-ghost btn-sm" onclick="exportAttCsv()" title="تصدير الحضور إلى Excel (CSV)" aria-label="تصدير الحضور إلى Excel (CSV)"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#16834a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h11l5 5v13H4z"/><path d="M15 3v5h5"/><path d="m8 11 6 7m0-7-6 7"/></svg></button><button class="btn btn-ghost btn-sm" onclick="exportAttReport()" title="طباعة سجل الحضور" aria-label="طباعة سجل الحضور">🖨️</button><button class="btn btn-ghost btn-sm" onclick="shareNotebookPdf('attendance')" title="مشاركة PDF" aria-label="مشاركة PDF"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg></button><button class="btn btn-ghost btn-sm" onclick="sendAttendanceToNoorExtension()">⇄ Noor</button></div>
 </div>
-<div class="date-nav">
+<div class="date-nav att-date-nav">
   <button class="btn-icon" onclick="shiftAttDate(-1)" aria-label="prev">‹</button>
   <input type="date" id="attDate" onchange="onAttDateChange()">
   <button class="btn-icon" onclick="shiftAttDate(1)" aria-label="next">›</button>
-  <button class="btn btn-ghost btn-sm" onclick="setAttToday()" data-i18n="today">اليوم</button>
+  
 </div>
-<div class="form-group"><label data-i18n="classLabel">الصف</label><select id="attClass" onchange="onAttClassChange()"></select></div>
-<div class="form-group"><label data-i18n="period">الحصة</label>
+<div class="att-control-line"><div class="form-group att-class-control"><label data-i18n="classLabel">الصف</label><select id="attClass" onchange="onAttClassChange()"></select></div>
+<div class="form-group att-period-control"><label data-i18n="period">الحصة</label>
   <div class="chip-row" id="attPeriodChips"></div>
   <select id="attPeriod" onchange="loadAtt()" style="display:none"></select>
-</div>
+</div></div>
 <div id="attSummary" class="att-summary" style="display:none"></div>
 <div class="card" id="attBody" style="padding:4px 12px"></div>
 <button class="btn btn-primary btn-block" style="margin-top:10px" onclick="saveAtt()" data-i18n="saveAttendance">حفظ الحضور</button>
