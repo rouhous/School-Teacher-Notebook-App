@@ -1396,7 +1396,7 @@ function ensureOfficialAssessments(classId){
  // Trial English: discard outdated assessment columns and their marks, rebuild from canonical preset.
  if(subj==='إنجليزي'){
   // Imported English columns are authoritative for this class; do not overwrite after Save.
-  if(db.englishAssessmentManualImportAt&&db.assessments.some(x=>String(x.classId)===String(classId)))return;
+  if(db.englishAssessmentManualImportAt&&db.assessments.some(x=>String(x.classId)===String(classId)&&x.officialKey))return;
   const current=db.assessments.filter(x=>String(x.classId)===String(classId));
   const canonical=preset.map(x=>({name:x.name,max:Number(x.max),type:x.type}));
   const matches=current.length===canonical.length&&canonical.every(x=>current.some(y=>y.name===x.name&&Number(y.max)===x.max&&y.type===x.type));
