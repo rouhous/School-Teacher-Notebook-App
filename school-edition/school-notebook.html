@@ -1564,7 +1564,13 @@ function loadStudents(){
  if(!cid){
   const grades=[...new Set(activeTeacherClasses().map(c=>schoolGradeLabel(c.name)).filter(Boolean))].sort((a,b)=>Number(a)-Number(b)||a.localeCompare(b,'ar'));
   const cards=grades.map(g=>{
-   const count=db.students.filter(st=>studentMatchesSchoolClass(st,'grade:'+g)).length;
+   const matching=db.students.filter(st=>studentMatchesSchoolClass(st,'grade:'+g));
+   const unique=new Set(matching.map(st=>{
+    const number=String(st.studentNumber||st.studentCode||'').trim();
+    const name=String(st.name||'').normalize('NFKC').replace(/[\u064B-\u065F\u0640]/g,'').replace(/\s+/g,' ').trim();
+    return number?'id:'+number:'name:'+name;
+   }));
+   const count=unique.size;
    return '<button type="button" class="btn btn-outline" style="min-height:100px;display:flex;flex-direction:column;justify-content:center;gap:10px;font-size:1.4rem;border-radius:18px" onclick="selectStudentGrade(\''+escHTML(g)+'\')"><strong>'+escHTML(g)+'</strong><span style="font-size:.85rem;color:var(--mu)">'+count+' '+t('students')+'</span></button>';
   }).join('');
   body.innerHTML=grades.length?'<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px">'+cards+'</div>':'<div class="empty"><p>'+t('noClasses')+'</p></div>';
