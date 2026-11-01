@@ -3716,8 +3716,15 @@ function sendGradesToNoorExtension(){
       }))
     }))
   };
+  const listener=function(event){
+    if(event.source!==window||event.origin!==location.origin||event.data?.type!=='TEACHER_NOTEBOOK_NOOR_ACK')return;
+    window.removeEventListener('message',listener);
+    toast('✓ استقبلت إضافة نور بيانات '+Number(event.data.count||0)+' طالبًا. افتح نور وراجع البيانات داخل الإضافة.');
+  };
+  window.addEventListener('message',listener);
   window.postMessage({type:'TEACHER_NOTEBOOK_NOOR_EXPORT',payload},location.origin);
-  toast('تم إرسال الدرجات إلى إضافة Firefox إذا كانت مثبتة. افتح نور ثم الإضافة.');
+  setTimeout(()=>window.removeEventListener('message',listener),10000);
+  toast('تم طلب إرسال الدرجات. ستظهر رسالة تأكيد عندما تستقبلها إضافة Firefox.');
 }
 async function shareNotebookPdf(kind){
   if(kind!=='attendance'&&kind!=='grades')return;
