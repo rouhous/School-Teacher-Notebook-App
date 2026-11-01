@@ -1,5 +1,5 @@
-const VERSION='school-pwa-v23-passkey-auto-prompt';
-const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png'];
+const VERSION='school-pwa-v24-offline-notebook-shell';
+const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png','./school-edition/school-notebook.html','./school-edition/session-auth.js','./school-edition/manifest.webmanifest'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)));
  self.skipWaiting();
@@ -14,15 +14,15 @@ self.addEventListener('fetch',event=>{
  if(u.origin!==self.location.origin||!u.pathname.startsWith('/School-Teacher-Notebook-App/'))return;
  if(req.mode==='navigate'){
    // Never serve the login document in place of a protected notebook or dashboard.
-   if(!['/School-Teacher-Notebook-App/','/School-Teacher-Notebook-App/index.html'].includes(u.pathname))return;
+   if(!['/School-Teacher-Notebook-App/','/School-Teacher-Notebook-App/index.html','/School-Teacher-Notebook-App/school-edition/school-notebook.html'].includes(u.pathname))return;
    event.respondWith((async()=>{
      const cache=await caches.open(VERSION);
      try{
        const fresh=await fetch(req,{cache:'no-store'});
-       if(fresh.ok)await cache.put('./index.html',fresh.clone());
+       if(fresh.ok)await cache.put(req,fresh.clone());
        return fresh;
      }catch{
-       return (await cache.match('./index.html'))||Response.error();
+       return (await cache.match(req,{ignoreSearch:true}))||Response.error();
      }
    })());
    return;
