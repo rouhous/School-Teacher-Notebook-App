@@ -659,7 +659,19 @@ async function verifiedTeacher(response){
    const j=await r.json();
    if(r.ok&&j.ok&&j.data?.approved){location.replace('school-edition/school-notebook.html');return;}
    schoolAuthClear();
-  }catch(e){status.textContent='تعذر التحقق من الجلسة المحفوظة. يمكنك تسجيل الدخول باستخدام Google.';}
+  }catch(e){
+   if(!navigator.onLine&&credential&&'caches' in window){
+    try{
+     const cached=await caches.match('school-edition/school-notebook.html',{ignoreSearch:true});
+     if(cached){
+      status.textContent='📴 لا يوجد اتصال؛ فتح الدفتر المحفوظ باستخدام جلسة لم تنتهِ صلاحيتها.';
+      location.replace('school-edition/school-notebook.html');
+      return;
+     }
+    }catch(_){}
+   }
+   status.textContent='تعذر التحقق من الجلسة المحفوظة. يلزم الاتصال لتسجيل الدخول أو تجديد الجلسة.';
+  }
  }
  resumeApprovedSession();
  function render(){
