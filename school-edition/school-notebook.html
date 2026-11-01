@@ -3716,16 +3716,26 @@ function sendGradesToNoorExtension(){
       }))
     }))
   };
+  let acknowledged=false;
   const listener=function(event){
-    const ack=typeof event.data==='string'?(()=>{try{return JSON.parse(event.data)}catch(_){return null}})():event.data;
-    if(event.origin!==location.origin||ack?.type!=='TEACHER_NOTEBOOK_NOOR_ACK')return;
-    window.removeEventListener('message',listener);
-    toast('✓ استقبلت إضافة نور بيانات '+Number(ack.count||0)+' طالبًا. افتح نور وراجع البيانات داخل الإضافة.');
+    if(event.origin!==location.origin)return;
+    let msg=event.data;
+    if(typeof msg==='string'){try{msg=JSON.parse(msg)}catch(_){return}}
+    if(msg?.type==='TEACHER_NOTEBOOK_NOOR_ACK'){
+      acknowledged=true;window.removeEventListener('message',listener);
+      toast('✓ استلمت إضافة نور بيانات '+Number(msg.count||0)+' طالبًا. افتح الإضافة للمراجعة.');
+    }else if(msg?.type==='TEACHER_NOTEBOOK_NOOR_ERROR'){
+      acknowledged=true;window.removeEventListener('message',listener);
+      alert('تعذر إرسال الدرجات إلى الإضافة: '+String(msg.message||'خطأ غير معروف'));
+    }
   };
   window.addEventListener('message',listener);
   window.postMessage(JSON.stringify({type:'TEACHER_NOTEBOOK_NOOR_EXPORT',payload}),location.origin);
-  setTimeout(()=>window.removeEventListener('message',listener),10000);
-  toast('تم طلب إرسال الدرجات. ستظهر رسالة تأكيد عندما تستقبلها إضافة Firefox.');
+  toast('جارٍ إرسال '+students.length+' طالبًا إلى إضافة نور...');
+  setTimeout(()=>{
+    window.removeEventListener('message',listener);
+    if(!acknowledged)alert('لم تؤكد إضافة نور الاستلام خلال 8 ثوانٍ. تحقق من تحميل الإضافة 1.4.3 وإذن الوصول إلى موقع الدفتر، ثم أعد تحميل صفحة الدفتر.');
+  },8000);
 }
 async function shareNotebookPdf(kind){
   if(kind!=='attendance'&&kind!=='grades')return;
