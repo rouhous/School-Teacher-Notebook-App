@@ -1,7 +1,9 @@
-const VERSION='school-pwa-v24-offline-notebook-shell';
+const VERSION='school-pwa-v25-resilient-shell-assets';
 const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png','./school-edition/school-notebook.html','./school-edition/session-auth.js','./school-edition/manifest.webmanifest'];
 self.addEventListener('install',event=>{
- event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)));
+ event.waitUntil(caches.open(VERSION).then(async cache=>{
+   await Promise.allSettled(SHELL.map(path=>cache.add(path)));
+ }));
  self.skipWaiting();
 });
 self.addEventListener('activate',event=>{
@@ -35,6 +37,17 @@ self.addEventListener('fetch',event=>{
      const res=await fetch(req);
      if(res.ok)await cache.put(u.pathname,res.clone());
      return res;
+   })());
+   return;
+ }
+ if(u.pathname.endsWith('/school-edition/session-auth.js')||u.pathname.endsWith('/school-edition/manifest.webmanifest')){
+   event.respondWith((async()=>{
+     const cache=await caches.open(VERSION);
+     try{
+       const response=await fetch(req,{cache:'no-store'});
+       if(response.ok)await cache.put(req,response.clone());
+       return response;
+     }catch{return (await cache.match(req))||Response.error()}
    })());
    return;
  }
