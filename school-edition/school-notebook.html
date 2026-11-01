@@ -534,19 +534,14 @@ function load(){
   if(!db.periodNotes||typeof db.periodNotes!=='object')db.periodNotes={};
   if(!Array.isArray(db.timingPresets))db.timingPresets=[];
   try{ensureBreakInPeriods()}catch(e){}
-  if(db.englishAssessmentResetVersion!==20261101){
-   const englishIds=new Set((db.classes||[]).filter(c=>schoolAssessmentSubject(c.subject||classDisplaySubject(c)||'')==='إنجليزي').map(c=>String(c.id)));
-   const ids=new Set(db.assessments.filter(a=>englishIds.has(String(a.classId))).map(a=>String(a.id)));
-   db.assessments=db.assessments.filter(a=>!ids.has(String(a.id)));
-   for(const key of Object.keys(db.grades||{}))if([...ids].some(id=>key.startsWith(id+'_')))delete db.grades[key];
-   db.englishAssessmentResetVersion=20261101;
-   save();
-  }
   try{
     const a=syncClassSubjectsFromSchedule();
     const b=purgeStaleDefaultSlots();
     if(a||b)save();
   }catch(e){}
+  // Reconcile English trial data after class/subject linkage is available.
+  try{resetEnglishTrialDataAutomatically()}catch(e){console.warn('English reset:',e)}
+
   applyLang();
   if(window._gradeZoom===undefined)window._gradeZoom=0.7;
   setTimeout(applyStaticSchoolIcon,20); setTimeout(setupAppIconsFromBanner,80);
@@ -1372,6 +1367,21 @@ function schoolAssessmentSubject(value){
  if(/(?:فيزياء|physics)/i.test(raw))return 'فيزياء';
  if(/علوم|science/i.test(raw))return 'علوم';
  return raw;
+}
+function resetEnglishTrialDataAutomatically(){
+ const version=20261102;
+ if(db.englishAssessmentResetVersion===version)return;
+ const ids=new Set((db.classes||[]).filter(c=>{
+  const sub=schoolAssessmentSubject(c.subject||classDisplaySubject(c)||'');
+  return sub==='إنجليزي'||/english|انجليزي|إنجليزي/i.test(String(c.subject||''));
+ }).map(c=>String(c.id)));
+ const old=db.assessments.filter(a=>ids.has(String(a.classId)));
+ const removed=new Set(old.map(a=>String(a.id)));
+ db.assessments=db.assessments.filter(a=>!removed.has(String(a.id)));
+ for(const k of Object.keys(db.grades||{}))if([...removed].some(id=>k.startsWith(id+'_')))delete db.grades[k];
+ db.englishAssessmentResetVersion=version;
+ save();
+ for(const id of ids)ensureOfficialAssessments(id);
 }
 function ensureOfficialAssessments(classId){
  const c=db.classes.find(x=>String(x.id)===String(classId));if(!c)return;
@@ -2705,7 +2715,7 @@ function loadCatalogPresetUI(classId){
   const selectedBand=correctBand||document.getElementById('presetBand')?.value||'';
   const band=correctBand||(selectedBand&&allowedBands.includes(selectedBand)?selectedBand:allowedBands[0]);
   if(grade&&correctBand&&band!==correctBand){toast('نموذج التقويم لا يطابق صف الفصل المحدد');return}
-  const assessments=resolveAssessmentPreset(subj,band);
+  const assessments=(subj==='إنجليزي'&&(grade===11||grade===12))?englishAssessmentsForGrade(grade,Number(document.getElementById('presetSemester')?.value)||1):resolveAssessmentPreset(subj,band);
   if(!assessments){toast(db.lang==='ar'?'لا يوجد نموذج لهذه المادة/الصف':'No preset');return}
   const cMax=assessments.filter(a=>a.type!=='exam').reduce((s,a)=>s+a.max,0);
   const eMax=assessments.filter(a=>a.type==='exam').reduce((s,a)=>s+a.max,0);
