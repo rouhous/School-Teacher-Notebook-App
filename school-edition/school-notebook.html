@@ -2738,6 +2738,7 @@ function loadCatalogPresetUI(classId){
       <input type="number" id="gMax${i}" min="0" value="${a.max}"></div>`;
   });
   h+=`</div><input type="hidden" id="gAssessCount" value="${assessments.length}"><input type="hidden" id="gGradeCount" value="0">
+    <button type="button" class="btn btn-ghost btn-block" style="margin-top:12px;color:#b91c1c;border:1px solid #fca5a5" onclick="resetEnglishTrialAssessments()">حذف تقييمات الإنجليزية التجريبية ودرجاتها وإعادة البدء</button>
     <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="applyGradesImport('${classId||document.getElementById('impGradeClass')?.value||''}')">${t('save')}</button></div>`;
   prev.innerHTML=h;
 }
@@ -3639,6 +3640,27 @@ function loadEnglishPresetUI(classId,grade){
   prev.innerHTML=h;
 }
 
+function resetEnglishTrialAssessments(){
+ const englishClasses=(db.classes||[]).filter(c=>{
+  const subject=schoolAssessmentSubject(c.subject||classDisplaySubject(c)||'');
+  return subject==='إنجليزي'||/english|انجليزي|إنجليزي/i.test(String(c.subject||''));
+ });
+ const classIds=new Set(englishClasses.map(c=>String(c.id)));
+ if(!classIds.size)return toast('لم يتم العثور على صفوف اللغة الإنجليزية المرتبطة بهذا المعلم');
+ const old=(db.assessments||[]).filter(a=>classIds.has(String(a.classId)));
+ if(!confirm('حذف جميع تقييمات اللغة الإنجليزية ودرجاتها التجريبية على هذا الجهاز؟ لن تُحذف قوائم الطلاب أو الحضور أو تقييمات المواد الأخرى.'))return;
+ if(!confirm('تأكيد نهائي: سيتم حذف '+old.length+' بند تقييم وجميع درجاتها من بيانات هذا الجهاز. النسخ السحابية والملفات الاحتياطية القديمة لن تُحذف تلقائيًا.'))return;
+ const ids=new Set(old.map(a=>String(a.id)));
+ db.assessments=db.assessments.filter(a=>!ids.has(String(a.id)));
+ let removed=0;
+ for(const key of Object.keys(db.grades||{})){
+  if([...ids].some(id=>key.startsWith(id+'_'))){delete db.grades[key];removed++}
+ }
+ db.englishTrialAssessmentResetAt=new Date().toISOString();
+ if(!save())return;
+ closeM();go('grades');
+ toast('حُذفت '+old.length+' تقييمات و'+removed+' درجة تجريبية محليًا');
+}
 function applyGradesImport(classId){
   if(!classId){toast(t('classLabel'));return}
   const nA=+(document.getElementById('gAssessCount')?.value||0);const created=[];
