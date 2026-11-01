@@ -13,7 +13,7 @@
  function active(){try{const x=JSON.parse(sessionStorage.getItem(SESSION)||'null');return x&&x.subject&&x.until>Date.now()?x:null}catch{return null}}
  function clear(){sessionStorage.removeItem(SESSION)}
  async function enroll(subject,pin){
-  if(!subject||!/^\\d{6,10}$/.test(pin))throw Error('استخدم رمزًا من 6 إلى 10 أرقام.');
+  if(!subject||!/^[0-9]{6,10}$/.test(pin))throw Error('استخدم رمزًا من 6 إلى 10 أرقام.');
   const salt=crypto.getRandomValues(new Uint8Array(16));
   const verifier=await digest(pin,salt);
   localStorage.setItem(PREFIX+'profile',JSON.stringify({subject,salt:b64(salt),verifier,verifiedAt:Date.now(),failures:0,blockedUntil:0}));
@@ -21,7 +21,7 @@
  }
  async function unlock(pin){
   const p=read();if(!p)throw Error('لم يُفعّل رمز الدخول على هذا الجهاز.');
-  if(Date.now()>p.verifiedAt+72*60*60*1000)throw Error('انتهت صلاحية الدخول المحلي. اتصل بالإنترنت للتحقق من الحساب.');
+  if(Date.now()>p.verifiedAt+24*60*60*1000)throw Error('انتهت صلاحية الدخول المحلي. اتصل بالإنترنت للتحقق من الحساب.');
   if(Date.now()<p.blockedUntil)throw Error('محاولات كثيرة. حاول لاحقًا.');
   const result=await digest(pin,un64(p.salt));
   if(result!==p.verifier){
