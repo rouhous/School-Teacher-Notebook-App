@@ -219,6 +219,7 @@ header .supervisor-hero-row .supervisor-teacher-shortcut{background:#fff1c9!impo
 <p id="supervisorBehaviorMessage" role="status" aria-live="polite"></p>
 <div id="supervisorBehaviorList"></div>
 </section>
+<section id="supervisorApprovalSection"><h2>طلبات اعتماد المشرفين</h2><p>المرشحون: ناصر السعيدي، فاطمة البوسعيدية. لا تُمنح الصلاحيات إلا بعد التحقق من حساب Google واعتماد الطلب.</p><div id="supervisorApprovalList">جارٍ تحميل الطلبات...</div><button type="button" id="refreshSupervisorApprovals">تحديث طلبات المشرفين</button></section>
 <details id="supervisorPendingRequests" class="supervisor-secondary-options">
 <summary>طلبات اعتماد المعلمين <span id="pending" class="pending-chip">0</span></summary>
 <div class="supervisor-table-scroll"><table><thead><tr><th>المدرسة</th><th>المعلم</th><th>التاريخ</th><th>القرار</th></tr></thead><tbody id="requests"></tbody></table></div>
@@ -233,12 +234,35 @@ function render(d){const revoked=Array.isArray(d.revoked)?d.revoked:[];$('revoke
 async function refresh(){try{$('status').textContent='جارٍ تحديث البيانات...';render(await request('school-founder-dashboard',{}))}catch(e){$('status').textContent='تعذر تحميل البيانات: '+e.message}}
 async function changeApproval(x,decision){const message=decision==='revoke'?'إلغاء اعتماد '+x.teacherName+'؟ سيتم تعليق دخول المعلم مع الاحتفاظ بجميع بياناته.':'إعادة اعتماد '+x.teacherName+'؟';if(!confirm(message))return;try{$('status').textContent='جارٍ تحديث الاعتماد...';await request('school-registration',{action:'decide',requestId:x.id,decision});await refresh()}catch(e){$('status').textContent='تعذر تحديث الاعتماد: '+e.message}}
 async function decide(id,decision){if(!confirm(decision==='approve'?'تأكيد اعتماد المعلم؟':'تأكيد رفض الطلب؟'))return;try{$('status').textContent='جارٍ حفظ القرار...';await request('school-registration',{action:'decide',requestId:id,decision});await refresh()}catch(e){$('status').textContent='تعذر تنفيذ القرار: '+e.message}}
+async function supervisorRequestApi(action,extra={}){
+ const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-supervisor-requests',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,credential,access_token:supervisorPasskeyToken,...extra})});
+ const body=await response.json();if(!response.ok||!body.ok)throw Error(body.error||'REQUEST_FAILED');return body.data;
+}
+async function refreshSupervisorApprovals(){
+ const target=document.getElementById('supervisorApprovalList');if(!target)return;
+ try{
+  const items=await supervisorRequestApi('pending');
+  target.replaceChildren();
+  if(!items.length){target.textContent='لا توجد طلبات مشرفين معلقة.';return}
+  for(const item of items){
+   const card=document.createElement('div');card.style.cssText='border:1px solid #dce8df;border-radius:12px;padding:12px;margin:8px 0';
+   const info=document.createElement('p');info.textContent=item.name+' — '+(item.email||'بريد غير متاح')+' — '+new Date(item.createdAt).toLocaleDateString('ar-OM');card.append(info);
+   for(const decision of ['approve','reject']){
+    const button=document.createElement('button');button.type='button';button.textContent=decision==='approve'?'اعتماد مشرف':'رفض الطلب';
+    button.style.margin='4px';button.onclick=async()=>{if(!confirm('هل تؤكد '+button.textContent+' للطلب المحدد؟'))return;try{await supervisorRequestApi('decide',{requestId:item.id,decision});await refreshSupervisorApprovals()}catch(e){alert('تعذر تنفيذ القرار: '+e.message)}};card.append(button);
+   }
+   target.append(card);
+  }
+ }catch(e){target.textContent='تعذر تحميل طلبات المشرفين: '+e.message}
+}
+document.getElementById('refreshSupervisorApprovals').onclick=refreshSupervisorApprovals;
+
 $('refresh').onclick=refresh;
 (async()=>{
  const auth=await schoolSupervisorSession();
  if(!auth){location.replace('../');return}
  credential=auth.credential||'';supervisorPasskeyToken=auth.access_token||'';
- await refresh();
+ await refresh();await refreshSupervisorApprovals();
 })();
 </script><script id="supervisor-behavior-report-client">
 (function(){
