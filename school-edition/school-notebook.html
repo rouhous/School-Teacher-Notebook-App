@@ -1375,6 +1375,33 @@ function ensureOfficialAssessments(classId){
  if(!band)return;
  const preset=resolveAssessmentPreset(subj,band);if(!Array.isArray(preset))return;
  let changed=false;
+ // English 11/12: reconcile legacy assessment columns after a preset revision.
+ // Preserve any column with recorded marks, and never delete its grade keys.
+ if(subj==='إنجليزي'&&(grade===11||grade===12)){
+  const expected=new Map(preset.map(a=>[String(a.name),a]));
+  const officialPrefix=subj+'|'+band+'|';
+  const oldColumns=db.assessments.filter(a=>String(a.classId)===String(classId)&&
+    (a.official===true||String(a.officialKey||'').startsWith(subj+'|')));
+  for(const old of oldColumns){
+   const target=expected.get(String(old.name));
+   if(target&&Number(old.max)===Number(target.max)&&String(old.type||'activity')===String(target.type||'activity'))continue;
+   const scored=Object.keys(db.grades||{}).some(k=>k.startsWith(String(old.id)+'_')&&db.grades[k]!==''&&db.grades[k]!==null&&db.grades[k]!==undefined);
+   if(scored){
+    // A scored legacy column is kept for audit and manual migration, not counted as an official preset.
+    if(old.official!==false||old.officialKey){old.official=false;delete old.officialKey;old.legacyAssessment=true;changed=true;}
+   }else{
+    db.assessments=db.assessments.filter(a=>a.id!==old.id);
+    changed=true;
+   }
+  }
+  for(const old of db.assessments.filter(a=>String(a.classId)===String(classId)&&expected.has(String(a.name)))){
+   const target=expected.get(String(old.name));
+   if(Number(old.max)!==Number(target.max))continue;
+   if(old.officialKey!==officialPrefix+old.name||old.official!==true){
+    old.officialKey=officialPrefix+old.name;old.official=true;old.type=target.type;changed=true;
+   }
+  }
+ }
  // When moving from a provisional science aggregate to detailed tools, remove only
  // blank provisional columns; if marks exist, retain them and avoid duplicate totals.
  if(['أحياء','كيمياء','فيزياء','العلوم والبيئة','العلوم البيئية','علوم البيئة'].includes(subj)&&['11','12'].includes(band)){
