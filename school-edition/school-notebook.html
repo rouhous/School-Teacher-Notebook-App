@@ -3717,12 +3717,13 @@ function sendGradesToNoorExtension(){
     }))
   };
   const listener=function(event){
-    if(event.origin!==location.origin||event.data?.type!=='TEACHER_NOTEBOOK_NOOR_ACK')return;
+    const ack=typeof event.data==='string'?(()=>{try{return JSON.parse(event.data)}catch(_){return null}})():event.data;
+    if(event.origin!==location.origin||ack?.type!=='TEACHER_NOTEBOOK_NOOR_ACK')return;
     window.removeEventListener('message',listener);
-    toast('✓ استقبلت إضافة نور بيانات '+Number(event.data.count||0)+' طالبًا. افتح نور وراجع البيانات داخل الإضافة.');
+    toast('✓ استقبلت إضافة نور بيانات '+Number(ack.count||0)+' طالبًا. افتح نور وراجع البيانات داخل الإضافة.');
   };
   window.addEventListener('message',listener);
-  window.postMessage({type:'TEACHER_NOTEBOOK_NOOR_EXPORT',payload},location.origin);
+  window.postMessage(JSON.stringify({type:'TEACHER_NOTEBOOK_NOOR_EXPORT',payload}),location.origin);
   setTimeout(()=>window.removeEventListener('message',listener),10000);
   toast('تم طلب إرسال الدرجات. ستظهر رسالة تأكيد عندما تستقبلها إضافة Firefox.');
 }
