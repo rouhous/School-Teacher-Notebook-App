@@ -39,3 +39,21 @@ self.addEventListener('fetch',e=>{
   })());
  }
 });
+
+/* Web Push receiver: delivery requires a registered subscription and a server sender. */
+self.addEventListener('push',event=>{
+ let payload={};try{payload=event.data?.json()||{}}catch{payload={body:event.data?.text()||''}}
+ const title=String(payload.title||'تكليف احتياط مدرسي');
+ const options={body:String(payload.body||'لديك إشعار جديد من دفتر المعلم المدرسي'),tag:String(payload.tag||'school-cover'),icon:'./app-icon.svg',badge:'./app-icon.svg',requireInteraction:true,data:{url:'./school-notebook.html',assignmentId:payload.assignmentId||null}};
+ event.waitUntil(self.registration.showNotification(title,options));
+});
+self.addEventListener('notificationclick',event=>{
+ event.notification.close();
+ event.waitUntil((async()=>{
+  const target=new URL('./school-notebook.html',self.registration.scope).href;
+  const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+  const existing=windows.find(c=>c.url.startsWith(self.registration.scope));
+  if(existing){await existing.focus();existing.navigate(target);return}
+  await self.clients.openWindow(target);
+ })());
+});
