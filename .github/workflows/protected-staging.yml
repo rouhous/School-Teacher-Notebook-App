@@ -16,7 +16,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p protected-staging
-          cp -a index.html school-edition assets protected-staging/ 2>/dev/null || true
+          cp -a index.html school-edition protected-staging/
           test -s protected-staging/index.html
           test -s protected-staging/school-edition/school-notebook.html
       - name: Syntax-check standalone JavaScript before optimization
@@ -32,9 +32,9 @@ jobs:
           set -euo pipefail
           npm install --no-save --ignore-scripts --no-audit --no-fund terser@5.44.1
           find protected-staging/school-edition -name '*.js' -type f -print0 | while IFS= read -r -d '' file; do
-            node_modules/.bin/terser "$file" --compress --mangle false --comments false --output "$file.tmp"
-            node --check "$file.tmp"
-            mv "$file.tmp" "$file"
+            node_modules/.bin/terser "$file" --compress --comments false --output "$file.tmp.js"
+            node --check "$file.tmp.js"
+            mv "$file.tmp.js" "$file"
           done
       - name: Package staging-only artifact
         uses: actions/upload-artifact@v4
