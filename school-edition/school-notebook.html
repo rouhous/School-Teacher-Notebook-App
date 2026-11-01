@@ -3717,7 +3717,7 @@ function sendGradesToNoorExtension(){
     }))
   };
   const listener=function(event){
-    if(event.source!==window||event.origin!==location.origin||event.data?.type!=='TEACHER_NOTEBOOK_NOOR_ACK')return;
+    if(event.origin!==location.origin||event.data?.type!=='TEACHER_NOTEBOOK_NOOR_ACK')return;
     window.removeEventListener('message',listener);
     toast('✓ استقبلت إضافة نور بيانات '+Number(event.data.count||0)+' طالبًا. افتح نور وراجع البيانات داخل الإضافة.');
   };
