@@ -2369,27 +2369,36 @@ function englishG10Assessments(){
     {name:'Semester Test',max:60,type:'exam'}
   ];
 }
-function englishG11Assessments(){
-  // SAH Grades 11-12 · Grade 11 CORE Semester One (Sept 2026)
+function englishG11Assessments(semester=1){
+  // SAH English Grades 11-12 (September 2026), Core, summaries pp.22-23.
   return [
     {name:'SPK Presentations',max:10,type:'activity'},
     {name:'SPK Interaction',max:10,type:'activity'},
     {name:'RDG Texts',max:5,type:'activity'},
-    {name:'WRT Information',max:5,type:'activity'},
-    {name:'WRT Letters',max:5,type:'activity'},
+    ...(Number(semester)===2?[
+      {name:'WRT Stories',max:5,type:'activity'},
+      {name:'WRT Opinions',max:5,type:'activity'}
+    ]:[
+      {name:'WRT Information',max:5,type:'activity'},
+      {name:'WRT Letters',max:5,type:'activity'}
+    ]),
     {name:'G/V Grammar',max:5,type:'activity'},
     {name:'Semester Test',max:60,type:'exam'}
   ];
 }
-function englishG12Assessments(){
-  // SAH Grades 11-12 · Grade 12 CORE Semester One (Sept 2026)
-  // Continuous total 30 on the summary sheet; semester test may be added manually if present
+function englishG12Assessments(semester=1){
+  // SAH English Grades 11-12 (September 2026), Core, summaries pp.24-25.
   return [
     {name:'SPK Presentations',max:5,type:'activity'},
     {name:'SPK Interaction',max:10,type:'activity'},
     {name:'RDG Texts',max:5,type:'activity'},
-    {name:'WRT Stories',max:5,type:'activity'},
-    {name:'WRT Opinions',max:5,type:'activity'},
+    ...(Number(semester)===2?[
+      {name:'WRT Information',max:5,type:'activity'},
+      {name:'WRT Letters',max:5,type:'activity'}
+    ]:[
+      {name:'WRT Stories',max:5,type:'activity'},
+      {name:'WRT Opinions',max:5,type:'activity'}
+    ]),
     {name:'Semester Test',max:70,type:'exam'}
   ];
 }
@@ -2402,10 +2411,10 @@ function detectEnglishGrade(text){
   if(/GRADE\s*[5-8]|الصف\s*[5-8]/i.test(t)) return 9; // use G9 short-test structure for 5–8
   return 0;
 }
-function englishAssessmentsForGrade(grade){
+function englishAssessmentsForGrade(grade,semester=1){
   const g=Number(grade)||0;
-  if(g===12) return englishG12Assessments();
-  if(g===11) return englishG11Assessments();
+  if(g===12) return englishG12Assessments(semester);
+  if(g===11) return englishG11Assessments(semester);
   if(g===10) return englishG10Assessments();
   return englishG9Assessments();
 }
@@ -2663,7 +2672,7 @@ function resolveAssessmentPreset(subject,band){
   const aliases={'اللغة العربية':'لغة عربية','التربية الإسلامية':'تربية إسلامية','الدراسات الاجتماعية':'دراسات اجتماعية','الدراسات':'دراسات اجتماعية','التربية البدنية':'تربية بدنية','التربية الرياضية':'تربية بدنية','الفنون':'فنون بصرية','التربية الفنية':'فنون بصرية','الموسيقى':'مهارات موسيقية','التربية الموسيقية':'مهارات موسيقية','اللغة الإنجليزية':'إنجليزي','الانجليزية':'إنجليزي','English':'إنجليزي','الرياضيات':'رياضيات','الرياضيات الأساسية':'رياضيات','الرياضيات المتقدمة':'رياضيات','العلوم':'علوم','الأحياء':'أحياء','الفيزياء':'فيزياء','الكيمياء':'كيمياء','علوم البيئة':'العلوم والبيئة'};
   subject=aliases[String(subject||'').trim()]||String(subject||'').trim();
   const g=Number(String(band||'').match(/\\d+/)?.[0])||0;
-  if(subject==='إنجليزي')return englishAssessmentsForGrade(g>=10?g:9);
+  if(subject==='إنجليزي')return englishAssessmentsForGrade(g>=10?g:9,Number(document.getElementById('presetSemester')?.value)||1);
   let cat=ASSESSMENT_CATALOG[subject];
   if(typeof cat==='string')cat=ASSESSMENT_CATALOG[cat];
   if(!cat)return null;
@@ -2718,6 +2727,7 @@ function loadCatalogPresetUI(classId){
       <strong>${escHTML(subj)}</strong> · ${escHTML(band)} · 
       <strong>${t('continuous')}</strong> (${cMax||'—'}) → ${t('finalExam')} (${eMax||'—'}) → ${t('grandTotal')} (${cMax+eMax||100})
     </div>
+    ${subj==='إنجليزي'&&(grade===11||grade===12)?`<div class="form-group"><label>الفصل الدراسي</label><select id="presetSemester" onchange="loadCatalogPresetUI('${classId||''}')"><option value="1" ${(Number(document.getElementById('presetSemester')?.value)||1)===1?'selected':''}>الفصل الأول</option><option value="2" ${Number(document.getElementById('presetSemester')?.value)===2?'selected':''}>الفصل الثاني</option></select></div>`:''}
     <p style="font-size:.85rem;font-weight:700;margin-bottom:6px">${t('assessments')} (${assessments.length}):</p>
     <div style="max-height:300px;overflow:auto">`;
   assessments.forEach((a,i)=>{
