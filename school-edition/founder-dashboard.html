@@ -303,24 +303,48 @@ $('refresh').onclick=refresh;
   if(report.openedAt)details.append(el('div','تاريخ الاطلاع: '+dateTime(report.openedAt)));
   card.append(details);
  }
+ let expandedTeacher=null;
  function render(){
   const unread=reports.filter(x=>x.status!=='opened').length;
   count.textContent=String(unread);badge.textContent=String(unread);badge.hidden=unread===0;
+  const module=document.querySelector('a[href="founder-dashboard.html?view=behavior"]');
+  if(module){
+   let indicator=module.querySelector('.behavior-report-count');
+   if(!indicator){indicator=el('span');indicator.className='behavior-report-count';module.append(indicator)}
+   indicator.textContent=String(unread);indicator.hidden=unread===0;
+   module.setAttribute('aria-label','التقارير السلوكية، '+unread+' غير مقروءة');
+  }
   list.replaceChildren();
   if(!reports.length){list.append(el('p','لا توجد تقارير واردة بعد.'));return}
+  const groups=new Map();
   for(const r of reports){
-   const card=el('article');card.className='supervisor-behavior-item';card.dataset.state=r.status;card.dataset.reportId=String(r.id);
-   card.append(el('strong',(r.kind==='positive'?'✅ ':'📘 ')+r.studentName+' — الصف '+r.classId));
-   const meta=el('div','المعلم المُرسِل: '+r.senderName+' | يوم وتاريخ ووقت الإرسال: '+dateTime(r.createdAt)+' | '+(r.schoolId==='boys'?'مدرسة البنين':'مدرسة البنات'));meta.className='supervisor-behavior-meta';card.append(meta);
-   card.append(el('div','رقم الطالب: '+(r.studentCode||'—')+' | السلوك: '+r.behavior));
-   card.append(el('strong',label(r.status)));
-   const actions=el('div');actions.className='behavior-report-actions';
-   if(r.status!=='opened'){
-    const open=el('button','👁 فتح التقرير');open.onclick=()=>mark(r.id,'open',card,r);actions.append(open);
-   }else{
-    const view=el('button','عرض التفاصيل');view.onclick=()=>showDetails(card,r);actions.append(view);
+   const key=String(r.senderId||r.senderEmail||r.senderName||'معلم غير معروف');
+   if(!groups.has(key))groups.set(key,[]);
+   groups.get(key).push(r);
+  }
+  for(const [key,items] of groups){
+   const teacherName=items[0].senderName||'معلم غير معروف';
+   const pending=items.filter(r=>r.status!=='opened').length;
+   const group=el('section');group.className='supervisor-behavior-item';
+   const toggle=el('button',teacherName+' — '+items.length+' رسالة'+(pending?' | 🔴 '+pending+' غير مقروءة':' | ✓ تمت القراءة'));
+   toggle.type='button';toggle.style.cssText='width:100%;text-align:right;white-space:normal';
+   toggle.setAttribute('aria-expanded',String(expandedTeacher===key));
+   const messages=el('div');messages.hidden=expandedTeacher!==key;
+   toggle.onclick=()=>{expandedTeacher=expandedTeacher===key?null:key;render()};
+   group.append(toggle);
+   for(const r of items){
+    const card=el('article');card.className='supervisor-behavior-item';card.dataset.state=r.status;card.dataset.reportId=String(r.id);
+    const head=el('div','📩 رسالة بتاريخ '+dateTime(r.createdAt)+' — '+(r.status==='opened'?'✓ مقروءة':'🔴 لم تُقرأ'));
+    head.className='supervisor-behavior-meta';card.append(head);
+    const actions=el('div');actions.className='behavior-report-actions';
+    if(r.status!=='opened'){
+     const open=el('button','فتح الرسالة واحتساب الاطلاع');open.onclick=()=>mark(r.id,'open',card,r);actions.append(open);
+    }else{
+     const view=el('button','عرض الرسالة');view.onclick=()=>showDetails(card,r);actions.append(view);
+    }
+    card.append(actions);messages.append(card);
    }
-   card.append(actions);list.append(card);
+   group.append(messages);list.append(group);
   }
  }
  async function load(){
