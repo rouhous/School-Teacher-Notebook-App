@@ -1,5 +1,5 @@
 /* Offline shell only. Authorization remains in application/session layer. */
-const CACHE='school-notebook-shell-v18-offline-assets';
+const CACHE='school-notebook-shell-v19-english-reset';
 const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./session-auth.js','./offline-pin.js'];
 self.addEventListener('install',e=>{
  e.waitUntil(caches.open(CACHE).then(async cache=>{
