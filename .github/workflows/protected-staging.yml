@@ -1,0 +1,44 @@
+name: Build protected staging artifact (no deployment)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare staging copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p protected-staging
+          cp -a index.html school-edition assets protected-staging/ 2>/dev/null || true
+          test -s protected-staging/index.html
+          test -s protected-staging/school-edition/school-notebook.html
+      - name: Syntax-check standalone JavaScript before optimization
+        shell: bash
+        run: |
+          set -euo pipefail
+          find protected-staging -name '*.js' -type f -print0 | while IFS= read -r -d '' file; do
+            node --check "$file"
+          done
+      - name: Minify standalone first-party scripts without renaming public symbols
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts --no-audit --no-fund terser@5.44.1
+          find protected-staging/school-edition -name '*.js' -type f -print0 | while IFS= read -r -d '' file; do
+            node_modules/.bin/terser "$file" --compress --mangle false --comments false --output "$file.tmp"
+            node --check "$file.tmp"
+            mv "$file.tmp" "$file"
+          done
+      - name: Package staging-only artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: protected-staging-review
+          path: protected-staging/
+          retention-days: 7
