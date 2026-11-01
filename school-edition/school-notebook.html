@@ -534,6 +534,14 @@ function load(){
   if(!db.periodNotes||typeof db.periodNotes!=='object')db.periodNotes={};
   if(!Array.isArray(db.timingPresets))db.timingPresets=[];
   try{ensureBreakInPeriods()}catch(e){}
+  if(db.englishAssessmentResetVersion!==20261101){
+   const englishIds=new Set((db.classes||[]).filter(c=>schoolAssessmentSubject(c.subject||classDisplaySubject(c)||'')==='إنجليزي').map(c=>String(c.id)));
+   const ids=new Set(db.assessments.filter(a=>englishIds.has(String(a.classId))).map(a=>String(a.id)));
+   db.assessments=db.assessments.filter(a=>!ids.has(String(a.id)));
+   for(const key of Object.keys(db.grades||{}))if([...ids].some(id=>key.startsWith(id+'_')))delete db.grades[key];
+   db.englishAssessmentResetVersion=20261101;
+   save();
+  }
   try{
     const a=syncClassSubjectsFromSchedule();
     const b=purgeStaleDefaultSlots();
@@ -1375,32 +1383,20 @@ function ensureOfficialAssessments(classId){
  if(!band)return;
  const preset=resolveAssessmentPreset(subj,band);if(!Array.isArray(preset))return;
  let changed=false;
- // English 11/12: reconcile legacy assessment columns after a preset revision.
- // Preserve any column with recorded marks, and never delete its grade keys.
- if(subj==='إنجليزي'&&(grade===11||grade===12)){
-  const expected=new Map(preset.map(a=>[String(a.name),a]));
-  const officialPrefix=subj+'|'+band+'|';
-  const oldColumns=db.assessments.filter(a=>String(a.classId)===String(classId)&&
-    (a.official===true||String(a.officialKey||'').startsWith(subj+'|')));
-  for(const old of oldColumns){
-   const target=expected.get(String(old.name));
-   if(target&&Number(old.max)===Number(target.max)&&String(old.type||'activity')===String(target.type||'activity'))continue;
-   const scored=Object.keys(db.grades||{}).some(k=>k.startsWith(String(old.id)+'_')&&db.grades[k]!==''&&db.grades[k]!==null&&db.grades[k]!==undefined);
-   if(scored){
-    // A scored legacy column is kept for audit and manual migration, not counted as an official preset.
-    if(old.official!==false||old.officialKey){old.official=false;delete old.officialKey;old.legacyAssessment=true;changed=true;}
-   }else{
-    db.assessments=db.assessments.filter(a=>a.id!==old.id);
-    changed=true;
-   }
+ // Trial English: discard outdated assessment columns and their marks, rebuild from canonical preset.
+ if(subj==='إنجليزي'){
+  const current=db.assessments.filter(x=>String(x.classId)===String(classId));
+  const canonical=preset.map(x=>({name:x.name,max:Number(x.max),type:x.type}));
+  const matches=current.length===canonical.length&&canonical.every(x=>current.some(y=>y.name===x.name&&Number(y.max)===x.max&&y.type===x.type));
+  if(!matches){
+   const ids=new Set(current.map(x=>String(x.id)));
+   db.assessments=db.assessments.filter(x=>String(x.classId)!==String(classId));
+   for(const key of Object.keys(db.grades||{}))if([...ids].some(id=>key.startsWith(id+'_')))delete db.grades[key];
+   for(const item of canonical)db.assessments.push({id:uid(),classId,name:item.name,max:item.max,type:item.type,official:true,officialKey:subj+'|'+band+'|'+item.name});
+   db.englishAssessmentRebuiltAt=new Date().toISOString();
+   save();
   }
-  for(const old of db.assessments.filter(a=>String(a.classId)===String(classId)&&expected.has(String(a.name)))){
-   const target=expected.get(String(old.name));
-   if(Number(old.max)!==Number(target.max))continue;
-   if(old.officialKey!==officialPrefix+old.name||old.official!==true){
-    old.officialKey=officialPrefix+old.name;old.official=true;old.type=target.type;changed=true;
-   }
-  }
+  return;
  }
  // When moving from a provisional science aggregate to detailed tools, remove only
  // blank provisional columns; if marks exist, retain them and avoid duplicate totals.
@@ -2738,7 +2734,6 @@ function loadCatalogPresetUI(classId){
       <input type="number" id="gMax${i}" min="0" value="${a.max}"></div>`;
   });
   h+=`</div><input type="hidden" id="gAssessCount" value="${assessments.length}"><input type="hidden" id="gGradeCount" value="0">
-    <button type="button" class="btn btn-ghost btn-block" style="margin-top:12px;color:#b91c1c;border:1px solid #fca5a5" onclick="resetEnglishTrialAssessments()">حذف تقييمات الإنجليزية التجريبية ودرجاتها وإعادة البدء</button>
     <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="applyGradesImport('${classId||document.getElementById('impGradeClass')?.value||''}')">${t('save')}</button></div>`;
   prev.innerHTML=h;
 }
@@ -3640,27 +3635,6 @@ function loadEnglishPresetUI(classId,grade){
   prev.innerHTML=h;
 }
 
-function resetEnglishTrialAssessments(){
- const englishClasses=(db.classes||[]).filter(c=>{
-  const subject=schoolAssessmentSubject(c.subject||classDisplaySubject(c)||'');
-  return subject==='إنجليزي'||/english|انجليزي|إنجليزي/i.test(String(c.subject||''));
- });
- const classIds=new Set(englishClasses.map(c=>String(c.id)));
- if(!classIds.size)return toast('لم يتم العثور على صفوف اللغة الإنجليزية المرتبطة بهذا المعلم');
- const old=(db.assessments||[]).filter(a=>classIds.has(String(a.classId)));
- if(!confirm('حذف جميع تقييمات اللغة الإنجليزية ودرجاتها التجريبية على هذا الجهاز؟ لن تُحذف قوائم الطلاب أو الحضور أو تقييمات المواد الأخرى.'))return;
- if(!confirm('تأكيد نهائي: سيتم حذف '+old.length+' بند تقييم وجميع درجاتها من بيانات هذا الجهاز. النسخ السحابية والملفات الاحتياطية القديمة لن تُحذف تلقائيًا.'))return;
- const ids=new Set(old.map(a=>String(a.id)));
- db.assessments=db.assessments.filter(a=>!ids.has(String(a.id)));
- let removed=0;
- for(const key of Object.keys(db.grades||{})){
-  if([...ids].some(id=>key.startsWith(id+'_'))){delete db.grades[key];removed++}
- }
- db.englishTrialAssessmentResetAt=new Date().toISOString();
- if(!save())return;
- closeM();go('grades');
- toast('حُذفت '+old.length+' تقييمات و'+removed+' درجة تجريبية محليًا');
-}
 function applyGradesImport(classId){
   if(!classId){toast(t('classLabel'));return}
   const nA=+(document.getElementById('gAssessCount')?.value||0);const created=[];
