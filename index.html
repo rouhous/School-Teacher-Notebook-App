@@ -673,6 +673,24 @@ async function verifiedTeacher(response){
    status.textContent='تعذر التحقق من الجلسة المحفوظة. يلزم الاتصال لتسجيل الدخول أو تجديد الجلسة.';
   }
  }
+ const pinProfile=window.schoolOfflinePin?.read();
+ if(pinProfile){
+  const panel=document.createElement('div');
+  panel.style.cssText='padding:12px;margin:10px auto;border:1px solid #b5d6c7;border-radius:12px;max-width:320px;background:#effaf5;text-align:center';
+  const heading=document.createElement('strong');heading.textContent='الدخول دون إنترنت';
+  const input=document.createElement('input');input.type='password';input.inputMode='numeric';input.maxLength=10;input.placeholder='رمز الدخول المحلي';input.style.cssText='display:block;width:100%;margin:10px 0;padding:10px';
+  const button=document.createElement('button');button.type='button';button.textContent='فتح الدفتر';button.style.cssText='padding:10px;background:#075a47;color:white;border:0;border-radius:8px';
+  const msg=document.createElement('p');msg.setAttribute('role','status');
+  panel.append(heading,input,button,msg);holder.after(panel);
+  button.onclick=async()=>{
+   try{
+    const subject=await schoolOfflinePin.unlock(input.value);
+    if(!await caches.match('school-edition/school-notebook.html',{ignoreSearch:true}))throw Error('افتح الدفتر بالإنترنت أولاً.');
+    sessionStorage.setItem('school-notebook-passkey-subject-v1',subject);
+    location.replace('school-edition/school-notebook.html');
+   }catch(err){schoolOfflinePin.clear();msg.textContent=err.message}
+  };
+ }
  resumeApprovedSession();
  function render(){
   if(!window.google?.accounts?.id){status.textContent='تعذر تحميل خدمة Google. أعد تحميل الصفحة.';return;}
