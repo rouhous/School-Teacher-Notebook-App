@@ -253,7 +253,7 @@ async function refreshSupervisorApprovals(){
    }
    target.append(card);
   }
- }catch(e){target.textContent='تعذر تحميل طلبات المشرفين: '+e.message}
+ }catch(e){if(/FOUNDER_REQUIRED|ACCESS_DENIED/.test(String(e.message))){document.getElementById('supervisorApprovalSection').hidden=true;return}target.textContent='تعذر تحميل طلبات المشرفين: '+e.message}
 }
 document.getElementById('refreshSupervisorApprovals').onclick=refreshSupervisorApprovals;
 
