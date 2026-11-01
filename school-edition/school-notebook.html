@@ -4404,6 +4404,41 @@ const forbidden=new Set(['addClass','editClass','addStudent','editStudent','addS
 const schoolApi='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
 let managedSchedule=[],managedRoster=[],managedCover=[],loaded=false;
 function statusMessage(message){const node=document.getElementById('school-managed-status');if(node)node.textContent=message;}
+let coverAudio=null;
+function enableCoverAlerts(){
+ try{coverAudio=coverAudio||new (window.AudioContext||window.webkitAudioContext)();coverAudio.resume();}catch(e){}
+ if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+ localStorage.setItem('school-cover-alert-enabled:'+schoolNotebookSubject,'1');
+ toast('تم تفعيل تنبيهات الاحتياط أثناء فتح التطبيق');
+}
+function coverSound(){
+ try{if(!coverAudio||coverAudio.state!=='running')return;for(const [i,f] of [740,990].entries()){const o=coverAudio.createOscillator(),g=coverAudio.createGain(),t=coverAudio.currentTime+i*.24;o.frequency.value=f;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.12,t+.025);g.gain.exponentialRampToValueAtTime(.001,t+.19);o.connect(g);g.connect(coverAudio.destination);o.start(t);o.stop(t+.2)}}catch(e){}
+}
+function coverNotify(item,kind){
+ const key='school-cover-notified:'+schoolNotebookSubject+':'+item.date+':'+item.period+':'+kind;
+ if(localStorage.getItem(key))return;
+ localStorage.setItem(key,String(Date.now()));
+ const msg='الحصة '+item.period+' — الصف '+(item.classId||'غير محدد');
+ const title=kind==='new'?'تكليف احتياط جديد':'تذكير: تبقى 5 دقائق لحصة الاحتياط';
+ if('Notification' in window&&Notification.permission==='granted'){try{new Notification(title,{body:msg,tag:key})}catch(e){}}
+ coverSound();
+ if(document.visibilityState==='visible')toast(title+' · '+msg);
+}
+function checkCoverAlerts(){
+ const d=new Date(),date=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'),now=d.getHours()*60+d.getMinutes();
+ for(const item of managedCover.filter(x=>x.status==='confirmed'&&x.date===date)){
+  coverNotify(item,'new');
+  const p=Number(item.period),displayId=(db.periods||[]).some(isBreakPeriod)&&p>=5?p+1:p;
+  const per=(db.periods||[]).find(x=>Number(x.id)===displayId)|| (db.periods||[]).find(x=>Number(x.id)===p);
+  if(!per||!/^\\d{1,2}:\\d{2}$/.test(String(per.time||'')))continue;
+  const [h,m]=per.time.split(':').map(Number),delta=h*60+m-now;
+  if(delta>=0&&delta<=5)coverNotify(item,'five');
+ }
+}
+window.enableCoverAlerts=enableCoverAlerts;
+setInterval(checkCoverAlerts,20000);
+setInterval(async()=>{if(document.visibilityState==='visible'&&navigator.onLine&&loaded){try{const table=await fetchApproved('school-teacher-timetable');if(Array.isArray(table.dailyCover)){const prev=JSON.stringify(managedCover);managedCover=table.dailyCover;if(prev!==JSON.stringify(managedCover))replaceHome();checkCoverAlerts()}}catch(e){}}},60000);
+
 function managedHTML(){
  if(!loaded)return '<div class="school-managed-notice">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
  if(!managedSchedule.length)return '<div class="school-managed-notice">لم يتوفر جدول منشور لهذا الحساب. لن يتم تعديل بياناتك المحلية.</div>';
@@ -4412,8 +4447,9 @@ function managedHTML(){
  const today=new Date(),date=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
  const coverToday=managedCover.filter(x=>x.date===date&&x.status==='confirmed');
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const coverControls='<div style="text-align:center;margin:8px"><button class="btn btn-outline btn-sm" onclick="enableCoverAlerts()">🔔 تفعيل إشعار وصوت الاحتياط</button></div>';
  const coverBanner=coverToday.length?'<div class="school-managed-notice" style="border:2px solid #d99a1b;background:#fff6d8;color:#714600"><b>🔔 تكليفات الاحتياط المعتمدة اليوم</b>'+coverToday.map(x=>'<div style="padding:8px;border-top:1px solid #e5c77a">الحصة '+safe(x.period)+' — الصف '+safe(x.classId||'غير محدد')+' — احتياط معتمد</div>').join('')+'</div>':'';
- return coverBanner+'<div class="card" id="school-managed-schedule"><h3 style="text-align:center;margin-bottom:12px">الجدول الأسبوعي المعتمد</h3><div style="width:100%;overflow-x:auto">'+weekly+'</div></div>';
+ return coverControls+coverBanner+'<div class="card" id="school-managed-schedule"><h3 style="text-align:center;margin-bottom:12px">الجدول الأسبوعي المعتمد</h3><div style="width:100%;overflow-x:auto">'+weekly+'</div></div>';
 }
 function replaceHome(){
  const body=document.getElementById('homeBody');if(!body)return;
@@ -4486,6 +4522,7 @@ async function syncManaged(){
   if(!Array.isArray(roster))throw Error('قائمة الطلاب غير صالحة؛ لن يتم تغيير البيانات المحلية');
   managedSchedule=Array.isArray(table.slots)?table.slots:[];
   managedCover=Array.isArray(table.dailyCover)?table.dailyCover:[];
+  checkCoverAlerts();
   // Translate the supervisor's published slots into the ORIGINAL notebook schedule model.
   // Keep identifiers stable so attendance and grades remain linked to their students.
   const existingClasses=Array.isArray(db.classes)?db.classes:[];
