@@ -12,7 +12,7 @@ function friendly(error){
  const msg=String(error?.message||error||'');
  if(/NotAllowedError|cancelled|canceled|timed out|no credentials|no passkeys|not allowed/i.test(msg))return 'لم تكتمل عملية البصمة أو تم إلغاؤها. يمكنك استخدام Google.';
  if(/passkey.*(disabled|unsupported)|webauthn.*(disabled|unsupported)/i.test(msg))return 'خدمة مفاتيح المرور غير متاحة على الجهاز أو الخادم.';
- if(/FOUNDER_ONLY|NOT_APPROVED|ACCESS_DENIED/i.test(msg))return 'الحساب لا يملك صلاحية المشرف المؤسس.';
+ if(/FOUNDER_ONLY|SUPERVISOR_REQUIRED|NOT_APPROVED|ACCESS_DENIED/i.test(msg))return 'يجب اعتماد حساب المشرف قبل تفعيل البصمة.';
  return msg.length>160?'تعذر إكمال العملية. يرجى استخدام تسجيل الدخول عبر Google.':msg;
 }
 async function call(path,body){
@@ -53,7 +53,7 @@ if(register){
   try{
    const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
    if(!credential)throw Error('سجّل الدخول إلى لوحة المشرف باستخدام Google أولًا، ثم فعّل البصمة.');
-   // Bootstrap is restricted server-side to the authorized founder identity.
+   // Bootstrap verifies an approved founder or supervisor server-side.
    const result=await call('school-supervisor-passkey-bootstrap',{credential});
    const {error}=await client.auth.setSession(result.session);
    if(error)throw error;
@@ -70,7 +70,7 @@ if(register){
 }
 function reflectEnrollment(){
  if(register){
-  register.hidden=!(window.supervisorGoogleVerified===true);
+  register.hidden=false;
   if(previouslyEnabled){register.textContent='إعادة تفعيل البصمة على هذا الجهاز';inform('البصمة مسجلة سابقًا على هذا المتصفح. يمكنك إعادة التفعيل عند الحاجة.')}
  }
 }
