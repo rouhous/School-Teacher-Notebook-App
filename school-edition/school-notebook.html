@@ -4402,14 +4402,18 @@ button[onclick*="openM('addStu'"],button[onclick*="openM('editStu'"],button[oncl
 const originalOpenM=window.openM;
 const forbidden=new Set(['addClass','editClass','addStudent','editStudent','addStu','editStu','editSchedule','importSched','importStu','importStudents','editPeriods','schedGrid','schedImage','schedImport','addPeriod']);
 const schoolApi='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
-let managedSchedule=[],managedRoster=[],loaded=false;
+let managedSchedule=[],managedRoster=[],managedCover=[],loaded=false;
 function statusMessage(message){const node=document.getElementById('school-managed-status');if(node)node.textContent=message;}
 function managedHTML(){
  if(!loaded)return '<div class="school-managed-notice">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
  if(!managedSchedule.length)return '<div class="school-managed-notice">لم يتوفر جدول منشور لهذا الحساب. لن يتم تعديل بياناتك المحلية.</div>';
  // Reuse the ORIGINAL notebook's weekly timetable, rather than a separate school-only list.
  const weekly=buildScheduleTableHTML().replace(/\s+onclick="[^"]*"/g,'');
- return '<div class="card" id="school-managed-schedule"><h3 style="text-align:center;margin-bottom:12px">الجدول الأسبوعي المعتمد</h3><div style="width:100%;overflow-x:auto">'+weekly+'</div></div>';
+ const today=new Date(),date=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
+ const coverToday=managedCover.filter(x=>x.date===date&&x.status==='confirmed');
+ const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const coverBanner=coverToday.length?'<div class="school-managed-notice" style="border:2px solid #d99a1b;background:#fff6d8;color:#714600"><b>🔔 تكليفات الاحتياط المعتمدة اليوم</b>'+coverToday.map(x=>'<div style="padding:8px;border-top:1px solid #e5c77a">الحصة '+safe(x.period)+' — الصف '+safe(x.classId||'غير محدد')+' — احتياط معتمد</div>').join('')+'</div>':'';
+ return coverBanner+'<div class="card" id="school-managed-schedule"><h3 style="text-align:center;margin-bottom:12px">الجدول الأسبوعي المعتمد</h3><div style="width:100%;overflow-x:auto">'+weekly+'</div></div>';
 }
 function replaceHome(){
  const body=document.getElementById('homeBody');if(!body)return;
@@ -4481,6 +4485,7 @@ async function syncManaged(){
   if(!table?.approved)throw Error('الحساب غير معتمد لعرض الجدول');
   if(!Array.isArray(roster))throw Error('قائمة الطلاب غير صالحة؛ لن يتم تغيير البيانات المحلية');
   managedSchedule=Array.isArray(table.slots)?table.slots:[];
+  managedCover=Array.isArray(table.dailyCover)?table.dailyCover:[];
   // Translate the supervisor's published slots into the ORIGINAL notebook schedule model.
   // Keep identifiers stable so attendance and grades remain linked to their students.
   const existingClasses=Array.isArray(db.classes)?db.classes:[];
