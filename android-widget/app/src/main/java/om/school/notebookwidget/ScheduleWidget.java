@@ -90,7 +90,7 @@ public class ScheduleWidget extends AppWidgetProvider {
           }
         }catch(Exception ignored){} 
       }
-      return out.toString();
+      return out;
     }catch(Exception e){return "تعذر قراءة الجدول. افتح الدفتر لتحديث الويدجت.";}
   }
 }
