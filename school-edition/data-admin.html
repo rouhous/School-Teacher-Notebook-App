@@ -673,7 +673,7 @@ async function pdfText(f){
 }
 async function imageText(f){
 if(!window.Tesseract)await script('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
-const result=await Tesseract.recognize(f,'eng');return result.data.text;
+const result=await Tesseract.recognize(f,'ara+eng');return result.data.text;
 }
 button.onclick=async()=>{
 if(!file.files[0]){status.textContent='اختر ملف PDF أو صورة أولًا.';return}
