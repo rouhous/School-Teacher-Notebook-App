@@ -29,6 +29,8 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import android.os.CancellationSignal;
 import android.widget.FrameLayout;
 import android.view.ViewGroup;
+import android.view.View;
+import android.view.WindowManager;
 import org.json.JSONArray;
 
 /**
@@ -42,6 +44,10 @@ public class MainActivity extends Activity {
   @Override public void onCreate(Bundle state){
     super.onCreate(state);
     receiveSharedSchedule(getIntent());
+    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+    getWindow().setStatusBarColor(0xFF087568);
+    getWindow().setNavigationBarColor(0xFF075D4E);
+    getWindow().getDecorView().setSystemUiVisibility(0);
     LinearLayout root=new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
     root.setPadding(28,48,28,28);
@@ -74,6 +80,7 @@ public class MainActivity extends Activity {
     notebookView.getSettings().setAllowContentAccess(false);
     CookieManager.getInstance().setAcceptCookie(true);
     notebookView.setWebChromeClient(new WebChromeClient());
+    notebookView.setSystemUiVisibility(0);
     notebookView.setWebViewClient(new WebViewClient(){
       @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
         Uri uri=request.getUrl();
@@ -93,13 +100,15 @@ public class MainActivity extends Activity {
     FrameLayout.LayoutParams buttonParams=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
     buttonParams.setMargins(24,0,24,24);
     shell.addView(googleLogin,buttonParams);
+    googleLogin.setVisibility(View.GONE);
     googleLogin.setOnClickListener(v->signInWithGoogle());
     notebookView.setWebViewClient(new WebViewClient(){
       @Override public void onPageFinished(WebView view,String url){
-        if(url.startsWith(URL)){
+        boolean loginPage=url.equals(URL) || url.equals(URL+"index.html") || url.equals(URL+"#") || url.startsWith(URL+"index.html#");
+        googleLogin.setVisibility(loginPage ? View.VISIBLE : View.GONE);
+        if(loginPage){
           view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';})()",null);
-          googleLogin.setVisibility(android.view.View.VISIBLE);
-        }else googleLogin.setVisibility(android.view.View.GONE);
+        }
       }
       @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
         Uri uri=request.getUrl();
