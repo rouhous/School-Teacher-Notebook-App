@@ -626,7 +626,7 @@ if(!file||!button)return;
 function script(src){return new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=src;el.onload=resolve;el.onerror=()=>reject(Error('تعذر تحميل مكتبة القراءة. تحقق من الاتصال بالإنترنت.'));document.head.append(el)})}
 function normalize(t){return String(t).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٫]/g,':')}
 function times(text){
-const found=[...normalize(text).matchAll(/(?:^|[^0-9])([01]?\\d|2[0-3])\\s*[:.]\\s*([0-5]\\d)(?!\\d)/gm)].map(m=>String(m[1]).padStart(2,'0')+':'+m[2]);
+const found=[...normalize(text).matchAll(/(?:^|[^0-9])([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)(?!\d)/gm)].map(m=>String(m[1]).padStart(2,'0')+':'+m[2]);
 const pairs=[];for(let i=0;i+1<found.length;i+=2){if(found[i]<found[i+1])pairs.push([found[i],found[i+1]])}
 return pairs.slice(0,12);
 }
@@ -645,7 +645,7 @@ button.onclick=async()=>{
 if(!file.files[0]){status.textContent='اختر ملف PDF أو صورة أولًا.';return}
 button.disabled=true;status.textContent='جارٍ قراءة الملف، قد يستغرق ذلك بعض الوقت…';
 try{
- const f=file.files[0],raw=f.type==='application/pdf'||/\\.pdf$/i.test(f.name)?await pdfText(f):await imageText(f);
+ const f=file.files[0],raw=f.type==='application/pdf'||/\.pdf$/i.test(f.name)?await pdfText(f):await imageText(f);
  const rows=times(raw);
  if(!rows.length)throw Error('لم أتعرف على أزواج الأوقات. يمكن إدخالها يدويًا أو استخدام ملف أوضح.');
  const root=document.getElementById('timingRows');root.replaceChildren();
