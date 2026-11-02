@@ -668,36 +668,34 @@ function times(text){
 async function pdfText(f){
  if(!window.pdfjsLib)await script('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
- const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,groups=[];
+ const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,parsed=[];
  for(let i=1;i<=Math.min(pdf.numPages,3);i++){
-  const page=await pdf.getPage(i),items=(await page.getTextContent()).items;
-  const grouped=new Map();
-  for(const item of items){
-   if(!item.str.trim())continue;
-   const y=Math.round(item.transform[5]/4)*4;
-   if(!grouped.has(y))grouped.set(y,[]);
-   grouped.get(y).push({x:item.transform[4],text:normalize(item.str)});
+  const page=await pdf.getPage(i),items=(await page.getTextContent()).items
+   .filter(x=>x.str&&x.str.trim()).map(x=>({x:x.transform[4],y:x.transform[5],text:normalize(x.str)}));
+  // Use the two time columns, not text order or exact PDF text baselines.
+  const clockItems=items.map(x=>({...x,time:clockValue(x.text)})).filter(x=>x.time);
+  const clusters=[];
+  for(const item of clockItems.sort((a,b)=>b.y-a.y)){
+   let cluster=clusters.find(c=>Math.abs(c.y-item.y)<14);
+   if(!cluster){cluster={y:item.y,times:[]};clusters.push(cluster)}
+   cluster.times.push(item);
   }
-  groups.push(...[...grouped.entries()].sort((a,b)=>b[0]-a[0]).map(x=>x[1]));
- }
- const parsed=[];
- for(const group of groups){
-  // Arabic school tables: period label at right, start in middle, end at left.
-  const sorted=group.sort((a,b)=>a.x-b.x);
-  const cells=sorted.map(x=>({...x,time:clockValue(x.text)}));
-  const clocks=cells.filter(x=>x.time);
-  if(clocks.length!==2)continue;
-  const label=cells.filter(x=>!x.time).map(x=>x.text).join(' ');
-  const kind=/طابور|اصطفاف/.test(label)?'assembly':/فسحة|استراحة/.test(label)?'break':'lesson';
-  const right=clocks[1].time,left=clocks[0].time;
-  let start=right,end=left;
-  // 1:30 is afternoon when it follows 12:50; use chronology, never a hard-coded school schedule.
-  if(parsed.length){
-   const previous=parsed[parsed.length-1].end;
-   if(minutes(start)<minutes(previous)&&minutes(start)+720>=minutes(previous))start=String(Number(start.slice(0,2))+12).padStart(2,'0')+start.slice(2);
+  for(const cluster of clusters){
+   const clocks=cluster.times.sort((a,b)=>a.x-b.x);
+   if(clocks.length!==2)continue;
+   const near=items.filter(x=>Math.abs(x.y-cluster.y)<17);
+   const label=near.filter(x=>x.x>Math.max(...clocks.map(t=>t.x))+45).map(x=>x.text).join(' ');
+   const kind=/طابور|اصطفاف/.test(label)?'assembly':/فسحة|استراحة/.test(label)?'break':'lesson';
+   let start=clocks[1].time,end=clocks[0].time;
+   if(parsed.length){
+    const previous=parsed[parsed.length-1].end;
+    if(minutes(start)<minutes(previous)&&minutes(start)+720>=minutes(previous))
+     start=String(Number(start.slice(0,2))+12).padStart(2,'0')+start.slice(2);
+   }
+   if(minutes(end)<minutes(start)&&minutes(end)+720>minutes(start))
+    end=String(Number(end.slice(0,2))+12).padStart(2,'0')+end.slice(2);
+   parsed.push({start,end,kind});
   }
-  if(minutes(end)<minutes(start)&&minutes(end)+720>minutes(start))end=String(Number(end.slice(0,2))+12).padStart(2,'0')+end.slice(2);
-  parsed.push({start,end,kind});
  }
  return parsed;
 }
