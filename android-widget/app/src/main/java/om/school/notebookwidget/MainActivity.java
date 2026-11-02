@@ -1,6 +1,8 @@
 package om.school.notebookwidget;
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.content.Intent;
 import android.net.Uri;
 import android.widget.Button;
@@ -75,6 +77,43 @@ public class MainActivity extends Activity {
     setContentView(root);
     openEmbeddedNotebook();
   }
+  private final Handler widgetHandler=new Handler(Looper.getMainLooper());
+  private final Runnable widgetSyncLoop=new Runnable(){
+    @Override public void run(){
+      syncWidgetFromWeb();
+      widgetHandler.postDelayed(this,60000);
+    }
+  };
+  private void syncWidgetFromWeb(){
+    if(notebookView==null || notebookView.getUrl()==null ||
+      !notebookView.getUrl().startsWith(URL+"school-edition/school-notebook.html"))return;
+    notebookView.evaluateJavascript("(function(){try{return JSON.stringify(window.schoolWidgetSnapshot?.()||null)}catch(e){return null}})()",value->{
+      try{
+        if(value==null||"null".equals(value))return;
+        String payload=new org.json.JSONTokener(value).nextValue().toString();
+        if("null".equals(payload)||payload.length()>100000)return;
+        JSONObject data=new JSONObject(payload);
+        JSONArray slots=data.getJSONArray("slots"),timing=data.getJSONArray("timing");
+        if(slots.length()>500||timing.length()<8||timing.length()>20)return;
+        String previous=getSharedPreferences("widget",MODE_PRIVATE).getString("snapshot","");
+        if(!payload.equals(previous)){
+          getSharedPreferences("widget",MODE_PRIVATE).edit().putString("snapshot",payload).apply();
+          ScheduleWidget.refresh(this);
+      WeeklyScheduleWidget.refresh(this);
+          WeeklyScheduleWidget.refresh(this);
+        }
+      }catch(Exception ignored){}
+    });
+  }
+  @Override protected void onResume(){
+    super.onResume();
+    widgetHandler.removeCallbacks(widgetSyncLoop);
+    widgetHandler.postDelayed(widgetSyncLoop,3000);
+  }
+  @Override protected void onPause(){
+    widgetHandler.removeCallbacks(widgetSyncLoop);
+    super.onPause();
+  }
   private void openEmbeddedNotebook(){
     notebookView=new WebView(this);
     notebookView.getSettings().setJavaScriptEnabled(true);
@@ -111,6 +150,7 @@ public class MainActivity extends Activity {
       @Override public void onPageFinished(WebView view,String url){
         boolean loginPage=url.equals(URL) || url.equals(URL+"index.html") || url.equals(URL+"#") || url.startsWith(URL+"index.html#");
         googleLogin.setVisibility(loginPage ? View.VISIBLE : View.GONE);
+        if(!loginPage)widgetHandler.postDelayed(()->syncWidgetFromWeb(),3500);
         if(loginPage){
           view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';})()",null);
         }
