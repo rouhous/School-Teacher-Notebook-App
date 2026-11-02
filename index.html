@@ -659,6 +659,7 @@ async function verifiedTeacher(response){
   schoolAuthSave(response.credential);location.replace('school-edition/school-notebook.html');
  }catch(e){status.textContent=e.message||'تعذر التحقق من الحساب.'}
 }
+ window.schoolNotebookNativeGoogleSignIn = function(idToken){ return verifiedTeacher({credential:idToken}); };
  // Reuse a still-valid Google session on Android/iOS without prompting again.
  async function resumeApprovedSession(){
   if(localStorage.getItem('school-notebook-passkey-enrolled-v1')==='1')return;
