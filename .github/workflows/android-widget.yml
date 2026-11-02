@@ -32,6 +32,7 @@ jobs:
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android-widget/app/teacher-notebook-release.jks
             echo "Persistent signing key restored securely."
+            echo "HAS_SIGNING_KEY=true" >> "$GITHUB_ENV"
           else
             echo "No persistent signing key configured; debug APK only."
           fi
@@ -53,6 +54,22 @@ jobs:
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk
           echo "NOTE: The debug signing key may differ across GitHub-hosted runners. Do not register this fingerprint as a permanent production OAuth identity."
+      - name: Build signed release APK when signing secrets are configured
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        working-directory: android-widget
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          gradle --no-daemon assembleRelease
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.HAS_SIGNING_KEY == 'true' }}
+        with:
+          name: School-Teacher-Notebook-Android-signed-release
+          path: android-widget/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: School-Teacher-Notebook-Android-debug
