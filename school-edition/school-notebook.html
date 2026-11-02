@@ -4439,6 +4439,18 @@ window.enableCoverAlerts=enableCoverAlerts;
 setInterval(checkCoverAlerts,20000);
 setInterval(async()=>{if(document.visibilityState==='visible'&&navigator.onLine&&loaded){try{const table=await fetchApproved('school-teacher-timetable');if(Array.isArray(table.dailyCover)){const prev=JSON.stringify(managedCover);managedCover=table.dailyCover;if(prev!==JSON.stringify(managedCover))replaceHome();checkCoverAlerts()}}catch(e){}}},60000);
 
+// Read-only, credential-free snapshot for the optional Android home-screen widget.
+// Called only inside an authenticated teacher notebook session.
+window.schoolWidgetSnapshot=function(){
+ if(!loaded || !managedSchedule.length || !window.schoolPublishedTiming?.periods?.length)return null;
+ return {
+  revision:window.schoolPublishedTiming.revision,
+  schoolId:window.schoolManagedSchoolId||'',
+  slots:managedSchedule.map(x=>({weekday:Number(x.weekday),period:Number(x.period),classId:String(x.classId||''),dutyPriority:String(x.dutyPriority||'')})),
+  timing:window.schoolPublishedTiming.periods.map(x=>({start:String(x.start||''),end:String(x.end||''),kind:String(x.kind||'lesson')})),
+  cover:managedCover.filter(x=>x.status==='confirmed').map(x=>({date:String(x.date||''),period:Number(x.period),classId:String(x.classId||''),status:'confirmed'}))
+ };
+};
 function managedHTML(){
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  if(!loaded)return '<div class="school-managed-notice">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
