@@ -641,18 +641,25 @@ function normalize(t){return String(t).replace(/[٠-٩]/g,c=>String('٠١٢٣٤�
 function times(text){
  const lines=normalize(text).split(/\n+/).map(x=>x.trim()).filter(Boolean);
  const rows=[];
+ const clock=/(?:^|[^\d])([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)(?!\d)/g;
  for(const line of lines){
   const kind=/طابور|اصطفاف|assembly/i.test(line)?'assembly':/فسحة|استراحة|break|recess/i.test(line)?'break':'lesson';
-  const found=[...line.matchAll(/(?:^|[^0-9])([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)(?!\d)/g)].map(m=>String(m[1]).padStart(2,'0')+':'+m[2]);
-  if(found.length<2)continue;
-  const unique=[...new Set(found)];
-  const pair=unique.length>=2?[unique[0],unique[1]]:null;
-  if(!pair)continue;
-  const ordered=pair.sort();
-  if(ordered[0]===ordered[1])continue;
-  rows.push({start:ordered[0],end:ordered[1],kind});
+  const found=[...line.matchAll(clock)].map(m=>String(m[1]).padStart(2,'0')+':'+m[2]);
+  if(found.length!==2)continue;
+  const [start,end]=found.sort();
+  if(start===end)continue;
+  const minutes=t=>Number(t.slice(0,2))*60+Number(t.slice(3));
+  const duration=minutes(end)-minutes(start);
+  if(duration<5||duration>90)continue;
+  rows.push({start,end,kind});
  }
- return rows.sort((a,b)=>a.start.localeCompare(b.start)).slice(0,12);
+ const unique=[...new Map(rows.map(x=>[x.kind+'|'+x.start+'|'+x.end,x])).values()].sort((a,b)=>a.start.localeCompare(b.start));
+ // Never silently convert an incomplete or ambiguous PDF extraction into an editable timetable.
+ const lessons=unique.filter(x=>x.kind==='lesson');
+ if(lessons.length!==8)throw Error('استخراج غير مكتمل: تم التعرف على '+lessons.length+' حصص من أصل 8. لم تتغير البيانات. استخدم صورة أوضح أو أدخل الفترات يدويًا.');
+ if(unique.length>10||unique.filter(x=>x.kind==='assembly').length>1||unique.filter(x=>x.kind==='break').length>1)throw Error('الفترات المستخرجة مكررة أو غير واضحة؛ لم تتغير البيانات.');
+ for(let i=1;i<unique.length;i++)if(unique[i].start<unique[i-1].end)throw Error('تداخل في الأوقات المستخرجة؛ لم تتغير البيانات.');
+ return unique;
 }
 async function pdfText(f){
  if(!window.pdfjsLib)await script('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
@@ -663,12 +670,12 @@ async function pdfText(f){
   const page=await pdf.getPage(i),items=(await page.getTextContent()).items;
   const grouped=new Map();
   for(const item of items){
-   const y=Math.round(item.transform[5]/5)*5;
+   const y=Math.round(item.transform[5]/3)*3;
    if(!grouped.has(y))grouped.set(y,[]);
    grouped.get(y).push(item);
   }
   for(const row of [...grouped.entries()].sort((a,b)=>b[0]-a[0])){
-   lines.push(row[1].sort((a,b)=>b.transform[4]-a.transform[4]).map(x=>x.str).join(' '));
+   lines.push(row[1].sort((a,b)=>a.transform[4]-b.transform[4]).map(x=>x.str).join(' '));
   }
  }
  return lines.join('\n');
