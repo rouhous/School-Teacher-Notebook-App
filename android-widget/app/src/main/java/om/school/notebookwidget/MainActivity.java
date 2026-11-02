@@ -15,6 +15,17 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.CookieManager;
 import org.json.JSONObject;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.CredentialManagerCallback;
+import androidx.credentials.exceptions.GetCredentialException;
+import androidx.credentials.CustomCredential;
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+import android.os.CancellationSignal;
+import android.widget.FrameLayout;
+import android.view.ViewGroup;
 import org.json.JSONArray;
 
 /**
@@ -70,8 +81,60 @@ public class MainActivity extends Activity {
         return true;
       }
     });
-    setContentView(notebookView);
+    FrameLayout shell=new FrameLayout(this);
+    shell.addView(notebookView,new FrameLayout.LayoutParams(-1,-1));
+    Button googleLogin=new Button(this);
+    googleLogin.setText("الدخول الآمن بحساب Google");
+    googleLogin.setTextColor(0xFFFFFFFF);
+    googleLogin.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF075D4E));
+    FrameLayout.LayoutParams buttonParams=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
+    buttonParams.setMargins(24,0,24,24);
+    shell.addView(googleLogin,buttonParams);
+    googleLogin.setOnClickListener(v->signInWithGoogle());
+    notebookView.setWebViewClient(new WebViewClient(){
+      @Override public void onPageFinished(WebView view,String url){
+        if(url.startsWith(URL)){
+          view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';})()",null);
+          googleLogin.setVisibility(android.view.View.VISIBLE);
+        }else googleLogin.setVisibility(android.view.View.GONE);
+      }
+      @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
+        Uri uri=request.getUrl();
+        if("rouhous.github.io".equalsIgnoreCase(uri.getHost()))return false;
+        openExternal(uri);return true;
+      }
+    });
+    setContentView(shell);
     notebookView.loadUrl(URL);
+  }
+  private void signInWithGoogle(){
+    GetGoogleIdOption googleOption=new GetGoogleIdOption.Builder()
+      .setServerClientId("825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com")
+      .setFilterByAuthorizedAccounts(false)
+      .build();
+    GetCredentialRequest request=new GetCredentialRequest.Builder().addCredentialOption(googleOption).build();
+    CredentialManager.create(this).getCredentialAsync(this,request,new CancellationSignal(),
+      getMainExecutor(),new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
+        @Override public void onResult(GetCredentialResponse response){
+          if(!(response.getCredential() instanceof CustomCredential)){
+            Toast.makeText(MainActivity.this,"نوع تسجيل الدخول غير مدعوم",Toast.LENGTH_LONG).show();return;
+          }
+          CustomCredential credential=(CustomCredential)response.getCredential();
+          if(!GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(credential.getType()))return;
+          try{
+            String token=GoogleIdTokenCredential.createFrom(credential.getData()).getIdToken();
+            String quoted=JSONObject.quote(token);
+            if(notebookView!=null && notebookView.getUrl()!=null &&
+               notebookView.getUrl().startsWith(URL)){
+              notebookView.evaluateJavascript(
+                "window.schoolNotebookNativeGoogleSignIn && window.schoolNotebookNativeGoogleSignIn("+quoted+")",null);
+            }
+          }catch(Exception ex){Toast.makeText(MainActivity.this,"تعذر قراءة تسجيل Google",Toast.LENGTH_LONG).show();}
+        }
+        @Override public void onError(GetCredentialException error){
+          Toast.makeText(MainActivity.this,"تعذر تسجيل Google: "+error.getClass().getSimpleName(),Toast.LENGTH_LONG).show();
+        }
+      });
   }
   private void openExternal(Uri uri){
     try{
