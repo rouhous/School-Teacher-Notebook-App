@@ -1,0 +1,12 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ android:layout_width="match_parent" android:layout_height="match_parent"
+ android:orientation="vertical" android:padding="10dp" android:background="@drawable/widget_background">
+ <TextView android:id="@+id/weekly_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+ android:background="@drawable/widget_header" android:padding="12dp" android:gravity="center"
+ android:text="دفتر المعلم • الجدول الأسبوعي" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="16sp"/>
+ <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+ <TextView android:id="@+id/weekly_content" android:layout_width="match_parent" android:layout_height="wrap_content"
+ android:padding="10dp" android:gravity="right" android:textColor="#075D4E" android:textSize="14sp"
+ android:lineSpacingExtra="4dp" android:text="افتح دفتر المعلم لعرض الجدول"/>
+ </ScrollView>
+</LinearLayout>
