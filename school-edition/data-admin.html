@@ -79,7 +79,13 @@ main>h1{font-size:clamp(1.3rem,5vw,1.75rem)!important;margin:9px 0 2px!important
 </section><div id="timingOnlySchool" hidden><label for="timingSchoolSelect">المدرسة</label><select id="timingSchoolSelect"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select></div><section class="card" id="timingPublishPanel" data-panel="timing" hidden>
 <h2>⏰ اعتماد التوقيت المدرسي</h2>
 
-<div id="timingRows"></div>
+<div class="card" style="padding:12px;margin:12px 0;border:1px solid #c6dacd">
+<label for="schoolTimingImportFile"><strong>📄 استيراد توقيت من PDF أو صورة</strong></label>
+<input type="file" id="schoolTimingImportFile" accept=".pdf,application/pdf,image/*" style="width:100%;margin:8px 0">
+<button type="button" id="schoolTimingExtract">استخراج أوقات الحصص للمراجعة</button>
+<p style="font-size:12px;color:#587269">تُستخرج الأوقات محليًا في المتصفح. راجع جميع الحصص قبل اعتماد التوقيت؛ لن يُنشر الملف تلقائيًا.</p>
+<p id="schoolTimingImportStatus" role="status"></p>
+</div><div id="timingRows"></div>
 <div class="timing-action-buttons">
 <button type="button" id="addTimingPeriod">إضافة حصة</button>
 <button type="button" id="readTiming">عرض التوقيت المنشور</button>
@@ -613,4 +619,44 @@ $('school').addEventListener('change',()=>{profileState.rows=[];$('reviewClasses
  school.addEventListener('change',initialTiming);initialTiming();
  showPanel();
 })();
-</script><script>(function(){const a=document.getElementById('schoolTimetableImport'),school=document.getElementById('school');if(!a||!school)return;function update(){const v=school.value;a.href='./timetable-manager.html'+(['boys','girls'].includes(v)?'?school='+v:'');a.textContent='إدخال جداول '+(v==='girls'?'البنات':v==='boys'?'البنين':'المدرسة');}school.addEventListener('change',update);update();})();</script></body></html>
+</script><script>(function(){const a=document.getElementById('schoolTimetableImport'),school=document.getElementById('school');if(!a||!school)return;function update(){const v=school.value;a.href='./timetable-manager.html'+(['boys','girls'].includes(v)?'?school='+v:'');a.textContent='إدخال جداول '+(v==='girls'?'البنات':v==='boys'?'البنين':'المدرسة');}school.addEventListener('change',update);update();})();</script><script id="school-timing-file-import">
+(function(){
+const file=document.getElementById('schoolTimingImportFile'),button=document.getElementById('schoolTimingExtract'),status=document.getElementById('schoolTimingImportStatus');
+if(!file||!button)return;
+function script(src){return new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=src;el.onload=resolve;el.onerror=()=>reject(Error('تعذر تحميل مكتبة القراءة. تحقق من الاتصال بالإنترنت.'));document.head.append(el)})}
+function normalize(t){return String(t).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٫]/g,':')}
+function times(text){
+const found=[...normalize(text).matchAll(/(?:^|[^0-9])([01]?\\d|2[0-3])\\s*[:.]\\s*([0-5]\\d)(?!\\d)/gm)].map(m=>String(m[1]).padStart(2,'0')+':'+m[2]);
+const pairs=[];for(let i=0;i+1<found.length;i+=2){if(found[i]<found[i+1])pairs.push([found[i],found[i+1]])}
+return pairs.slice(0,12);
+}
+async function pdfText(f){
+if(!window.pdfjsLib)await script('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+let result='';for(let i=1;i<=Math.min(pdf.numPages,3);i++){const page=await pdf.getPage(i);result+=' '+(await page.getTextContent()).items.map(x=>x.str).join(' ')}
+return result;
+}
+async function imageText(f){
+if(!window.Tesseract)await script('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+const result=await Tesseract.recognize(f,'eng');return result.data.text;
+}
+button.onclick=async()=>{
+if(!file.files[0]){status.textContent='اختر ملف PDF أو صورة أولًا.';return}
+button.disabled=true;status.textContent='جارٍ قراءة الملف، قد يستغرق ذلك بعض الوقت…';
+try{
+ const f=file.files[0],raw=f.type==='application/pdf'||/\\.pdf$/i.test(f.name)?await pdfText(f):await imageText(f);
+ const rows=times(raw);
+ if(!rows.length)throw Error('لم أتعرف على أزواج الأوقات. يمكن إدخالها يدويًا أو استخدام ملف أوضح.');
+ const root=document.getElementById('timingRows');root.replaceChildren();
+ document.getElementById('addTimingPeriod').click();
+ for(let i=0;i<rows.length;i++){
+  if(i)document.getElementById('addTimingPeriod').click();
+  const inputs=root.children[i].querySelectorAll('input');inputs[0].value=rows[i][0];inputs[1].value=rows[i][1];
+ }
+ status.textContent='استُخرج '+rows.length+' حصة. راجع ترتيب الأوقات وتداخلها ثم اضغط «اعتماد ونشر التوقيت».';
+}catch(e){status.textContent='تعذر الاستيراد: '+e.message}
+finally{button.disabled=false}
+};
+})();
+</script></body></html>
