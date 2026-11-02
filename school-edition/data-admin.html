@@ -597,11 +597,13 @@ $('school').addEventListener('change',()=>{profileState.rows=[];$('reviewClasses
    const kind=row.querySelector('.timing-period-kind').value;
    return {kind,period:kind==='lesson'?++lesson:0,start:row.querySelectorAll('input')[0].value,end:row.querySelectorAll('input')[1].value};
   });
-  if(!entries.length||entries.length>12||lesson<1||lesson>8)throw Error('يجب إدخال 1 إلى 8 حصص دراسية، مع الطابور والفسحة اختياريًا.');
+  if(!entries.length||entries.length>12||lesson!==8)throw Error('يلزم وجود 8 حصص دراسية بالضبط. راجع الفترات الناقصة قبل الاعتماد.');
   if(entries.filter(x=>x.kind==='assembly').length>1||entries.filter(x=>x.kind==='break').length>1)throw Error('لا يمكن تكرار الطابور أو الفسحة.');
   for(let i=0;i<entries.length;i++){
    const r=entries[i];if(!r.start||!r.end||r.end<=r.start)throw Error('راجع بداية ونهاية الفترة '+(i+1));
    if(i&&r.start<entries[i-1].end)throw Error('يوجد تداخل بين الفترات '+i+' و'+(i+1));
+   const duration=(t)=>Number(t.slice(0,2))*60+Number(t.slice(3,5));
+   if(r.kind==='lesson'&&(duration(r.end)-duration(r.start)<20||duration(r.end)-duration(r.start)>90))throw Error('مدة غير منطقية للحصة '+r.period+'؛ صححها قبل الاعتماد.');
   }
   return entries;
  }
