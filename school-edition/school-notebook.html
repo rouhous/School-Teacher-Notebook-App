@@ -4522,6 +4522,18 @@ async function syncManaged(){
   if(!Array.isArray(roster))throw Error('قائمة الطلاب غير صالحة؛ لن يتم تغيير البيانات المحلية');
   managedSchedule=Array.isArray(table.slots)?table.slots:[];
   managedCover=Array.isArray(table.dailyCover)?table.dailyCover:[];
+  // The school's published timing is authoritative; never substitute local default clock times.
+  if(Array.isArray(table.timing)&&table.timing.length){
+   const rows=table.timing.slice().sort((a,b)=>Number(a.period)-Number(b.period));
+   const normalized=rows.map((p,i)=>({id:i+1,nameAr:'الحصة '+(i+1),nameEn:'Period '+(i+1),time:String(p.start).slice(0,5),endTime:String(p.end).slice(0,5)}));
+   const gap=rows.findIndex((p,i)=>i>0&&String(p.start).slice(0,5)>String(rows[i-1].end).slice(0,5));
+   if(gap>0){
+    const b=rows[gap-1],next=rows[gap];
+    normalized.splice(gap,0,{id:gap+1,nameAr:'فسحة',nameEn:'Break',time:String(b.end).slice(0,5),endTime:String(next.start).slice(0,5),type:'break'});
+    normalized.forEach((p,i)=>p.id=i+1);
+   }
+   db.periods=normalized;
+  }
   checkCoverAlerts();
   // Translate the supervisor's published slots into the ORIGINAL notebook schedule model.
   // Keep identifiers stable so attendance and grades remain linked to their students.
