@@ -4526,7 +4526,7 @@ async function syncManaged(){
   if(Array.isArray(table.timing)&&table.timing.length){
    const rows=table.timing.slice().sort((a,b)=>Number(a.period)-Number(b.period));
    const normalized=rows.map((p,i)=>({id:i+1,nameAr:'الحصة '+(i+1),nameEn:'Period '+(i+1),time:String(p.start).slice(0,5),endTime:String(p.end).slice(0,5)}));
-   const gap=rows.findIndex((p,i)=>i>0&&String(p.start).slice(0,5)>String(rows[i-1].end).slice(0,5));
+   const gap=rows.reduce((best,p,i)=>{if(!i)return best;const minutes=t=>{const [h,m]=String(t).slice(0,5).split(':').map(Number);return h*60+m};const span=minutes(p.start)-minutes(rows[i-1].end);return span>=15&&span>best.span?{index:i,span}:best},{index:-1,span:0}).index;
    if(gap>0){
     const b=rows[gap-1],next=rows[gap];
     normalized.splice(gap,0,{id:gap+1,nameAr:'فسحة',nameEn:'Break',time:String(b.end).slice(0,5),endTime:String(next.start).slice(0,5),type:'break'});
