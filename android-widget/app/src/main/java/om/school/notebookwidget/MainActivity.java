@@ -8,6 +8,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.view.Gravity;
 import android.widget.Toast;
+import androidx.browser.customtabs.CustomTabsIntent;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -33,16 +34,27 @@ public class MainActivity extends Activity {
     title.setGravity(Gravity.CENTER);
     root.addView(title);
     TextView info=new TextView(this);
-    info.setText("افتح الدفتر وسجل الدخول. من صفحة الجدول اضغط «إرسال الجدول للويدجت»، ثم اختر تطبيق دفتر المعلم من قائمة المشاركة. سيظهر الجدول على الشاشة الرئيسية.\n\nالتحديث الحالي يدوي وآمن؛ لا نشارك كلمة المرور أو بيانات الطلاب.");
+    info.setText("الدفتر الكامل: الجداول، الطلاب، الحضور، التقييم والتقارير.\nتسجيل Google يتم بأمان داخل متصفح موثوق مع الاحتفاظ بجلسة الدخول.\n\nلمزامنة الويدجت: افتح الجدول واضغط «إرسال الجدول إلى ويدجت Android» ثم اختر دفتر المعلم من المشاركة.");
     info.setTextSize(17);
     info.setPadding(0,32,0,32);
     info.setGravity(Gravity.CENTER);
     root.addView(info);
     Button open=new Button(this);
-    open.setText("فتح دفتر المعلم في المتصفح");
-    open.setOnClickListener(v->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(URL))));
+    open.setText("فتح دفتر المعلم الكامل");
+    open.setOnClickListener(v->openNotebook());
     root.addView(open);
     setContentView(root);
+  }
+  private void openNotebook(){
+    try{
+      CustomTabsIntent tab=new CustomTabsIntent.Builder()
+          .setShowTitle(false)
+          .setToolbarColor(0xFF075D4E)
+          .build();
+      tab.launchUrl(this,Uri.parse(URL));
+    }catch(Exception e){
+      startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(URL)));
+    }
   }
   @Override protected void onNewIntent(Intent intent){
     super.onNewIntent(intent);
