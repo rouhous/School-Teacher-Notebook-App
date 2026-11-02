@@ -668,48 +668,48 @@ function times(text){
 async function pdfText(f){
  if(!window.pdfjsLib)await script('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
- const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise,parsed=[];
+ const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+ const result=[];
  for(let pageNo=1;pageNo<=Math.min(pdf.numPages,3);pageNo++){
-  const page=await pdf.getPage(pageNo);
-  const content=await page.getTextContent();
+  const page=await pdf.getPage(pageNo),content=await page.getTextContent();
   const items=content.items.filter(x=>x.str&&x.str.trim()).map(x=>({
    x:x.transform[4],y:x.transform[5],
-   text:normalize(x.str).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'')
+   text:normalize(x.str).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'').trim()
   }));
-  // Identify rows using rightmost period-name labels, not times (which may be split into PDF text runs).
-  const labels=items.filter(x=>/طابور|فسحة|استراحة|الأولى|األولى|الثانية|الثالثة|الرابعة|الخامسة|السادسة|السابعة|الثامنة/.test(x.text))
-   .sort((a,b)=>b.y-a.y);
-  const rows=[];
-  for(const label of labels){
-   if(rows.some(r=>Math.abs(r.y-label.y)<16))continue;
-   rows.push({y:label.y,label:label.text});
+  // Find the two distinct clock columns from the PDF geometry, independent of Arabic glyph ordering.
+  const clocks=items.map(x=>({...x,time:clockValue(x.text)})).filter(x=>x.time);
+  const bands=new Map();
+  for(const x of clocks){
+   const key=Math.round(x.x/18)*18;
+   if(!bands.has(key))bands.set(key,[]);
+   bands.get(key).push(x);
   }
+  const columns=[...bands.values()].filter(xs=>xs.length>=6).sort((a,b)=>a[0].x-b[0].x);
+  if(columns.length<2)continue;
+  const left=columns[0],right=columns[columns.length-1];
+  const rows=[];
+  for(const startItem of right){
+   const endItem=left.reduce((best,x)=>Math.abs(x.y-startItem.y)<Math.abs((best?.y??Infinity)-startItem.y)?x:best,null);
+   if(!endItem||Math.abs(endItem.y-startItem.y)>14)continue;
+   if(rows.some(x=>Math.abs(x.y-startItem.y)<14))continue;
+   rows.push({y:startItem.y,start:startItem.time,end:endItem.time});
+  }
+  rows.sort((a,b)=>b.y-a.y);
   for(const row of rows){
-   const near=items.filter(x=>Math.abs(x.y-row.y)<16).sort((a,b)=>a.x-b.x);
-   // Time columns are the two leftmost columns, duration and period label are to their right.
-   const timeItems=near.filter(x=>x.x<rowLabelBoundary(near));
-   const candidates=timeItems.map(x=>clockValue(x.text)).filter(Boolean);
-   if(candidates.length<2){
-    const joined=timeItems.map(x=>x.text).join(' ');
-    const matches=[...joined.matchAll(/([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)/g)];
-    for(const m of matches)candidates.push(String(Number(m[1])).padStart(2,'0')+':'+m[2]);
-   }
-   if(candidates.length<2)continue;
-   let start=candidates[candidates.length-1],end=candidates[0];
-   if(parsed.length&&minutes(start)<minutes(parsed[parsed.length-1].end)&&minutes(start)+720>=minutes(parsed[parsed.length-1].end))
+   let {start,end}=row;
+   if(result.length&&minutes(start)<minutes(result[result.length-1].end)&&minutes(start)+720>=minutes(result[result.length-1].end))
     start=String(Number(start.slice(0,2))+12).padStart(2,'0')+start.slice(2);
    if(minutes(end)<minutes(start)&&minutes(end)+720>minutes(start))
     end=String(Number(end.slice(0,2))+12).padStart(2,'0')+end.slice(2);
-   const kind=/طابور/.test(row.label)?'assembly':/فسحة|استراحة/.test(row.label)?'break':'lesson';
-   parsed.push({start,end,kind});
+   const nearby=items.filter(x=>Math.abs(x.y-row.y)<17);
+   const label=nearby.filter(x=>x.x>right[0].x+40).map(x=>x.text).join(' ');
+   const duration=minutes(end)-minutes(start);
+   const kind=/طابور|اصطفاف/.test(label)?'assembly':/فسحة|استراحة/.test(label)?'break':duration===15&&result.length===0?'assembly':duration===20?'break':'lesson';
+   result.push({start,end,kind});
   }
  }
- if(parsed.length<8)throw Error('تعذر تحديد صفوف التوقيت: تم تحليل '+parsed.length+' من 10 فترات. يرجى إرسال لقطة من تفاصيل الخطأ للمراجعة.');
- return parsed;
-}
-function rowLabelBoundary(items){
- const xs=items.map(x=>x.x).sort((a,b)=>a-b);
- return xs.length>=4?(xs[1]+xs[2])/2:Infinity;
+ if(result.length!==10)throw Error('تعذر قراءة جميع صفوف الجدول: تم تحديد '+result.length+' من 10 فترات. لم تتغير البيانات.');
+ return result;
 }
 async function imageText(f){
 if(!window.Tesseract)await script('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
