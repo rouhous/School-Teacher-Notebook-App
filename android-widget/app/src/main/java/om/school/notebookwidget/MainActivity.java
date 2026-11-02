@@ -22,6 +22,8 @@ import androidx.credentials.CredentialManagerCallback;
 import androidx.credentials.exceptions.GetCredentialException;
 import androidx.credentials.CustomCredential;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
+import androidx.credentials.exceptions.NoCredentialException;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import android.os.CancellationSignal;
 import android.widget.FrameLayout;
@@ -113,6 +115,9 @@ public class MainActivity extends Activity {
       .setFilterByAuthorizedAccounts(false)
       .build();
     GetCredentialRequest request=new GetCredentialRequest.Builder().addCredentialOption(googleOption).build();
+    requestGoogleCredential(request,true);
+  }
+  private void requestGoogleCredential(GetCredentialRequest request,boolean allowFallback){
     CredentialManager.create(this).getCredentialAsync(this,request,new CancellationSignal(),
       getMainExecutor(),new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
         @Override public void onResult(GetCredentialResponse response){
@@ -132,7 +137,13 @@ public class MainActivity extends Activity {
           }catch(Exception ex){Toast.makeText(MainActivity.this,"تعذر قراءة تسجيل Google",Toast.LENGTH_LONG).show();}
         }
         @Override public void onError(GetCredentialException error){
-          Toast.makeText(MainActivity.this,"تعذر تسجيل Google: "+error.getClass().getSimpleName(),Toast.LENGTH_LONG).show();
+          if(allowFallback && error instanceof NoCredentialException){
+            GetSignInWithGoogleOption explicit=new GetSignInWithGoogleOption.Builder(
+              "825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com").build();
+            requestGoogleCredential(new GetCredentialRequest.Builder().addCredentialOption(explicit).build(),false);
+            return;
+          }
+          Toast.makeText(MainActivity.this,"تعذر تسجيل Google: "+error.getClass().getSimpleName()+". تحقق من تحديث خدمات Google Play.",Toast.LENGTH_LONG).show();
         }
       });
   }
