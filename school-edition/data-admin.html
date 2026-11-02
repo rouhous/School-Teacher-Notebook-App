@@ -637,16 +637,39 @@ if(!file||!button)return;
 function script(src){return new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=src;el.onload=resolve;el.onerror=()=>reject(Error('تعذر تحميل مكتبة القراءة. تحقق من الاتصال بالإنترنت.'));document.head.append(el)})}
 function normalize(t){return String(t).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٫]/g,':')}
 function times(text){
-const found=[...normalize(text).matchAll(/(?:^|[^0-9])([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)(?!\d)/gm)].map(m=>String(m[1]).padStart(2,'0')+':'+m[2]);
-const pairs=[];for(let i=0;i+1<found.length;i+=2){if(found[i]<found[i+1])pairs.push([found[i],found[i+1]])}
-return pairs.slice(0,12);
+ const lines=normalize(text).split(/\n+/).map(x=>x.trim()).filter(Boolean);
+ const rows=[];
+ for(const line of lines){
+  const kind=/طابور|اصطفاف|assembly/i.test(line)?'assembly':/فسحة|استراحة|break|recess/i.test(line)?'break':'lesson';
+  const found=[...line.matchAll(/(?:^|[^0-9])([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)(?!\d)/g)].map(m=>String(m[1]).padStart(2,'0')+':'+m[2]);
+  if(found.length<2)continue;
+  const unique=[...new Set(found)];
+  const pair=unique.length>=2?[unique[0],unique[1]]:null;
+  if(!pair)continue;
+  const ordered=pair.sort();
+  if(ordered[0]===ordered[1])continue;
+  rows.push({start:ordered[0],end:ordered[1],kind});
+ }
+ return rows.sort((a,b)=>a.start.localeCompare(b.start)).slice(0,12);
 }
 async function pdfText(f){
-if(!window.pdfjsLib)await script('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-let result='';for(let i=1;i<=Math.min(pdf.numPages,3);i++){const page=await pdf.getPage(i);result+=' '+(await page.getTextContent()).items.map(x=>x.str).join(' ')}
-return result;
+ if(!window.pdfjsLib)await script('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+ const lines=[];
+ for(let i=1;i<=Math.min(pdf.numPages,3);i++){
+  const page=await pdf.getPage(i),items=(await page.getTextContent()).items;
+  const grouped=new Map();
+  for(const item of items){
+   const y=Math.round(item.transform[5]/5)*5;
+   if(!grouped.has(y))grouped.set(y,[]);
+   grouped.get(y).push(item);
+  }
+  for(const row of [...grouped.entries()].sort((a,b)=>b[0]-a[0])){
+   lines.push(row[1].sort((a,b)=>b.transform[4]-a.transform[4]).map(x=>x.str).join(' '));
+  }
+ }
+ return lines.join('\n');
 }
 async function imageText(f){
 if(!window.Tesseract)await script('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
@@ -663,9 +686,10 @@ try{
  document.getElementById('addTimingPeriod').click();
  for(let i=0;i<rows.length;i++){
   if(i)document.getElementById('addTimingPeriod').click();
-  const inputs=root.children[i].querySelectorAll('input');inputs[0].value=rows[i][0];inputs[1].value=rows[i][1];
+  const row=root.children[i],inputs=row.querySelectorAll('input');inputs[0].value=rows[i].start;inputs[1].value=rows[i].end;row.querySelector('.timing-period-kind').value=rows[i].kind;
  }
- status.textContent='استُخرج '+rows.length+' حصة. راجع ترتيب الأوقات وتداخلها ثم اضغط «اعتماد ونشر التوقيت».';
+ root.querySelector('.timing-period-kind')?.dispatchEvent(new Event('change'));
+ status.textContent='استُخرج '+rows.length+' فترة للمراجعة. تحقق من الطابور والفسحة وجميع الأوقات قبل الاعتماد؛ لم يُنشر أي تغيير.';
 }catch(e){status.textContent='تعذر الاستيراد: '+e.message}
 finally{button.disabled=false}
 };
