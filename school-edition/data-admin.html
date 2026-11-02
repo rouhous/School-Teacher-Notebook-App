@@ -676,10 +676,36 @@ async function pdfText(f){
    x:x.transform[4],y:x.transform[5],
    text:normalize(x.str).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'').trim()
   }));
-  // Find the two distinct clock columns from the PDF geometry, independent of Arabic glyph ordering.
-  const clocks=items.map(x=>({...x,time:clockValue(x.text)})).filter(x=>x.time);
+  // PDF text runs can split a clock into separate digits and punctuation.
+  // Reassemble adjacent runs on each visual row before recognizing clock values.
+  const visualRows=[];
+  for(const item of [...items].sort((a,b)=>b.y-a.y)){
+   let row=visualRows.find(row=>Math.abs(row.y-item.y)<5);
+   if(!row){row={y:item.y,items:[]};visualRows.push(row)}
+   row.items.push(item);
+  }
+  const clocks=[];
+  for(const row of visualRows){
+   const ordered=row.items.sort((a,b)=>a.x-b.x);
+   // Adjacent numeric runs are grouped by physical proximity, preserving column separation.
+   let segment=[];
+   const flush=()=>{
+    if(!segment.length)return;
+    const joined=segment.map(x=>x.text).join('');
+    const time=clockValue(joined);
+    if(time)clocks.push({x:segment[0].x,y:row.y,text:joined,time});
+    segment=[];
+   };
+   for(const item of ordered){
+    const previous=segment[segment.length-1];
+    if(previous&&item.x-previous.x>38)flush();
+    if(/[0-9٠-٩۰-۹:：.٫]/.test(item.text))segment.push(item);
+    else flush();
+   }
+   flush();
+  }
   if(!clocks.length){
-   const sample=items.slice(0,18).map(x=>x.text).join(' | ').slice(0,650);
+   const sample=visualRows.slice(0,12).map(row=>row.items.map(x=>x.text).join(' ')).join(' / ').slice(0,650);
    throw Error('لم تُكتشف أوقات في PDF. عدد المقاطع النصية: '+items.length+'؛ عينة القراءة: '+sample);
   }
   // Time text is right-aligned: 7:20 and 10:30 have different x origins.
