@@ -24,6 +24,7 @@ import androidx.credentials.CustomCredential;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import androidx.credentials.exceptions.NoCredentialException;
+import androidx.credentials.exceptions.GetCredentialCancellationException;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import android.os.CancellationSignal;
 import android.widget.FrameLayout;
@@ -141,6 +142,10 @@ public class MainActivity extends Activity {
             GetSignInWithGoogleOption explicit=new GetSignInWithGoogleOption.Builder(
               "825380653679-u542mtddqblq5nrt0pctj8sbfe9sg4dj.apps.googleusercontent.com").build();
             requestGoogleCredential(new GetCredentialRequest.Builder().addCredentialOption(explicit).build(),false);
+            return;
+          }
+          if(error instanceof GetCredentialCancellationException){
+            Toast.makeText(MainActivity.this,"لم يكتمل اختيار حساب Google. حاول مرة أخرى.",Toast.LENGTH_LONG).show();
             return;
           }
           Toast.makeText(MainActivity.this,"تعذر تسجيل Google: "+error.getClass().getSimpleName()+". تحقق من تحديث خدمات Google Play.",Toast.LENGTH_LONG).show();
