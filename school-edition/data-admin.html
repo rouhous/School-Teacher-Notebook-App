@@ -572,24 +572,38 @@ $('school').addEventListener('change',()=>{profileState.rows=[];$('reviewClasses
  const kind=document.getElementById('kind'),school=document.getElementById('school');
  const root=document.getElementById('timingRows'),panel=document.getElementById('timingPublishPanel'),status=document.getElementById('timingPublishStatus');
  const endpoint='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-supervisor-documents';
- function addPeriod(start='',end=''){
+ function addPeriod(start='',end='',kind='lesson'){
   const row=document.createElement('div');row.className='timing-period-row';
   const num=document.createElement('strong');num.className='timing-period-label';
+  const type=document.createElement('select');type.className='timing-period-kind';type.setAttribute('aria-label','نوع الفترة');
+  for(const [value,label] of [['lesson','حصة دراسية'],['assembly','الطابور'],['break','الفسحة']])type.add(new Option(label,value));
+  type.value=kind;type.onchange=renumber;
   const a=document.createElement('label');a.textContent='البداية';const x=document.createElement('input');x.type='time';x.value=start;x.required=true;a.append(x);
   const b=document.createElement('label');b.textContent='النهاية';const y=document.createElement('input');y.type='time';y.value=end;y.required=true;b.append(y);
-  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','حذف الحصة');
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','حذف الفترة');
   remove.onclick=()=>{row.remove();renumber()};
-  row.append(num,a,b,remove);root.append(row);renumber();
+  row.append(num,type,a,b,remove);root.append(row);renumber();
  }
  function renumber(){
-  [...root.children].forEach((row,i)=>row.querySelector('.timing-period-label').textContent='حصة '+(i+1));
+  let lesson=0;
+  [...root.children].forEach(row=>{
+   const kind=row.querySelector('.timing-period-kind').value;
+   row.querySelector('.timing-period-label').textContent=kind==='assembly'?'الطابور':kind==='break'?'الفسحة':'حصة '+(++lesson);
+  });
  }
  function readRows(){
-  const entries=[...root.children].map((row,i)=>({period:i+1,start:row.querySelectorAll('input')[0].value,end:row.querySelectorAll('input')[1].value}));
-  if(!entries.length||entries.length>12)throw Error('أدخل بين حصة واحدة و12 حصة.');
+  let lesson=0;
+  const entries=[...root.children].map(row=>{
+   const kind=row.querySelector('.timing-period-kind').value;
+   return {kind,period:kind==='lesson'?++lesson:0,start:row.querySelectorAll('input')[0].value,end:row.querySelectorAll('input')[1].value};
+  });
+  if(!entries.length||entries.length>12||lesson!==8)throw Error('يلزم وجود 8 حصص دراسية بالضبط. راجع الفترات الناقصة قبل الاعتماد.');
+  if(entries.filter(x=>x.kind==='assembly').length>1||entries.filter(x=>x.kind==='break').length>1)throw Error('لا يمكن تكرار الطابور أو الفسحة.');
   for(let i=0;i<entries.length;i++){
-   const r=entries[i];if(!r.start||!r.end||r.end<=r.start)throw Error('راجع بداية ونهاية الحصة '+(i+1));
-   if(i&&r.start<entries[i-1].end)throw Error('يوجد تداخل بين الحصص '+i+' و'+(i+1));
+   const r=entries[i];if(!r.start||!r.end||r.end<=r.start)throw Error('راجع بداية ونهاية الفترة '+(i+1));
+   if(i&&r.start<entries[i-1].end)throw Error('يوجد تداخل بين الفترات '+i+' و'+(i+1));
+   const duration=(t)=>Number(t.slice(0,2))*60+Number(t.slice(3,5));
+   if(r.kind==='lesson'&&(duration(r.end)-duration(r.start)<20||duration(r.end)-duration(r.start)>90))throw Error('مدة غير منطقية للحصة '+r.period+'؛ صححها قبل الاعتماد.');
   }
   return entries;
  }
@@ -603,19 +617,18 @@ $('school').addEventListener('change',()=>{profileState.rows=[];$('reviewClasses
  const originalClick=document.getElementById('addTimingPeriod');originalClick.onclick=()=>{if(root.children.length>=12){status.textContent='الحد الأقصى 12 حصة';return}addPeriod()};
  document.getElementById('readTiming').onclick=async()=>{
   status.textContent='جارٍ تحميل النسخة المعتمدة…';
-  try{const d=await call('timing_read');root.replaceChildren();for(const r of d.periods||[])addPeriod(r.start,r.end);if(!root.children.length)addPeriod();status.textContent=d.revision?'تم تحميل الإصدار المعتمد '+d.revision+' للمراجعة.':'لا يوجد توقيت منشور لهذه المدرسة بعد.'}
+  try{const d=await call('timing_read');root.replaceChildren();for(const r of d.periods||[])addPeriod(r.start,r.end,r.kind||'lesson');if(!root.children.length)addPeriod();status.textContent=d.revision?'تم تحميل الإصدار المعتمد '+d.revision+' للمراجعة.':'لا يوجد توقيت منشور لهذه المدرسة بعد.'}
   catch(e){status.textContent='تعذر التحميل: '+e.message}
  };
  document.getElementById('publishTiming').onclick=async()=>{
   let rows;try{rows=readRows()}catch(e){status.textContent=e.message;return}
-  if(!confirm('اعتماد ونشر توقيت '+rows.length+' حصة لمدرسة '+(school.value==='boys'?'البنين':'البنات')+'؟ سيتم استبدال التوقيت المنشور.'))return;
+  if(!confirm('اعتماد ونشر توقيت '+rows.filter(r=>r.kind==='lesson').length+' حصة لمدرسة '+(school.value==='boys'?'البنين':'البنات')+'؟ سيتم استبدال التوقيت المنشور.'))return;
   const btn=document.getElementById('publishTiming');btn.disabled=true;status.textContent='جارٍ حفظ التوقيت في الخادم…';
   try{const d=await call('timing_publish',rows);status.textContent='✓ تم نشر التوقيت بنجاح، الإصدار '+d.revision+' ('+d.count+' حصة).'}
   catch(e){status.textContent='لم يتم النشر: '+e.message}
   finally{btn.disabled=false}
  };
- const approvedGirlsTiming=[['07:25','08:05'],['08:10','08:50'],['08:55','09:35'],['09:40','10:20'],['10:40','11:20'],['11:20','12:00'],['12:00','12:40'],['12:40','13:20']];
- function initialTiming(){root.replaceChildren();approvedGirlsTiming.forEach(([a,b])=>addPeriod(a,b));status.textContent='التوقيت الموحد للمدرستين 2026–2027 جاهز للمراجعة والاعتماد لكل مدرسة. الطابور 07:10–07:25 والفسحة 10:20–10:40 خارج الحصص.'}
+ function initialTiming(){root.replaceChildren();status.textContent='لا يوجد توقيت مفترض. استورد PDF أو صورة ثم راجع الفترات، أو اضغط «عرض التوقيت المنشور». لن يُعتمد أي توقيت دون موافقتك.';}
  school.addEventListener('change',initialTiming);initialTiming();
  showPanel();
 })();
@@ -626,20 +639,43 @@ if(!file||!button)return;
 function script(src){return new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=src;el.onload=resolve;el.onerror=()=>reject(Error('تعذر تحميل مكتبة القراءة. تحقق من الاتصال بالإنترنت.'));document.head.append(el)})}
 function normalize(t){return String(t).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٫]/g,':')}
 function times(text){
-const found=[...normalize(text).matchAll(/(?:^|[^0-9])([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)(?!\d)/gm)].map(m=>String(m[1]).padStart(2,'0')+':'+m[2]);
-const pairs=[];for(let i=0;i+1<found.length;i+=2){if(found[i]<found[i+1])pairs.push([found[i],found[i+1]])}
-return pairs.slice(0,12);
+ const lines=normalize(text).split(/\n+/).map(x=>x.trim()).filter(Boolean);
+ const rows=[];
+ for(const line of lines){
+  const kind=/طابور|اصطفاف|assembly/i.test(line)?'assembly':/فسحة|استراحة|break|recess/i.test(line)?'break':'lesson';
+  const found=[...line.matchAll(/(?:^|[^0-9])([01]?\d|2[0-3])\s*[:.]\s*([0-5]\d)(?!\d)/g)].map(m=>String(m[1]).padStart(2,'0')+':'+m[2]);
+  if(found.length<2)continue;
+  const unique=[...new Set(found)];
+  const pair=unique.length>=2?[unique[0],unique[1]]:null;
+  if(!pair)continue;
+  const ordered=pair.sort();
+  if(ordered[0]===ordered[1])continue;
+  rows.push({start:ordered[0],end:ordered[1],kind});
+ }
+ return rows.sort((a,b)=>a.start.localeCompare(b.start)).slice(0,12);
 }
 async function pdfText(f){
-if(!window.pdfjsLib)await script('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-let result='';for(let i=1;i<=Math.min(pdf.numPages,3);i++){const page=await pdf.getPage(i);result+=' '+(await page.getTextContent()).items.map(x=>x.str).join(' ')}
-return result;
+ if(!window.pdfjsLib)await script('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+ const lines=[];
+ for(let i=1;i<=Math.min(pdf.numPages,3);i++){
+  const page=await pdf.getPage(i),items=(await page.getTextContent()).items;
+  const grouped=new Map();
+  for(const item of items){
+   const y=Math.round(item.transform[5]/5)*5;
+   if(!grouped.has(y))grouped.set(y,[]);
+   grouped.get(y).push(item);
+  }
+  for(const row of [...grouped.entries()].sort((a,b)=>b[0]-a[0])){
+   lines.push(row[1].sort((a,b)=>b.transform[4]-a.transform[4]).map(x=>x.str).join(' '));
+  }
+ }
+ return lines.join('\n');
 }
 async function imageText(f){
 if(!window.Tesseract)await script('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
-const result=await Tesseract.recognize(f,'eng');return result.data.text;
+const result=await Tesseract.recognize(f,'ara+eng');return result.data.text;
 }
 button.onclick=async()=>{
 if(!file.files[0]){status.textContent='اختر ملف PDF أو صورة أولًا.';return}
@@ -652,9 +688,10 @@ try{
  document.getElementById('addTimingPeriod').click();
  for(let i=0;i<rows.length;i++){
   if(i)document.getElementById('addTimingPeriod').click();
-  const inputs=root.children[i].querySelectorAll('input');inputs[0].value=rows[i][0];inputs[1].value=rows[i][1];
+  const row=root.children[i],inputs=row.querySelectorAll('input');inputs[0].value=rows[i].start;inputs[1].value=rows[i].end;row.querySelector('.timing-period-kind').value=rows[i].kind;
  }
- status.textContent='استُخرج '+rows.length+' حصة. راجع ترتيب الأوقات وتداخلها ثم اضغط «اعتماد ونشر التوقيت».';
+ root.querySelector('.timing-period-kind')?.dispatchEvent(new Event('change'));
+ status.textContent='استُخرج '+rows.length+' فترة للمراجعة. تحقق من الطابور والفسحة وجميع الأوقات قبل الاعتماد؛ لم يُنشر أي تغيير.';
 }catch(e){status.textContent='تعذر الاستيراد: '+e.message}
 finally{button.disabled=false}
 };

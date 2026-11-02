@@ -4444,6 +4444,12 @@ function managedHTML(){
  if(!managedSchedule.length)return '<div class="school-managed-notice">لم يتوفر جدول منشور لهذا الحساب. لن يتم تعديل بياناتك المحلية.</div>';
  // Reuse the ORIGINAL notebook's weekly timetable, rather than a separate school-only list.
  const weekly=buildScheduleTableHTML().replace(/\s+onclick="[^"]*"/g,'');
+ // Published timing is displayed separately; the teacher's lessons remain unchanged.
+ const timingInfo=window.schoolPublishedTiming;
+ const timingRows=timingInfo?.periods||[];
+ const nonLessons=timingRows.filter(x=>x.kind==='assembly'||x.kind==='break');
+ const timingBanner=timingInfo?.revision?'<div class="school-managed-notice"><b>التوقيت المدرسي المعتمد — الإصدار '+safe(timingInfo.revision)+'</b><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+nonLessons.map(x=>'<span style="padding:8px;border-radius:8px;background:#fff4d8">'+(x.kind==='assembly'?'الطابور':'الفسحة')+' · '+safe(x.start)+' – '+safe(x.end)+'</span>').join('')+'</div></div>':'';
+
  const today=new Date(),date=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
  const coverToday=managedCover.filter(x=>x.date===date&&x.status==='confirmed');
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4457,6 +4463,25 @@ function replaceHome(){
  // The managed school view replaces the entire timetable; refresh the live gold highlight after each replacement.
  if(typeof updateActiveLessonVisual==='function')updateActiveLessonVisual();
 }
+window.schoolPublishedTiming=null;
+async function refreshPublishedTiming(){
+ try{
+  const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
+  const auth=credential?{credential}:{access_token:await schoolNotebookPasskeyToken()};
+  if(!auth.credential&&!auth.access_token)return;
+  const schoolId=(typeof schoolNotebookSchool!=='undefined'&&schoolNotebookSchool)||'';
+  // School selection is read from the approved timetable profile, never assumed.
+  const school=window.schoolManagedSchoolId||schoolId;
+  if(!['boys','girls'].includes(school))return;
+  const response=await fetch(schoolApi+'school-teacher-published-documents',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...auth,action:'timing_read',schoolId:school})});
+  const result=await response.json();
+  if(response.ok&&result.ok&&result.data?.revision){
+   window.schoolPublishedTiming=result.data;
+   if(loaded)replaceHome();
+  }
+ }catch(e){console.warn('Published timing unavailable:',e.message)}
+}
+window.addEventListener('focus',refreshPublishedTiming);
 window.renderHome=replaceHome;
 window.loadSample=function(){toast('البيانات التجريبية غير متاحة في النسخة المدرسية.')};
 window.saveSchoolAlarmSettings=function(){
@@ -4524,15 +4549,24 @@ async function syncManaged(){
   managedCover=Array.isArray(table.dailyCover)?table.dailyCover:[];
   // The school's published timing is authoritative; never substitute local default clock times.
   if(Array.isArray(table.timing)&&table.timing.length){
-   const rows=table.timing.slice().sort((a,b)=>Number(a.period)-Number(b.period));
-   const normalized=rows.map((p,i)=>({id:i+1,nameAr:'الحصة '+(i+1),nameEn:'Period '+(i+1),time:String(p.start).slice(0,5),endTime:String(p.end).slice(0,5)}));
-   const gap=rows.reduce((best,p,i)=>{if(!i)return best;const minutes=t=>{const [h,m]=String(t).slice(0,5).split(':').map(Number);return h*60+m};const span=minutes(p.start)-minutes(rows[i-1].end);return span>=15&&span>best.span?{index:i,span}:best},{index:-1,span:0}).index;
-   if(gap>0){
-    const b=rows[gap-1],next=rows[gap];
-    normalized.splice(gap,0,{id:gap+1,nameAr:'فسحة',nameEn:'Break',time:String(b.end).slice(0,5),endTime:String(next.start).slice(0,5),type:'break'});
-    normalized.forEach((p,i)=>p.id=i+1);
+   const source=table.timing.slice().sort((a,b)=>String(a.start).localeCompare(String(b.start)));
+   const lessons=source.filter(x=>!['assembly','break'].includes(x.kind));
+   const normalized=[];
+   let lessonNumber=0;
+   for(const p of source){
+    const kind=p.kind||'lesson';
+    const isExtra=kind==='assembly'||kind==='break';
+    const number=isExtra?0:++lessonNumber;
+    normalized.push({id:normalized.length+1,nameAr:kind==='assembly'?'الطابور':kind==='break'?'فسحة':'الحصة '+number,nameEn:kind==='assembly'?'Assembly':kind==='break'?'Break':'Period '+number,time:String(p.start).slice(0,5),endTime:String(p.end).slice(0,5),type:kind});
+   }
+   if(!source.some(x=>x.kind==='break')){
+    const minutes=t=>{const [h,m]=String(t).slice(0,5).split(':').map(Number);return h*60+m};
+    const gap=lessons.reduce((best,p,i)=>{if(!i)return best;const span=minutes(p.start)-minutes(lessons[i-1].end);return span>=15&&span>best.span?{start:lessons[i-1].end,end:p.start,span}:best},{span:0});
+    if(gap.span){const idx=normalized.findIndex(x=>x.time===String(gap.end).slice(0,5));normalized.splice(idx,0,{nameAr:'فسحة',nameEn:'Break',time:gap.start,endTime:gap.end,type:'break'});normalized.forEach((p,i)=>p.id=i+1);}
    }
    db.periods=normalized;
+   window.schoolPublishedTiming={periods:source,revision:table.timingRevision||'معتمد'};
+   window.schoolManagedSchoolId=table.schoolId||managedSchedule.find(x=>x.schoolId)?.schoolId||'';
   }
   checkCoverAlerts();
   // Translate the supervisor's published slots into the ORIGINAL notebook schedule model.
@@ -4557,13 +4591,10 @@ async function syncManaged(){
   // Period times may only be changed by published supervisor data, never by a local guess.
   const publishedPeriods=Array.isArray(table.periods)?table.periods:Array.isArray(table.timing)?table.timing:[];
   if(publishedPeriods.length){const valid=publishedPeriods.filter(x=>x&&/^([01]\d|2[0-3]):[0-5]\d$/.test(String(x.time||''))&&Number.isInteger(Number(x.id)));if(valid.length){db.periods=valid.map(x=>({id:Number(x.id),nameAr:String(x.nameAr||'الحصة '+x.id),nameEn:String(x.nameEn||'Period '+x.id),time:String(x.time),endTime:x.endTime||undefined,type:x.type||undefined}));save();}}
-  // Supervisor timetable numbers refer to eight teaching periods; the notebook
-  // inserts break as UI period 5. Shift 5–8 only when the published period
-  // definitions use the nine-slot (including break) layout.
-  const displayHasBreak=(db.periods||[]).some(isBreakPeriod);
-  const sourceHasBreak=publishedPeriods.some(isBreakPeriod);
-  if(displayHasBreak&&!sourceHasBreak){
-    db.schedule=db.schedule.map(slot=>({...slot,periodId:slot.periodId>=5&&slot.periodId<=8?slot.periodId+1:slot.periodId}));
+  // Map original 1–8 lesson identifiers onto display rows, skipping assembly and break.
+  const lessonDisplayIds=(db.periods||[]).filter(p=>p.type!=='assembly'&&!isBreakPeriod(p)).map(p=>p.id);
+  if(lessonDisplayIds.length===8){
+   db.schedule=db.schedule.map(slot=>({...slot,periodId:lessonDisplayIds[Number(slot.periodId)-1]||slot.periodId}));
   }
   managedRoster=Array.isArray(roster)?roster:[];
   loaded=true;
@@ -5015,7 +5046,7 @@ async function activateTeacherPasskeyFromSettings(){
   try{
    const data=await ask('timing_read');
    result.textContent=data.revision
-    ?'الإصدار '+data.revision+'\n'+data.periods.map(x=>'الحصة '+x.period+': '+x.start+' – '+x.end).join('\n')
+    ?'الإصدار '+data.revision+'\n'+data.periods.map(x=>(x.kind==='assembly'?'الطابور':x.kind==='break'?'الفسحة':'الحصة '+x.period)+': '+x.start+' – '+x.end).join('\n')
     :'لا يوجد توقيت معتمد لهذه المدرسة.';
   }catch(e){result.textContent='تعذر العرض: '+e.message}
  };
