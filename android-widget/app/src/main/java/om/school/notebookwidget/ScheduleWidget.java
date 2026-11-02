@@ -10,6 +10,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import java.time.LocalDate;
 import java.util.Locale;
+import java.time.LocalTime;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
+import android.graphics.Typeface;
+import android.text.Spanned;
 
 public class ScheduleWidget extends AppWidgetProvider {
   public static void refresh(Context ctx){
@@ -30,7 +37,11 @@ public class ScheduleWidget extends AppWidgetProvider {
     view.setOnClickPendingIntent(R.id.widget_title,open);
     mgr.updateAppWidget(id,view);
   }
-  private static String buildText(Context ctx){
+  private static String clock(String start,String end){
+    // Unicode isolate marks keep LTR times in their correct order inside Arabic UI.
+    return "\u2066"+start+" - "+end+"\u2069";
+  }
+  private static CharSequence buildText(Context ctx){
     try{
       String json=ctx.getSharedPreferences("widget",Context.MODE_PRIVATE).getString("snapshot",null);
       if(json==null)return "افتح دفتر المعلم واضغط تحديث الويدجت";
@@ -40,15 +51,16 @@ public class ScheduleWidget extends AppWidgetProvider {
       JSONArray cover=data.optJSONArray("cover");
       int weekday=LocalDate.now().getDayOfWeek().getValue();
       String date=LocalDate.now().toString();
-      StringBuilder out=new StringBuilder();
+      SpannableStringBuilder out=new SpannableStringBuilder();
       int number=0;
+      LocalTime now=LocalTime.now();
       for(int i=0;i<timing.length();i++){
         JSONObject t=timing.getJSONObject(i);
         String kind=t.optString("kind","lesson");
         String start=t.optString("start","");
         String end=t.optString("end","");
-        if("assembly".equals(kind)){out.append("الطابور  ").append(start).append("–").append(end).append("\n");continue;}
-        if("break".equals(kind)){out.append("الفسحة  ").append(start).append("–").append(end).append("\n");continue;}
+        if("assembly".equals(kind)){out.append("الطابور  ").append(clock(start,end)).append("\n");continue;}
+        if("break".equals(kind)){out.append("الفسحة  ").append(clock(start,end)).append("\n");continue;}
         number++;
         String classes="";
         for(int j=0;j<slots.length();j++){
@@ -66,7 +78,17 @@ public class ScheduleWidget extends AppWidgetProvider {
             classes+=(classes.isEmpty()?"":"، ")+"احتياط مؤكد "+c.optString("classId","");
           }
         }
-        out.append("الحصة ").append(number).append("  ").append(start).append("–").append(end).append("  ").append(classes.isEmpty()?"—":classes).append("\n");
+        String line="الحصة "+number+"  "+clock(start,end)+"  "+(classes.isEmpty()?"—":classes)+"\n";
+        int offset=out.length();
+        out.append(line);
+        try{
+          LocalTime from=LocalTime.parse(start);
+          LocalTime until=LocalTime.parse(end);
+          if(!now.isBefore(from) && now.isBefore(until)){
+            out.setSpan(new ForegroundColorSpan(0xFF9A6913),offset,out.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            out.setSpan(new StyleSpan(Typeface.BOLD),offset,out.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          }
+        }catch(Exception ignored){} 
       }
       return out.toString();
     }catch(Exception e){return "تعذر قراءة الجدول. افتح الدفتر لتحديث الويدجت.";}
