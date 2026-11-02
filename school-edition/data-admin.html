@@ -678,6 +678,10 @@ async function pdfText(f){
   }));
   // Find the two distinct clock columns from the PDF geometry, independent of Arabic glyph ordering.
   const clocks=items.map(x=>({...x,time:clockValue(x.text)})).filter(x=>x.time);
+  if(!clocks.length){
+   const sample=items.slice(0,18).map(x=>x.text).join(' | ').slice(0,650);
+   throw Error('لم تُكتشف أوقات في PDF. عدد المقاطع النصية: '+items.length+'؛ عينة القراءة: '+sample);
+  }
   // Time text is right-aligned: 7:20 and 10:30 have different x origins.
   // Split by the largest horizontal gap rather than rounding x to fixed bands.
   const xs=clocks.map(c=>c.x).sort((a,b)=>a-b);
