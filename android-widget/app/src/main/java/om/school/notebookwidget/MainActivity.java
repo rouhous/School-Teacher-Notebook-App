@@ -9,6 +9,11 @@ import android.widget.TextView;
 import android.view.Gravity;
 import android.widget.Toast;
 import androidx.browser.customtabs.CustomTabsIntent;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.CookieManager;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -18,6 +23,7 @@ import org.json.JSONArray;
  * Never claim that a browser login has synchronized the widget.
  */
 public class MainActivity extends Activity {
+  private WebView notebookView;
   private static final String URL="https://rouhous.github.io/School-Teacher-Notebook-App/";
   @Override public void onCreate(Bundle state){
     super.onCreate(state);
@@ -44,6 +50,42 @@ public class MainActivity extends Activity {
     open.setOnClickListener(v->openNotebook());
     root.addView(open);
     setContentView(root);
+    openEmbeddedNotebook();
+  }
+  private void openEmbeddedNotebook(){
+    notebookView=new WebView(this);
+    notebookView.getSettings().setJavaScriptEnabled(true);
+    notebookView.getSettings().setDomStorageEnabled(true);
+    notebookView.getSettings().setAllowFileAccess(false);
+    notebookView.getSettings().setAllowContentAccess(false);
+    CookieManager.getInstance().setAcceptCookie(true);
+    notebookView.setWebChromeClient(new WebChromeClient());
+    notebookView.setWebViewClient(new WebViewClient(){
+      @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
+        Uri uri=request.getUrl();
+        String host=uri.getHost()==null?"":uri.getHost().toLowerCase(java.util.Locale.ROOT);
+        if(host.equals("rouhous.github.io"))return false;
+        // OAuth providers should never authenticate inside an embedded WebView.
+        openExternal(uri);
+        return true;
+      }
+    });
+    setContentView(notebookView);
+    notebookView.loadUrl(URL);
+  }
+  private void openExternal(Uri uri){
+    try{
+      CustomTabsIntent tab=new CustomTabsIntent.Builder().setToolbarColor(0xFF075D4E).build();
+      tab.launchUrl(this,uri);
+    }catch(Exception e){startActivity(new Intent(Intent.ACTION_VIEW,uri));}
+  }
+  @Override public void onBackPressed(){
+    if(notebookView!=null && notebookView.canGoBack())notebookView.goBack();
+    else super.onBackPressed();
+  }
+  @Override protected void onDestroy(){
+    if(notebookView!=null){notebookView.destroy();notebookView=null;}
+    super.onDestroy();
   }
   private void openNotebook(){
     try{
