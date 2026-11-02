@@ -31,11 +31,57 @@ public class ScheduleWidget extends AppWidgetProvider {
   private static void render(Context ctx,AppWidgetManager mgr,int id){
     RemoteViews view=new RemoteViews(ctx.getPackageName(),R.layout.widget_schedule);
     view.setTextViewText(R.id.widget_content,buildText(ctx));
+    view.setTextViewText(R.id.widget_date,LocalDate.now().toString());
+    view.setTextViewText(R.id.widget_current,currentPeriod(ctx));
     Intent intent=new Intent(ctx,MainActivity.class);
     PendingIntent open=PendingIntent.getActivity(ctx,0,intent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     view.setOnClickPendingIntent(R.id.widget_content,open);
     view.setOnClickPendingIntent(R.id.widget_title,open);
+    view.setOnClickPendingIntent(R.id.widget_current,open);
     mgr.updateAppWidget(id,view);
+  }
+  private static String currentPeriod(Context ctx){
+    try{
+      String json=ctx.getSharedPreferences("widget",Context.MODE_PRIVATE).getString("snapshot",null);
+      if(json==null)return "أرسل الجدول من دفتر المعلم لتفعيل الويدجت";
+      JSONObject data=new JSONObject(json);
+      JSONArray timing=data.getJSONArray("timing");
+      JSONArray slots=data.getJSONArray("slots");
+      JSONArray cover=data.optJSONArray("cover");
+      LocalTime now=LocalTime.now();
+      int weekday=LocalDate.now().getDayOfWeek().getValue();
+      if(weekday>5)return "عطلة نهاية الأسبوع";
+      int number=0;
+      for(int i=0;i<timing.length();i++){
+        JSONObject t=timing.getJSONObject(i);
+        String kind=t.optString("kind","lesson");
+        if(!"assembly".equals(kind)&&!"break".equals(kind))number++;
+        try{
+          LocalTime from=LocalTime.parse(t.optString("start"));
+          LocalTime until=LocalTime.parse(t.optString("end"));
+          if(now.isBefore(from)||!now.isBefore(until))continue;
+          if("assembly".equals(kind))return "الآن: الطابور الصباحي";
+          if("break".equals(kind))return "الآن: الفسحة";
+          String cls="";
+          for(int j=0;j<slots.length();j++){
+            JSONObject slot=slots.getJSONObject(j);
+            if(slot.optInt("weekday",-1)==weekday&&slot.optInt("period",-1)==number){
+              String item=slot.optString("classId","");
+              if(item.isEmpty()&&!slot.optString("dutyPriority","").isEmpty())item="احتياط "+slot.optString("dutyPriority");
+              if(!item.isEmpty())cls+=(cls.isEmpty()?"":"، ")+item;
+            }
+          }
+          if(cover!=null)for(int j=0;j<cover.length();j++){
+            JSONObject c=cover.getJSONObject(j);
+            if(LocalDate.now().toString().equals(c.optString("date"))&&number==c.optInt("period",-1)){
+              cls+=(cls.isEmpty()?"":"، ")+"احتياط مؤكد "+c.optString("classId","");
+            }
+          }
+          return "الحصة "+number+" الآن  •  "+(cls.isEmpty()?"لا توجد حصة":cls)+"\n"+clock(t.optString("start"),t.optString("end"));
+        }catch(Exception ignored){}
+      }
+      return "لا توجد حصة جارية الآن";
+    }catch(Exception e){return "افتح الدفتر لتحديث الجدول";}
   }
   private static String clock(String start,String end){
     // Unicode isolate marks keep LTR times in their correct order inside Arabic UI.
