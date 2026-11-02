@@ -9,6 +9,24 @@ android {
         versionCode 3
         versionName '0.3.0'
     }
+    signingConfigs {
+        release {
+            def keyFile = file('teacher-notebook-release.jks')
+            if (keyFile.exists() && System.getenv('ANDROID_KEYSTORE_PASSWORD') && System.getenv('ANDROID_KEY_ALIAS')) {
+                storeFile keyFile
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: System.getenv('ANDROID_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (signingConfigs.release.storeFile != null) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
 }
 
 dependencies {
