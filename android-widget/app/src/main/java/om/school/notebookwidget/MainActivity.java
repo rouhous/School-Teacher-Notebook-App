@@ -101,9 +101,9 @@ public class MainActivity extends Activity {
     Button googleLogin=new Button(this);
     googleLogin.setText("الدخول الآمن بحساب Google");
     googleLogin.setTextColor(0xFFFFFFFF);
-    googleLogin.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF075D4E));
+    googleLogin.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF1A73E8));
     FrameLayout.LayoutParams buttonParams=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
-    buttonParams.setMargins(24,0,24,24);
+    buttonParams.setMargins(24,0,24,72);
     shell.addView(googleLogin,buttonParams);
     googleLogin.setVisibility(View.GONE);
     googleLogin.setOnClickListener(v->signInWithGoogle());
