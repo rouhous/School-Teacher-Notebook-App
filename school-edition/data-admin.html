@@ -678,15 +678,16 @@ async function pdfText(f){
   }));
   // Find the two distinct clock columns from the PDF geometry, independent of Arabic glyph ordering.
   const clocks=items.map(x=>({...x,time:clockValue(x.text)})).filter(x=>x.time);
-  const bands=new Map();
-  for(const x of clocks){
-   const key=Math.round(x.x/18)*18;
-   if(!bands.has(key))bands.set(key,[]);
-   bands.get(key).push(x);
+  // Time text is right-aligned: 7:20 and 10:30 have different x origins.
+  // Split by the largest horizontal gap rather than rounding x to fixed bands.
+  const xs=clocks.map(c=>c.x).sort((a,b)=>a-b);
+  let split=0,gap=0;
+  for(let j=1;j<xs.length;j++){
+   const g=xs[j]-xs[j-1];
+   if(g>gap){gap=g;split=(xs[j]+xs[j-1])/2}
   }
-  const columns=[...bands.values()].filter(xs=>xs.length>=6).sort((a,b)=>a[0].x-b[0].x);
-  if(columns.length<2)continue;
-  const left=columns[0],right=columns[columns.length-1];
+  const left=clocks.filter(c=>c.x<split),right=clocks.filter(c=>c.x>=split);
+  if(left.length<8||right.length<8)throw Error('تعذر تحديد عمودي الوقت: يسار '+left.length+'، يمين '+right.length+'، مجموع القيم '+clocks.length+'. لم تتغير البيانات.');
   const rows=[];
   for(const startItem of right){
    const endItem=left.reduce((best,x)=>Math.abs(x.y-startItem.y)<Math.abs((best?.y??Infinity)-startItem.y)?x:best,null);
@@ -708,7 +709,7 @@ async function pdfText(f){
    result.push({start,end,kind});
   }
  }
- if(result.length!==10)throw Error('تعذر قراءة جميع صفوف الجدول: تم تحديد '+result.length+' من 10 فترات. لم تتغير البيانات.');
+ if(result.length!==10)throw Error('تعذر قراءة جميع صفوف الجدول: تم تحديد '+result.length+' من 10 فترات. راجع ملف PDF أو أرسل هذه الرسالة. لم تتغير البيانات.');
  return result;
 }
 async function imageText(f){
