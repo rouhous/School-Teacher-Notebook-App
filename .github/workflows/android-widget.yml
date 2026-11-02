@@ -28,6 +28,11 @@ jobs:
       - name: Build debug APK
         working-directory: android-widget
         run: gradle --no-daemon assembleDebug
+      - name: Print APK signing certificate fingerprints
+        working-directory: android-widget
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk
+          echo "NOTE: The debug signing key may differ across GitHub-hosted runners. Do not register this fingerprint as a permanent production OAuth identity."
       - uses: actions/upload-artifact@v4
         with:
           name: School-Teacher-Notebook-Android-debug
