@@ -10,10 +10,7 @@
     <TextView android:id="@+id/widget_current" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:background="@drawable/widget_current" android:padding="11dp" android:gravity="right"
         android:text="الحصة الحالية" android:textSize="16sp" android:textColor="#76500F" android:textStyle="bold"/>
-    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
-        android:fillViewport="false">
-        <TextView android:id="@+id/widget_content" android:layout_width="match_parent" android:layout_height="wrap_content"
+    <TextView android:id="@+id/widget_content" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="13" android:ellipsize="end"
             android:gravity="right" android:padding="8dp" android:lineSpacingExtra="5dp"
             android:text="افتح دفتر المعلم واضغط تحديث الويدجت" android:textSize="14sp" android:textColor="#153E32"/>
-    </ScrollView>
 </LinearLayout>
