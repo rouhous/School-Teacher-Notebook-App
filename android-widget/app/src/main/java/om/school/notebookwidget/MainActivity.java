@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
     receiveSharedSchedule(getIntent());
     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     getWindow().setStatusBarColor(0xFFF7FAF9);
+    getWindow().getDecorView().setFitsSystemWindows(true);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
     getWindow().setNavigationBarColor(0xFF075D4E);
@@ -161,7 +162,26 @@ public class MainActivity extends Activity {
       }
     });
     setContentView(shell);
+    applySystemBars();
     notebookView.loadUrl(URL);
+  }
+  private void applySystemBars(){
+    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN|WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+    getWindow().setStatusBarColor(0xFFF7FAF9);
+    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+    if(android.os.Build.VERSION.SDK_INT>=35){
+      getWindow().getDecorView().setOnApplyWindowInsetsListener((view,insets)->{
+        android.graphics.Insets bars=insets.getInsets(android.view.WindowInsets.Type.statusBars());
+        if(notebookView!=null)notebookView.setPadding(0,bars.top,0,0);
+        return insets;
+      });
+      getWindow().getDecorView().requestApplyInsets();
+    }
+  }
+  @Override public void onWindowFocusChanged(boolean hasFocus){
+    super.onWindowFocusChanged(hasFocus);
+    if(hasFocus)applySystemBars();
   }
   private void signInWithGoogle(){
     GetGoogleIdOption googleOption=new GetGoogleIdOption.Builder()
