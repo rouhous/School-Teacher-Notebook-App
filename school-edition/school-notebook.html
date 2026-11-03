@@ -4463,13 +4463,62 @@ window.shareApprovedScheduleToWidget=async function(){
  }catch(e){if(e?.name!=='AbortError')alert('تعذرت مشاركة الجدول. يرجى المحاولة من متصفح Android.');}
 };
 function printApprovedTeacherSchedule(){
- const table=document.querySelector('#school-managed-schedule table');
- if(!table){alert('الجدول المعتمد غير متاح للطباعة الآن');return;}
+ if(!loaded||!managedSchedule.length){alert('الجدول المعتمد غير متاح');return;}
+ const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+ const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
+ const periods=[...db.periods].sort((a,b)=>Number(a.id)-Number(b.id));
+ const timeList=window.schoolPublishedTiming?.periods||[];
+ function timing(p,i){
+  const t=timeList.find(x=>Number(x.period)===Number(p.id)&&x.kind!=='break'&&x.kind!=='assembly')
+    ||timeList.filter(x=>x.kind!=='break'&&x.kind!=='assembly')[i];
+  if(t?.start&&t?.end)return t.start+' – '+t.end;
+  const start=String(p.time||'');
+  if(!/^\\d{1,2}:\\d{2}$/.test(start))return start||'—';
+  const [h,m]=start.split(':').map(Number),end=h*60+m+40;
+  return start+' – '+String(Math.floor(end/60)%24).padStart(2,'0')+':'+String(end%60).padStart(2,'0');
+ }
+ const rows=periods.map((p,i)=>({
+  id:p.id,number:/break|فسحة/i.test(String(p.name||''))?'فسحة':String(p.id),
+  time:timing(p,i),
+  cells:days.map((_,di)=>{
+   const match=(db.schedule||[]).filter(x=>Number(x.day)===di&&Number(x.periodId)===Number(p.id)&&!isRestSlot(x)&&x.type!=='break');
+   if(match.length)return match.map(x=>schoolGradeLabel(db.classes.find(c=>c.id===x.classId)?.name||x.classId||'')).join(' / ');
+   return typeof schoolDutyLabel==='function'?schoolDutyLabel(di,p.id):'';
+  })
+ }));
  const w=window.open('','_blank');
- if(!w){alert('يرجى السماح بفتح نافذة الطباعة');return;}
- const name=(document.querySelector('#school-managed-schedule h3')?.textContent||'الجدول الأسبوعي المعتمد');
+ if(!w){alert('يرجى السماح بفتح نافذة المعاينة');return;}
+ const json=JSON.stringify({days,rows}).replace(/</g,'\\u003c');
  w.document.open();
- w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>طباعة جدول المعلم</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Tahoma,Arial,sans-serif;color:#163e32}h2{text-align:center;color:#075d4e}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px}th,td{border:1px solid #829e95;padding:5px;text-align:center}th{background:#d9eee5}button{margin:12px;padding:9px 18px;background:#075d4e;color:white;border:0;border-radius:8px}@media print{button{display:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><h2>'+name+'</h2>'+table.outerHTML+'<p style="text-align:center">تاريخ الطباعة: '+new Date().toLocaleDateString('ar-OM')+'</p><button onclick="window.print()">طباعة</button></body></html>');
+ w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>جدول المعلم - طباعة</title>
+ <style>
+ *{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:0;padding:12px;color:#173e34}
+ .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px;background:#eef7f1;border-radius:10px;margin-bottom:12px}
+ select,button{font:inherit;padding:8px;border-radius:8px;border:1px solid #9dbbad}button{background:#075d4e;color:#fff}
+ h2{text-align:center;margin:6px 0 14px;color:#075d4e}table{border-collapse:collapse;width:100%;table-layout:fixed;height:calc(100vh - 170px)}
+ th,td{border:1px solid #738e84;text-align:center;padding:5px;font-weight:600;overflow-wrap:anywhere}
+ th{background:#dceee5;color:#075d4e}tr.break-row>*{background:#fff2d9;color:#87540a}
+ @page{size:A4 landscape;margin:6mm}
+ @media print{.toolbar{display:none}body{padding:0}table{height:175mm;break-inside:avoid}h2{margin:0 0 8px}th,td{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+ </style></head><body>
+ <div class="toolbar"><label>اتجاه الجدول <select id="layout"><option value="rows">الحصص والتوقيت في الصفوف، الأيام في الأعمدة</option><option value="columns">الأيام في الصفوف، الحصص في الأعمدة</option></select></label><button id="print">🖨️ طباعة</button></div>
+ <h2>الجدول الأسبوعي المعتمد للمعلم</h2><table id="sheet"></table>
+ <script>
+ const data=${json};
+ function draw(){
+ const vertical=document.getElementById('layout').value==='rows';
+ const table=document.getElementById('sheet');
+ const rows=data.rows,days=data.days;
+ if(vertical){
+ table.innerHTML='<thead><tr><th>الحصة</th><th>التوقيت (من – إلى)</th>'+days.map(d=>'<th>'+d+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr'+(r.number==='فسحة'?' class="break-row"':'')+'><th>'+r.number+'</th><td>'+r.time+'</td>'+r.cells.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody>';
+ }else{
+ table.innerHTML='<thead><tr><th>اليوم</th>'+rows.map(r=>'<th>'+r.number+'<small style="display:block">'+r.time+'</small></th>').join('')+'</tr></thead><tbody>'+days.map((d,i)=>'<tr><th>'+d+'</th>'+rows.map(r=>'<td>'+r.cells[i]+'</td>').join('')+'</tr>').join('')+'</tbody>';
+ }
+ }
+ document.getElementById('layout').addEventListener('change',draw);
+ document.getElementById('print').addEventListener('click',()=>window.print());
+ draw();
+ <\\/script></body></html>`);
  w.document.close();
 }
 window.printApprovedTeacherSchedule=printApprovedTeacherSchedule;
