@@ -4477,19 +4477,18 @@ function printApprovedTeacherSchedule(){
  if(!loaded||!managedSchedule.length){alert('الجدول المعتمد غير متاح');return;}
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
  const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
- const periods=[...db.periods].sort((a,b)=>Number(a.id)-Number(b.id));
  const timeList=window.schoolPublishedTiming?.periods||[];
+ const isSpecial=p=>/break|assembly|فسحة|الفسحة|الطابور|طابور/i.test(String(p.name||p.nameAr||p.type||p.kind||''));
+ const periods=[...db.periods].filter(p=>!isSpecial(p)).sort((a,b)=>Number(a.id)-Number(b.id));
+ const timedLessons=timeList.filter(t=>t.kind!=='assembly'&&t.kind!=='break').sort((a,b)=>String(a.start||'').localeCompare(String(b.start||'')));
  function timing(p,i){
-  const t=timeList.find(x=>Number(x.period)===Number(p.id))
-    ||timeList[i];
+  const t=timedLessons.find(x=>Number(x.period)===Number(i+1))||timedLessons[i];
   if(t?.start&&t?.end)return t.start+' – '+t.end;
   const start=String(p.time||'');
-  if(!/^\d{1,2}:\d{2}$/.test(start))return start||'—';
-  return start+' – —';
+  return start?(start+' – —'):'—';
  }
  const lessonRows=periods.map((p,i)=>({
-  id:p.id,number:/break|فسحة/i.test(String(p.name||''))?'فسحة':String(p.id),
-  time:timing(p,i),
+  id:p.id,number:String(i+1),time:timing(p,i),
   cells:days.map((_,di)=>{
    const match=(db.schedule||[]).filter(x=>Number(x.day)===di&&Number(x.periodId)===Number(p.id)&&!isRestSlot(x)&&x.type!=='break');
    if(match.length)return match.map(x=>schoolGradeLabel(db.classes.find(c=>c.id===x.classId)?.name||x.classId||'')).join(' / ');
@@ -4498,19 +4497,14 @@ function printApprovedTeacherSchedule(){
  }));
  const specials=timeList.filter(x=>x.kind==='assembly'||x.kind==='break').sort((a,b)=>String(a.start||'').localeCompare(String(b.start||'')));
  const rows=[...lessonRows];
- // The published timetable already includes non-teaching slots in some schools.
- // Replace those slots rather than adding extra periods and shifting the lessons.
+ // Special events are independent timetable rows, never replacements for actual lessons.
  for(const special of specials){
   const label=special.kind==='assembly'?'الطابور':'الفسحة';
   const start=String(special.start||''),end=String(special.end||'');
+  if(rows.some(x=>x.number===label))continue;
   const entry={id:label,number:label,time:start+(end?' – '+end:''),cells:days.map(()=>label)};
-  const exact=rows.findIndex(x=>String(x.time||'').split(' – ')[0]===start);
-  if(exact>=0){rows[exact]=entry;continue;}
   const next=rows.findIndex(x=>String(x.time||'').split(' – ')[0]>start);
-  if(rows.length>=8+specials.length){
-   const index=next<0?rows.length-1:next;
-   rows[index]=entry;
-  }else if(next<0)rows.push(entry);else rows.splice(next,0,entry);
+  if(next<0)rows.push(entry);else rows.splice(next,0,entry);
  }
  const w=schoolPrintFrame();
  const json=JSON.stringify({days,rows}).replace(/</g,'\\u003c');
