@@ -4487,7 +4487,7 @@ function printApprovedTeacherSchedule(){
   if(!/^\d{1,2}:\d{2}$/.test(start))return start||'—';
   return start+' – —';
  }
- const rows=periods.map((p,i)=>({
+ const lessonRows=periods.map((p,i)=>({
   id:p.id,number:/break|فسحة/i.test(String(p.name||''))?'فسحة':String(p.id),
   time:timing(p,i),
   cells:days.map((_,di)=>{
@@ -4496,6 +4496,15 @@ function printApprovedTeacherSchedule(){
    return typeof schoolDutyLabel==='function'?schoolDutyLabel(di,p.id):'';
   })
  }));
+ const rows=[...lessonRows];
+ for(const special of timeList.filter(x=>x.kind==='assembly'||x.kind==='break')){
+  const label=special.kind==='assembly'?'الطابور':'الفسحة';
+  const start=String(special.start||'');
+  const end=String(special.end||'');
+  const entry={id:label,number:label,time:start+(end?' – '+end:''),cells:days.map(()=>label)};
+  const next=rows.findIndex(x=>{const t=String(x.time||'').split(' – ')[0];return start&&t&&t>start;});
+  if(next<0)rows.push(entry);else rows.splice(next,0,entry);
+ }
  const w=schoolPrintFrame();
  const json=JSON.stringify({days,rows}).replace(/</g,'\\u003c');
  w.document.open();
@@ -4504,11 +4513,11 @@ function printApprovedTeacherSchedule(){
  *{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:0;padding:12px;color:#173e34}
  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px;background:#eef7f1;border-radius:10px;margin-bottom:12px}
  select,button{font:inherit;padding:8px;border-radius:8px;border:1px solid #9dbbad}button{background:#075d4e;color:#fff}
- h2{text-align:center;margin:6px 0 14px;color:#075d4e}table{border-collapse:collapse;width:100%;table-layout:fixed;height:calc(100vh - 170px)}
+ h2{text-align:center;margin:6px 0 14px;color:#075d4e}table{border-collapse:collapse;width:100%;table-layout:fixed;min-height:calc(100vh - 170px)}
  th,td{border:1px solid #738e84;text-align:center;padding:5px;font-weight:600;overflow-wrap:anywhere}
- th{background:#dceee5;color:#075d4e}tr.break-row>*{background:#fff2d9;color:#87540a}
+ th{background:#dceee5;color:#075d4e}tr.break-row>*{background:#fff2d9;color:#87540a}tr.assembly-row>*{background:#e0f0ff;color:#174e78}
  @page{size:A4 landscape;margin:6mm}
- @media print{.toolbar{display:none}body{padding:0}table{height:175mm;break-inside:avoid}h2{margin:0 0 8px}th,td{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+ @media print{.toolbar{display:none}body{padding:0}table{height:auto;min-height:165mm;max-width:100%;break-inside:avoid}h2{margin:0 0 8px}th,td{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
  </style></head><body>
  <div class="toolbar"><label>اتجاه الجدول <select id="layout"><option value="rows">الحصص والتوقيت في الصفوف، الأيام في الأعمدة</option><option value="columns">الأيام في الصفوف، الحصص في الأعمدة</option></select></label><button id="print">🖨️ طباعة</button></div>
  <h2>الجدول الأسبوعي المعتمد للمعلم</h2><table id="sheet"></table>
@@ -4519,7 +4528,7 @@ function printApprovedTeacherSchedule(){
  const table=document.getElementById('sheet');
  const rows=data.rows,days=data.days;
  if(vertical){
- table.innerHTML='<thead><tr><th>الحصة</th><th>التوقيت (من – إلى)</th>'+days.map(d=>'<th>'+d+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr'+(r.number==='فسحة'?' class="break-row"':'')+'><th>'+r.number+'</th><td>'+r.time+'</td>'+r.cells.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody>';
+ table.innerHTML='<thead><tr><th>الحصة</th><th>التوقيت (من – إلى)</th>'+days.map(d=>'<th>'+d+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr'+(r.number==='فسحة'?' class="break-row"':r.number==='الطابور'?' class="assembly-row"':'')+'><th>'+r.number+'</th><td>'+r.time+'</td>'+r.cells.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody>';
  }else{
  table.innerHTML='<thead><tr><th>اليوم</th>'+rows.map(r=>'<th>'+r.number+'<small style="display:block">'+r.time+'</small></th>').join('')+'</tr></thead><tbody>'+days.map((d,i)=>'<tr><th>'+d+'</th>'+rows.map(r=>'<td>'+r.cells[i]+'</td>').join('')+'</tr>').join('')+'</tbody>';
  }
@@ -4555,7 +4564,7 @@ window.openSchoolGeneralTimetable=async function(){
    return '<span class="period-cell'+(duty?' duty':'')+'">'+safe(values.join(' / ')||'—')+'</span>';
   }).join('')+'</div></td>').join('')+'</tr>').join('');
   const html='<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>الجدول العام للمعلمين</title><style>'+
-  '@page{size:A3 landscape;margin:5mm}*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:8px;color:#13473a}h2{text-align:center;font-size:18px;margin:8px 0}button{background:#076352;color:white;border:0;border-radius:8px;padding:10px 18px;margin:8px}.toolbar{text-align:center}.table-wrap{width:100%;overflow:auto;max-height:calc(100vh - 130px)}table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:10px}th,td{padding:0;text-align:center;border-bottom:2px solid #629682}thead th{background:#075b48;color:white;padding:7px 2px;position:sticky;top:0;z-index:2}thead tr.period-heading th{background:#d8e9df;color:#075343;padding:0;top:29px;border-bottom:3px solid #175c46}.teacher-name{width:170px;min-width:170px;text-align:right;padding:5px 8px;background:#e1efe7;color:#084b3b;font-weight:bold;position:sticky;right:0;z-index:3;white-space:normal;overflow-wrap:anywhere}thead .teacher-name{background:#075b48;color:white;z-index:4}thead tr.period-heading .teacher-name{background:#c8e2d2;z-index:4}tbody tr:nth-child(even) td{background:#e1eee6}tbody tr:nth-child(even) .teacher-name{background:#cce3d5}td{border-right:3px double #367a65;background:#fbfdfb}.period-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));direction:rtl;width:100%}.period-cell{display:flex;align-items:center;justify-content:center;min-width:0;min-height:27px;padding:2px 0;border-left:2px solid #5b927a;overflow-wrap:anywhere;font-weight:600}.period-cell:last-child{border-left:0}.period-heading .period-cell{min-height:23px;border-color:#32785f;font-weight:bold}.period-cell.duty{background:#fff0d5;color:#8c5800}@media print{.toolbar{display:none}.table-wrap{overflow:visible;max-height:none}body{margin:0}table{font-size:8px}thead th{position:static}tr{break-inside:avoid}.teacher-name{width:135px;min-width:135px;position:static}.period-cell{min-height:19px;padding:1px 0}th,td,.period-cell{print-color-adjust:exact;-webkit-print-color-adjust:exact}}'+
+  '@page{size:A3 landscape;margin:5mm}*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;margin:8px;color:#13473a}h2{text-align:center;font-size:18px;margin:8px 0}button{background:#076352;color:white;border:0;border-radius:8px;padding:10px 18px;margin:8px}.toolbar{text-align:center}.table-wrap{width:100%;overflow:auto;max-height:calc(100vh - 130px);overscroll-behavior-x:contain}table{width:100%;min-width:1550px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:11px}th,td{padding:0;text-align:center;border-bottom:2px solid #629682}thead th{background:#075b48;color:white;padding:7px 2px;position:sticky;top:0;z-index:2}thead tr.period-heading th{background:#d8e9df;color:#075343;padding:0;top:29px;border-bottom:3px solid #175c46}.teacher-name{width:170px;min-width:170px;text-align:right;padding:5px 8px;background:#e1efe7;color:#084b3b;font-weight:bold;position:sticky;right:0;z-index:3;white-space:normal;overflow-wrap:anywhere}thead .teacher-name{background:#075b48;color:white;z-index:4}thead tr.period-heading .teacher-name{background:#c8e2d2;z-index:4}tbody tr:nth-child(even) td{background:#e1eee6}tbody tr:nth-child(even) .teacher-name{background:#cce3d5}td{border-right:3px double #367a65;background:#fbfdfb}.period-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));direction:rtl;width:100%}.period-cell{display:flex;align-items:center;justify-content:center;min-width:0;min-height:27px;padding:2px 1px;white-space:nowrap;font-size:10px;border-left:2px solid #5b927a;overflow-wrap:anywhere;font-weight:600}.period-cell:last-child{border-left:0}.period-heading .period-cell{min-height:23px;border-color:#32785f;font-weight:bold}.period-cell.duty{background:#fff0d5;color:#8c5800}@media print{.toolbar{display:none}.table-wrap{overflow:visible;max-height:none;width:100%}body{margin:0}table{width:100%;min-width:0;font-size:7px;table-layout:fixed}thead th{position:static}tr{break-inside:avoid}.teacher-name{width:12%;min-width:0;position:static;font-size:8px;padding:1px 2px}.period-cell{min-height:15px;padding:0;font-size:6px;white-space:normal;border-left-width:1px}th,td,.period-cell{print-color-adjust:exact;-webkit-print-color-adjust:exact}}'+
   '</style></head><body><div class="toolbar"><button onclick="window.print()">🖨️ طباعة الجدول العام</button></div><h2>الجدول العام للمعلمين — '+safe(result.data.schoolId==='girls'?'مدرسة البنات':'مدرسة البنين')+'</h2><div class="table-wrap"><table><thead><tr><th class="teacher-name">المعلم</th>'+days.map(d=>'<th>'+d+'</th>').join('')+'</tr><tr class="period-heading"><th class="teacher-name">الحصة</th>'+days.map(()=>'<th>'+periodGrid()+'</th>').join('')+'</tr></thead><tbody>'+cells+'</tbody></table></div></body></html>';
   popup.document.open();popup.document.write(html);popup.document.close();
  }catch(e){popup.document.body.textContent='تعذر عرض الجدول العام: '+e.message;}
