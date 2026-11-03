@@ -4473,9 +4473,8 @@ function printApprovedTeacherSchedule(){
     ||timeList.filter(x=>x.kind!=='break'&&x.kind!=='assembly')[i];
   if(t?.start&&t?.end)return t.start+' – '+t.end;
   const start=String(p.time||'');
-  if(!/^\\d{1,2}:\\d{2}$/.test(start))return start||'—';
-  const [h,m]=start.split(':').map(Number),end=h*60+m+40;
-  return start+' – '+String(Math.floor(end/60)%24).padStart(2,'0')+':'+String(end%60).padStart(2,'0');
+  if(!/^\d{1,2}:\d{2}$/.test(start))return start||'—';
+  return start+' – —';
  }
  const rows=periods.map((p,i)=>({
   id:p.id,number:/break|فسحة/i.test(String(p.name||''))?'فسحة':String(p.id),
@@ -4518,7 +4517,7 @@ function printApprovedTeacherSchedule(){
  document.getElementById('layout').addEventListener('change',draw);
  document.getElementById('print').addEventListener('click',()=>window.print());
  draw();
- <\\/script></body></html>`);
+ <\/script></body></html>`);
  w.document.close();
 }
 window.printApprovedTeacherSchedule=printApprovedTeacherSchedule;
