@@ -48,9 +48,9 @@ public class MainActivity extends Activity {
     super.onCreate(state);
     receiveSharedSchedule(getIntent());
     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-    getWindow().setStatusBarColor(0xFF075D4E);
+    getWindow().setStatusBarColor(0xFFF7FAF9);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-    getWindow().getDecorView().setSystemUiVisibility(0);
+    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
     getWindow().setNavigationBarColor(0xFF075D4E);
     getWindow().getDecorView().setSystemUiVisibility(0);
     LinearLayout root=new LinearLayout(this);
@@ -99,7 +99,6 @@ public class MainActivity extends Activity {
         if(!payload.equals(previous)){
           getSharedPreferences("widget",MODE_PRIVATE).edit().putString("snapshot",payload).apply();
           ScheduleWidget.refresh(this);
-      WeeklyScheduleWidget.refresh(this);
           WeeklyScheduleWidget.refresh(this);
         }
       }catch(Exception ignored){}
@@ -122,8 +121,8 @@ public class MainActivity extends Activity {
     notebookView.getSettings().setAllowContentAccess(false);
     CookieManager.getInstance().setAcceptCookie(true);
     notebookView.setWebChromeClient(new WebChromeClient());
-    notebookView.setSystemUiVisibility(0);
-    notebookView.setFitsSystemWindows(true);
+    notebookView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+    notebookView.setFitsSystemWindows(false);
     notebookView.setWebViewClient(new WebViewClient(){
       @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
         Uri uri=request.getUrl();
@@ -135,7 +134,7 @@ public class MainActivity extends Activity {
       }
     });
     FrameLayout shell=new FrameLayout(this);
-    shell.setFitsSystemWindows(true);
+    shell.setFitsSystemWindows(false);
     shell.addView(notebookView,new FrameLayout.LayoutParams(-1,-1));
     Button googleLogin=new Button(this);
     googleLogin.setText("الدخول الآمن بحساب Google");
@@ -152,7 +151,7 @@ public class MainActivity extends Activity {
         googleLogin.setVisibility(loginPage ? View.VISIBLE : View.GONE);
         if(!loginPage)widgetHandler.postDelayed(()->syncWidgetFromWeb(),3500);
         if(loginPage){
-          view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';})()",null);
+          view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';var b=document.getElementById('teacher-passkey-direct');if(b){b.disabled=true;b.style.display='none'}var p=document.getElementById('teacher-passkey-direct-status');if(p)p.textContent='للدخول استخدم Google؛ بصمة WebAuthn غير مدعومة في تطبيق Android حاليًا.';})()",null);
         }
       }
       @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
@@ -253,6 +252,7 @@ public class MainActivity extends Activity {
       }
       getSharedPreferences("widget",MODE_PRIVATE).edit().putString("snapshot",data.toString()).apply();
       ScheduleWidget.refresh(this);
+      WeeklyScheduleWidget.refresh(this);
       Toast.makeText(this,"تم تحديث ويدجت الجدول بنجاح",Toast.LENGTH_LONG).show();
     }catch(Exception e){
       Toast.makeText(this,"تعذر استيراد الجدول. استخدم زر المشاركة من دفتر المعلم.",Toast.LENGTH_LONG).show();
