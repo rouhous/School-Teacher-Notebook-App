@@ -4536,7 +4536,7 @@ window.openSchoolGeneralTimetable=async function(){
   const data=result.data.slots||[];
   const names=[...new Set(data.map(x=>String(x.teacherName||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
   const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
-  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\\'':'&#39;'}[c]));
+  const safe=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');
   const lookup=new Map();
   data.forEach(x=>{const key=x.teacherName+'|'+x.weekday+'|'+x.period;if(!lookup.has(key))lookup.set(key,[]);lookup.get(key).push(x.classId||x.dutyPriority||'—')});
   const cells=names.map(name=>'<tr><th>'+safe(name)+'</th>'+days.map((_,di)=>'<td><div class="slots">'+Array.from({length:8},(_,p)=>'<span>'+safe((lookup.get(name+'|'+di+'|'+(p+1))||[]).join(' / ')||'—')+'</span>').join('')+'</div></td>').join('')+'</tr>').join('');
