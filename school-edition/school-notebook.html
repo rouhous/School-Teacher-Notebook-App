@@ -4462,6 +4462,17 @@ window.shareApprovedScheduleToWidget=async function(){
   else{alert('المشاركة غير متاحة في هذا المتصفح. افتح الدفتر في متصفح يدعم مشاركة Android.');}
  }catch(e){if(e?.name!=='AbortError')alert('تعذرت مشاركة الجدول. يرجى المحاولة من متصفح Android.');}
 };
+function schoolPrintFrame(){
+ document.getElementById('schoolPrintOverlay')?.remove();
+ const overlay=document.createElement('div');overlay.id='schoolPrintOverlay';
+ overlay.style.cssText='position:fixed;inset:0;z-index:2147483645;background:#fff;display:flex;flex-direction:column;direction:rtl';
+ const bar=document.createElement('div');bar.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 12px;background:#075d4e;color:white;flex-shrink:0';
+ const close=document.createElement('button');close.textContent='✕ إغلاق المعاينة';close.type='button';close.style.cssText='background:white;color:#075d4e;border:0;border-radius:8px;padding:9px 16px;font-weight:bold';close.onclick=()=>overlay.remove();
+ const label=document.createElement('span');label.textContent='معاينة وطباعة الجدول';bar.append(close,label);
+ const frame=document.createElement('iframe');frame.title='معاينة الجدول';frame.style.cssText='width:100%;flex:1;border:0;background:white';frame.setAttribute('sandbox','allow-same-origin allow-scripts allow-modals');
+ overlay.append(bar,frame);document.body.append(overlay);
+ return frame.contentWindow;
+}
 function printApprovedTeacherSchedule(){
  if(!loaded||!managedSchedule.length){alert('الجدول المعتمد غير متاح');return;}
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
@@ -4485,8 +4496,7 @@ function printApprovedTeacherSchedule(){
    return typeof schoolDutyLabel==='function'?schoolDutyLabel(di,p.id):'';
   })
  }));
- const w=window.open('','_blank');
- if(!w){alert('يرجى السماح بفتح نافذة المعاينة');return;}
+ const w=schoolPrintFrame();
  const json=JSON.stringify({days,rows}).replace(/</g,'\\u003c');
  w.document.open();
  w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>جدول المعلم - طباعة</title>
@@ -4523,11 +4533,10 @@ function printApprovedTeacherSchedule(){
 window.printApprovedTeacherSchedule=printApprovedTeacherSchedule;
 
 window.openSchoolGeneralTimetable=async function(){
- const popup=window.open('','_blank');
- if(!popup){alert('يرجى السماح بفتح نافذة عرض الجدول العام');return;}
+ const popup=schoolPrintFrame();
  popup.document.write('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>الجدول العام للمعلمين</title><body style="font:16px Tahoma;padding:20px">جارٍ تحميل الجدول العام المعتمد…</body></html>');
  try{
-  const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
+  const credential=schoolNotebookCredential||null;
   const auth=credential?{credential}:{access_token:await schoolNotebookPasskeyToken()};
   if(!auth.credential&&!auth.access_token)throw Error('يجب تسجيل الدخول بحساب معتمد.');
   const response=await fetch(schoolApi+'school-teacher-general-timetable',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(auth)});
