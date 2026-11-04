@@ -51,21 +51,32 @@ return pools.flatMap((a,stage)=>a.map((item,j)=>{
  }
  return {stage,kind,item,opts,correct};
  }))}
-// Stable independent answer layouts for all three teams.
-const baseMakeDeckForTeams=makeDeck;
-makeDeck=function(){const all=baseMakeDeckForTeams();all.forEach(q=>{if(q.kind!=='typing'&&q.opts?.length){const ids=q.opts.map((_,i)=>i);q.teamOrders=[];for(let t=0;t<3;t++){let order,attempts=0;do{order=shuffled(ids);attempts++;}while(attempts<30&&q.teamOrders.some(prev=>prev.join(',')===order.join(',')));q.teamOrders.push(order);}}});return all;};
 function normalize(s){return String(s||'').toLowerCase().normalize('NFKC').replace(/[’']/g,'').replace(/[\s-]+/g,' ').trim()}
 function show(id){['home','local','hostLobby','hostBoard','join','phone'].forEach(k=>$(k).classList.toggle('hidden',k!==id));view=id;window.scrollTo(0,0)}
 function reset(){clearInterval(timer);timer=null;if(peer){try{peer.destroy()}catch(e){}peer=null}phoneConn=null;connections=[null,null,null];room='';game=null;phoneSelected=-1;answeredIdx=-1}
 function home(){if(game||peer){if(!confirm('إنهاء المسابقة والعودة إلى الرئيسية؟'))return}reset();show('home')}
 function full(){if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.().catch(()=>{})}
-function gameInit(mode){deck=makeDeck();game={mode,idx:0,phase:'question',scores:[0,0,0],answers:[null,null,null],remaining:30,phaseRemaining:0,phaseStage:0,complete:0};}
+function gameInit(mode){deck=makeDeck();game={mode,seed:Math.floor(Math.random()*2147483647)+1,idx:0,phase:'question',scores:[0,0,0],answers:[null,null,null],remaining:30,phaseRemaining:0,phaseStage:0,complete:0};}
 function startLocal(){reset();gameInit('local');show('local');startClock();render()}
 function question(){return deck[game?.idx||0]}
 function scoreMarkup(){return game.scores.map((s,i)=>`<div class="sc"><small>${TEAMS[i]}</small><b>${s} ★</b></div>`).join('')}
 function topMarkup(){let stage=Math.floor(game.idx/5),q=(game.idx%5)+1;return `<div class="stagehead"><div><div class="label">المرحلة ${stage+1} من 4 · ${STAGES[stage].en}</div><div>${STAGES[stage].ar} · السؤال ${q} من 5</div></div><div class="timer ${game.remaining<=10?'low':''}">${game.remaining}<span style="font-size:14px"> ث</span></div></div><div class="progress"><i style="width:${100*game.remaining/30}%"></i></div>`}
 function questionMarkup(q,host=false){let clue=q.kind==='image'?'Choose the adjective that matches the picture.':q.kind==='parts'?q.item.meaning:q.kind==='meaning'?q.item.meaning:'Look at the picture and type the correct communication verb.';let pic=q.kind==='meaning'||q.kind==='parts'?'':`<img class="picture" alt="Omani cartoon illustration" src="${q.item.img}">`;return `<div class="qarea" style="${pic?'':'grid-template-columns:1fr'}">${pic}<div><div class="label" style="color:#1e7665">${STAGES[q.stage].en}</div><h2 dir="ltr">${clue}</h2><p> ${q.kind==='typing'?'اكتب الكلمة باللغة الإنجليزية واضغط إرسال.':q.kind==='parts'?'اختر الجزء الذي يُكمل الكلمة.':'اختر الإجابة الصحيحة قبل انتهاء الوقت.'}</p></div></div>`}
-function inputMarkup(q,t,disabled=false){if(q.kind==='typing')return `<form class="formline" onsubmit="submitType(event,${t})" style="justify-content:center"><input id="typed-${t}" class="textin" aria-label="Type the word" placeholder="Type in English" ${disabled?'disabled':''} autocomplete="off" spellcheck="false"><button class="btn" ${disabled?'disabled':''}>إرسال</button></form>`;return `<div class="opts">${(q.teamOrders?.[t]?.map(i=>q.opts[i])||q.opts).map((opt,i)=>`<button class="opt" onclick="submitAnswer(${t},${i})" ${disabled?'disabled':''}><span dir="ltr">${String.fromCharCode(65+i)}. ${escapeHTML(opt)}</span></button>`).join('')}</div>`}
+
+function teamOptionOrder(n,t){
+ const idx=(view==='phone'&&phoneLast)?phoneLast.idx:(game?.idx||0);
+ const seed=(view==='phone'&&phoneLast)?phoneLast.seed:(game?.seed||1);
+ let x=(seed ^ Math.imul(idx+1,2654435761))>>>0;
+ const order=Array.from({length:n},(_,i)=>i);
+ for(let i=n-1;i>0;i--){
+   x=(Math.imul(x,1664525)+1013904223)>>>0;
+   const j=x%(i+1);
+   [order[i],order[j]]=[order[j],order[i]];
+ }
+ const shift=t%n;
+ return order.slice(shift).concat(order.slice(0,shift));
+}
+function inputMarkup(q,t,disabled=false){if(q.kind==='typing')return `<form class="formline" onsubmit="submitType(event,${t})" style="justify-content:center"><input id="typed-${t}" class="textin" aria-label="Type the word" placeholder="Type in English" ${disabled?'disabled':''} autocomplete="off" spellcheck="false"><button class="btn" ${disabled?'disabled':''}>إرسال</button></form>`;return `<div class="opts">${teamOptionOrder(q.opts.length,t).map((originalIndex,i)=>`<button class="opt" onclick="submitAnswer(${t},${originalIndex})" ${disabled?'disabled':''}><span dir="ltr">${String.fromCharCode(65+i)}. ${escapeHTML(q.opts[originalIndex])}</span></button>`).join('')}</div>`}
 function escapeHTML(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function render(){if(!game)return;
  const target=game.mode==='local'?'localArea':'boardArea';let el=$(target);if(game.phase==='question'){
@@ -84,14 +95,14 @@ function updateClock(){const target=game.mode==='local'?'localArea':'boardArea';
 function submitAnswer(t,i){accept(t,i)}
 function submitType(event,t){event.preventDefault();const v=$('typed-'+t).value;accept(t,v)}
 function accept(t,val){if(!game||game.phase!=='question'||game.answers[t]!==null)return;let q=question();if(q.kind==='typing'){if(typeof val!=='string')return;if(!val.trim())return}else if(!Number.isInteger(val)||val<0||val>=4)return;game.answers[t]=val;render()}
-function endQuestion(){if(!game||game.phase!=='question')return;clearInterval(timer);let q=question();for(let t=0;t<3;t++){let ans=game.answers[t];let ok=q.kind==='typing'?normalize(ans)===normalize(q.item.word):q.teamOrders?.[t]?.[ans]===q.correct;if(ok)game.scores[t]+=100}
+function endQuestion(){if(!game||game.phase!=='question')return;clearInterval(timer);let q=question();for(let t=0;t<3;t++){let ans=game.answers[t];let ok=q.kind==='typing'?normalize(ans)===normalize(q.item.word):ans===q.correct;if(ok)game.scores[t]+=100}
  // reveal solution for 2.5s, then auto progression
  game.phase='reveal';const target=game.mode==='local'?'localArea':'boardArea';let answer=q.kind==='typing'?q.item.word:q.kind==='parts'?q.item.word:q.item.word;$(target).innerHTML=`<section class="leader"><h2>✅ ${escapeHTML(answer)}</h2><p dir="ltr">${escapeHTML(q.item.meaning)}</p><p>تم احتساب النقاط • الانتقال تلقائيًا</p><div class="scoregrid">${scoreMarkup()}</div></section>`;if(game.mode==='host')broadcast();setTimeout(()=>{if(game?.phase!=='reveal')return;if(game.idx===19){game.phase='finished';render();return}if(game.idx%5===4){game.phase='score';game.phaseStage=Math.floor(game.idx/5);game.phaseRemaining=6;render();countdownPhase(6,()=>clipStart())}else nextQuestion()},2400)}
 function countdownPhase(seconds,done){let end=Date.now()+seconds*1000;clearInterval(timer);timer=setInterval(()=>{if(!game){clearInterval(timer);return}let n=Math.max(0,Math.ceil((end-Date.now())/1000));if(game.phaseRemaining!==n){game.phaseRemaining=n;render()}if(n<=0){clearInterval(timer);done()}},250)}
 function clipStart(){if(!game)return;game.phase='clip';game.phaseRemaining=20;render();countdownPhase(20,nextQuestion)}
 function nextQuestion(){if(!game)return;game.idx++;game.answers=[null,null,null];game.phase='question';game.remaining=30;render();startClock()}
-function publicState(teamId){if(!game)return null;let q=question();return {type:'state',phase:game.phase,idx:game.idx,stage:Math.floor(game.idx/5),seconds:game.phase==='question'?game.remaining:game.phaseRemaining,scores:game.scores,answered:game.answers.map(x=>x!==null),q:(game.phase==='question'||game.phase==='reveal')?{kind:q.kind,prefix:q.prefix||'',opts:(Number.isInteger(teamId)&&q.teamOrders?.[teamId]?q.teamOrders[teamId].map(i=>q.opts[i]):q.opts),item:{meaning:q.item.meaning,img:q.item.img},...(game.phase==='reveal'?{word:q.item.word,correct:q.correct}:{})}:null,clip:game.phaseStage}}
-function broadcast(){if(game?.mode!=='host')return;connections.forEach((c,t)=>{try{if(c?.open)c.send(publicState(t))}catch(e){}})}
+function publicState(){if(!game)return null;let q=question();return {type:'state',seed:game.seed,phase:game.phase,idx:game.idx,stage:Math.floor(game.idx/5),seconds:game.phase==='question'?game.remaining:game.phaseRemaining,scores:game.scores,answered:game.answers.map(x=>x!==null),q:(game.phase==='question'||game.phase==='reveal')?{kind:q.kind,prefix:q.prefix||'',opts:q.opts,item:{meaning:q.item.meaning,img:q.item.img},...(game.phase==='reveal'?{word:q.item.word,correct:q.correct}:{})}:null,clip:game.phaseStage}}
+function broadcast(){if(game?.mode!=='host')return;let s=publicState();connections.forEach(c=>{try{if(c?.open)c.send(s)}catch(e){}})}
 function roomCode(){let abc='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',a=new Uint8Array(6);crypto.getRandomValues(a);return [...a].map(v=>abc[v%abc.length]).join('')}
 function peerLib(){return new Promise((resolve,reject)=>{if(window.Peer)return resolve();let script=document.createElement('script');script.src='https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js';script.onload=resolve;script.onerror=()=>reject(new Error('تعذر تحميل مكتبة الاتصال. تحقق من الإنترنت.'));document.head.append(script)})}
 function copyJoinUrl(){let u=$('joinLink').href;if(location.protocol==='file:'){alert('يجب نشر اللعبة على رابط HTTPS أولاً');return}navigator.clipboard?.writeText(u).then(()=>alert('تم نسخ الرابط')).catch(()=>prompt('انسخ الرابط',u))}
@@ -103,7 +114,7 @@ async function createHost(){reset();gameInit('host');room=roomCode();$('lobbyCod
  peer.on('connection',conn=>{let t=-1;
   conn.on('data',m=>{if(!m||typeof m!=='object')return;
    if(m.type==='join'){let n=Number(m.team);if(!Number.isInteger(n)||n<0||n>2||(connections[n]?.open&&connections[n]!==conn)){conn.send({type:'error',message:'هذا الفريق مستخدم أو غير صالح. اختر فريقًا آخر.'});return}
-    t=n;connections[n]=conn;conn.send({type:'joined',team:n});members();conn.send(publicState(t));}
+    t=n;connections[n]=conn;conn.send({type:'joined',team:n});members();conn.send(publicState());}
    else if(m.type==='answer'&&t>=0&&connections[t]===conn&&game?.phase==='question'&&m.idx===game.idx){accept(t,m.value)}
   });
   conn.on('close',()=>{if(t>=0&&connections[t]===conn){connections[t]=null;members();if(game?.mode==='host')broadcast()}});
@@ -191,9 +202,9 @@ hostStart=function(){
  if(typeof initAudio==='function')initAudio();show('hostBoard');game.idx=0;game.answers=[null,null,null];beginIntroReview();
 };
 const previousPublicStateForIntro=publicState;
-publicState=function(teamId){
+publicState=function(){
  if(game?.phase==='intro')return {type:'state',phase:'intro',idx:0,stage:0,seconds:game.phaseRemaining,scores:game.scores,answered:[false,false,false],intro:{index:introIndex,total:introSlides.length,slide:introSlides[introIndex],teacher:introTeacherName}};
- return previousPublicStateForIntro(teamId);
+ return previousPublicStateForIntro();
 };
 const previousPhoneRenderForIntro=renderPhone;
 renderPhone=function(s){
