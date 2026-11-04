@@ -35,3 +35,12 @@ dependencies {
  implementation 'androidx.credentials:credentials-play-services-auth:1.5.0'
  implementation 'com.google.android.libraries.identity.googleid:googleid:1.1.1'
 }
+
+// Share the original school logo between web and Android.
+android.sourceSets.main.res.srcDir("$buildDir/generated/school-icon/res")
+tasks.register('prepareSchoolIcon', Copy) {
+ from(file('../../assets/school-icon-512.png'))
+ into(file("$buildDir/generated/school-icon/res/drawable-nodpi"))
+ rename { 'school_original_icon.png' }
+}
+tasks.named('preBuild').configure { dependsOn('prepareSchoolIcon') }
