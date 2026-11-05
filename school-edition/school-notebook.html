@@ -1290,7 +1290,66 @@ document.addEventListener('click',function(event){
  if(typeof showLessonNoteEditor==='function')showLessonNoteEditor(day,period);
  else console.error('Period note editor is not available');
 },true);
-<\/script><script type="module" src="./passkey-auth.js"><\/script></body></html>`);
+<\/script><script type="module" src="./passkey-auth.js"><\/script>
+<script id="school-published-assessment-sync">
+(function(){
+ const endpoint='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-published-documents';
+ let busy=false,lastCheck=0;
+ function subjectCode(s){return schoolAssessmentSubject(s)==='إنجليزي'?'english':null}
+ function hasMarks(a){return Object.keys(db.grades||{}).some(k=>k.startsWith(String(a.id)+'_')&&db.grades[k]!==''&&db.grades[k]!=null)}
+ async function refresh(force){
+  if(busy||!navigator.onLine||(!force&&Date.now()-lastCheck<60000))return;
+  busy=true;lastCheck=Date.now();
+  try{
+   const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
+   const auth=credential?{credential}:{access_token:await schoolNotebookPasskeyToken()};
+   if(!auth.credential&&!auth.access_token)return;
+   const groups=new Map();
+   for(const cls of db.classes||[]){
+    const grade=Number((String(cls.grade||cls.gradeLevel||cls.name||'').match(/\d+/)||[])[0]);
+    const subject=subjectCode(cls.subject||classDisplaySubject(cls)||'');
+    if(!grade||!subject)continue;
+    const key=subject+'|'+grade+'|1';
+    if(!groups.has(key))groups.set(key,{subject,grade,semester:1,classes:[]});
+    groups.get(key).classes.push(cls);
+   }
+   for(const group of groups.values()){
+    const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},cache:'no-store',body:JSON.stringify({...auth,action:'assessment_read',subject:group.subject,grade:group.grade,semester:group.semester})});
+    const json=await response.json().catch(()=>({}));
+    if(!response.ok||!json.ok)continue;
+    const published=json.data;
+    if(!published?.revision||!Array.isArray(published.assessments)||!published.assessments.length)continue;
+    for(const cls of group.classes){
+     const classId=String(cls.id),key=group.subject+'|'+group.grade+'|'+group.semester;
+     db.publishedAssessmentByClass=db.publishedAssessmentByClass||{};
+     if(db.publishedAssessmentByClass[classId]?.revision===published.revision&&db.publishedAssessmentByClass[classId]?.key===key)continue;
+     const existing=db.assessments.filter(a=>String(a.classId)===classId);
+     const incoming=published.assessments.map(a=>({name:String(a.name||'').trim(),max:Number(a.max)})).filter(a=>a.name&&Number.isFinite(a.max)&&a.max>=0);
+     if(!incoming.length)continue;
+     const names=new Set(incoming.map(a=>a.name));
+     // Never remove scored columns: they remain available for review and migration.
+     db.assessments=db.assessments.filter(a=>String(a.classId)!==classId||names.has(a.name)||hasMarks(a));
+     for(const item of incoming){
+      let target=db.assessments.find(a=>String(a.classId)===classId&&a.name===item.name);
+      if(target){target.max=item.max;target.official=true;target.officialKey=key+'|'+item.name}
+      else db.assessments.push({id:uid(),classId:cls.id,name:item.name,max:item.max,type:/semester test|اختبار الفصل|final/i.test(item.name)?'exam':'quiz',official:true,officialKey:key+'|'+item.name});
+     }
+     db.publishedAssessmentByClass[classId]={key,revision:published.revision,updatedAt:new Date().toISOString()};
+     save();
+    }
+   }
+   if(typeof loadGrades==='function'&&document.getElementById('gradeClass')?.value)loadGrades();
+  }catch(e){console.warn('Published assessment sync unavailable:',e)}
+  finally{busy=false}
+ }
+ window.refreshPublishedTeacherAssessments=()=>refresh(true);
+ window.addEventListener('online',()=>refresh(true));
+ window.addEventListener('focus',()=>refresh(false));
+ setTimeout(()=>refresh(true),1800);
+ const select=document.getElementById('gradeClass');
+ if(select)select.addEventListener('change',()=>refresh(false));
+})();
+</script></body></html>`);
   w.document.close();
 }
 function sendAttendanceToNoorExtension(){
@@ -1392,6 +1451,7 @@ function ensureOfficialAssessments(classId){
  const bands=bandsForSubject(subj);
  const band=bands.find(b=>b===String(grade))||bands.find(b=>{const m=String(b).match(/^(\d+)\s*[-–]\s*(\d+)$/);return m&&grade>=Number(m[1])&&grade<=Number(m[2])});
  if(!band)return;
+ if(db.publishedAssessmentByClass?.[String(classId)])return;
  const preset=resolveAssessmentPreset(subj,band);if(!Array.isArray(preset))return;
  let changed=false;
  // Trial English: discard outdated assessment columns and their marks, rebuild from canonical preset.
