@@ -21,7 +21,7 @@ public class WeeklyScheduleWidget extends AppWidgetProvider {
   private static void render(Context ctx,AppWidgetManager manager,int id){
     RemoteViews v=new RemoteViews(ctx.getPackageName(),R.layout.widget_weekly);
     v.setTextViewText(R.id.weekly_content,weeklyText(ctx));
-    PendingIntent open=PendingIntent.getActivity(ctx,0,new Intent(ctx,MainActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+    PendingIntent open=PendingIntent.getActivity(ctx,0,new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://rouhous.github.io/School-Teacher-Notebook-App/")),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     v.setOnClickPendingIntent(R.id.weekly_title,open);
     v.setOnClickPendingIntent(R.id.weekly_content,open);
     manager.updateAppWidget(id,v);
