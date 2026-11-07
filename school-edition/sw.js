@@ -1,5 +1,5 @@
 /* Offline shell only. Authorization remains in application/session layer. */
-const CACHE='school-notebook-shell-v19-english-reset';
+const CACHE='school-notebook-shell-v20-push-alerts';
 const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./session-auth.js','./offline-pin.js'];
 self.addEventListener('install',e=>{
  e.waitUntil(caches.open(CACHE).then(async cache=>{
@@ -40,15 +40,27 @@ self.addEventListener('fetch',e=>{
  }
 });
 
-/* Web Push receiver: delivery requires a registered subscription and a server sender. */
+/* Push delivery requires an authenticated subscription and a trusted sender. */
 self.addEventListener('push',event=>{
  let payload={};try{payload=event.data?.json()||{}}catch{payload={body:event.data?.text()||''}}
- const title=String(payload.title||'تكليف احتياط مدرسي');
- const options={body:String(payload.body||'لديك إشعار جديد من دفتر المعلم المدرسي'),tag:String(payload.tag||'school-cover'),icon:'./app-icon.svg',badge:'./app-icon.svg',requireInteraction:true,data:{url:'./school-notebook.html',assignmentId:payload.assignmentId||null}};
+ const title=String(payload.title||'إشعار دفتر المعلم').slice(0,140);
+ const kind=String(payload.kind||'lesson').slice(0,30);
+ const options={
+  body:String(payload.body||'لديك إشعار جديد').slice(0,300),
+  tag:String(payload.tag||'school-'+kind).slice(0,100),
+  icon:'./app-icon.svg',
+  badge:'./app-icon.svg',
+  requireInteraction:true,
+  renotify:true,
+  vibrate:[400,250,400,250,400],
+  data:{url:'./school-notebook.html',assignmentId:payload.assignmentId||null},
+  actions:[{action:'open',title:'فتح دفتر المعلم'},{action:'dismiss',title:'إغلاق'}]
+ };
  event.waitUntil(self.registration.showNotification(title,options));
 });
 self.addEventListener('notificationclick',event=>{
  event.notification.close();
+ if(event.action==='dismiss')return;
  event.waitUntil((async()=>{
   const target=new URL('./school-notebook.html',self.registration.scope).href;
   const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
