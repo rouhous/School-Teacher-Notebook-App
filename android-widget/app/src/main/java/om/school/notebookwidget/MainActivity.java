@@ -54,6 +54,7 @@ public class MainActivity extends Activity {
     super.onCreate(state);
     receiveSharedSchedule(getIntent());
     requestAndroidNotificationPermission();
+    requestOptionalFlashPermission();
     String cached=getSharedPreferences("widget",MODE_PRIVATE).getString("snapshot","");
     if(!cached.isEmpty())LessonAlarmScheduler.schedule(this,cached);
     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -97,6 +98,17 @@ public class MainActivity extends Activity {
     super.onRequestPermissionsResult(requestCode,permissions,results);
     if(requestCode==1007 && (results.length==0||results[0]!=PackageManager.PERMISSION_GRANTED)){
       Toast.makeText(this,"يمكن السماح بإشعارات Android لاحقًا من إعدادات الهاتف",Toast.LENGTH_LONG).show();
+    }
+  }
+  private void requestOptionalFlashPermission(){
+    // The flash is optional: do not block lesson alarms if permission is denied.
+    if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){
+      new android.app.AlertDialog.Builder(this)
+        .setTitle("فلاش التنبيه (اختياري)")
+        .setMessage("هل تسمح باستخدام فلاش الكاميرا أثناء تنبيهات الحصص لمدة 20 ثانية؟ يمكن إبقاء الصوت والاهتزاز دون الفلاش.")
+        .setPositiveButton("السماح",(dialog,which)->requestPermissions(new String[]{Manifest.permission.CAMERA},1009))
+        .setNegativeButton("بدون فلاش",(dialog,which)->{})
+        .show();
     }
   }
   private final Handler widgetHandler=new Handler(Looper.getMainLooper());
