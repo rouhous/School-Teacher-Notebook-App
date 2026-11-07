@@ -4453,6 +4453,29 @@ const schoolApi='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
 let managedSchedule=[],managedRoster=[],managedCover=[],loaded=false;
 function statusMessage(message){const node=document.getElementById('school-managed-status');if(node)node.textContent=message;}
 let coverAudio=null;
+async function schoolEnableWebPush(){
+ if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
+  toast('هذا المتصفح لا يدعم Web Push. استخدم تطبيق PWA المثبت من Chrome أو Brave.');return false;
+ }
+ if(Notification.permission==='default')await Notification.requestPermission();
+ if(Notification.permission!=='granted'){toast('يجب السماح بإشعارات التطبيق أولًا');return false}
+ try{
+  const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
+  const auth=credential?{credential}:{access_token:await schoolNotebookPasskeyToken()};
+  if(!auth.credential&&!auth.access_token){toast('يرجى تسجيل الدخول لتفعيل إشعارات الخلفية');return false}
+  const api='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-web-push-subscription';
+  const post=async payload=>{const r=await fetch(api,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...auth,...payload})});const x=await r.json();if(!r.ok||!x.ok)throw Error(x.error||'SERVER');return x};
+  const config=await post({action:'config'});
+  if(!config.publicKey){toast('إشعارات الخلفية قيد الإعداد: مفتاح Web Push غير مُفعّل على الخادم');return false}
+  const decode=s=>{const str=atob((s.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((s.length+3)%4)));return Uint8Array.from(str,c=>c.charCodeAt(0))};
+  const reg=await navigator.serviceWorker.ready;
+  let subscription=await reg.pushManager.getSubscription();
+  if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(config.publicKey)});
+  await post({action:'subscribe',subscription:subscription.toJSON()});
+  toast('✓ تم ربط إشعارات الخلفية بهذا الجهاز');return true;
+ }catch(e){console.warn('Web Push registration failed',e);toast('تعذر ربط إشعارات الخلفية: '+String(e.message||e));return false}
+}
+window.schoolEnableWebPush=schoolEnableWebPush;
 function enableCoverAlerts(){
  unlockLessonAlertAudio();
  try{coverAudio=coverAudio||new (window.AudioContext||window.webkitAudioContext)();coverAudio.resume();}catch(e){}
