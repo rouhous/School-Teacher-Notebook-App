@@ -22,7 +22,10 @@ public class LessonAlertService extends Service {
  @Override public void onCreate(){
   super.onCreate();
   NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-  nm.createNotificationChannel(new NotificationChannel(CHANNEL,"تنبيه صوتي للحصص (20 ثانية)",NotificationManager.IMPORTANCE_HIGH));
+  NotificationChannel channel=new NotificationChannel(CHANNEL,"تنبيه صوتي للحصص (20 ثانية)",NotificationManager.IMPORTANCE_HIGH);
+  channel.enableVibration(true);
+  channel.setVibrationPattern(new long[]{0,500,300,500,300,500});
+  nm.createNotificationChannel(channel);
  }
  @Override public int onStartCommand(Intent intent,int flags,int startId){
   if(intent!=null&&"STOP".equals(intent.getAction())){stopSelf();return START_NOT_STICKY;}
@@ -45,7 +48,7 @@ public class LessonAlertService extends Service {
   }catch(Exception ignored){}
   try{
    vibrator=(Vibrator)getSystemService(VIBRATOR_SERVICE);
-   if(vibrator!=null&&vibrator.hasVibrator())vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0,400,250,400,250,400},0));
+   if(vibrator!=null&&vibrator.hasVibrator())vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0,500,300,500,300,500},0));
   }catch(Exception ignored){}
   // Camera flash is optional and only enabled if the user granted CAMERA permission.
   if(checkSelfPermission(android.Manifest.permission.CAMERA)==android.content.pm.PackageManager.PERMISSION_GRANTED){
