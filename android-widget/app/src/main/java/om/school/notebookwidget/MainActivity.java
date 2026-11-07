@@ -1,5 +1,8 @@
 package om.school.notebookwidget;
 import android.app.Activity;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -48,6 +51,7 @@ public class MainActivity extends Activity {
   @Override public void onCreate(Bundle state){
     super.onCreate(state);
     receiveSharedSchedule(getIntent());
+    requestAndroidNotificationPermission();
     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     getWindow().setStatusBarColor(0xFFF7FAF9);
     getWindow().getDecorView().setFitsSystemWindows(true);
@@ -78,6 +82,18 @@ public class MainActivity extends Activity {
     root.addView(open);
     setContentView(root);
     openEmbeddedNotebook();
+  }
+  private void requestAndroidNotificationPermission(){
+    // Native Android notification permission; this does not grant WebView Web Push support.
+    if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
+      requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},1007);
+    }
+  }
+  @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
+    super.onRequestPermissionsResult(requestCode,permissions,results);
+    if(requestCode==1007 && (results.length==0||results[0]!=PackageManager.PERMISSION_GRANTED)){
+      Toast.makeText(this,"يمكن السماح بإشعارات Android لاحقًا من إعدادات الهاتف",Toast.LENGTH_LONG).show();
+    }
   }
   private final Handler widgetHandler=new Handler(Looper.getMainLooper());
   private final Runnable widgetSyncLoop=new Runnable(){
@@ -146,15 +162,26 @@ public class MainActivity extends Activity {
     FrameLayout.LayoutParams buttonParams=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
     buttonParams.setMargins(24,0,24,72);
     shell.addView(googleLogin,buttonParams);
+    Button browserFeatures=new Button(this);
+    browserFeatures.setText("البصمة وإشعارات Web Push عبر المتصفح");
+    browserFeatures.setTextColor(0xFFFFFFFF);
+    browserFeatures.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF075D4E));
+    FrameLayout.LayoutParams browserParams=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
+    browserParams.setMargins(24,0,24,14);
+    shell.addView(browserFeatures,browserParams);
+    browserFeatures.setOnClickListener(v->openNotebook());
+    browserFeatures.setVisibility(View.GONE);
+
     googleLogin.setVisibility(View.GONE);
     googleLogin.setOnClickListener(v->signInWithGoogle());
     notebookView.setWebViewClient(new WebViewClient(){
       @Override public void onPageFinished(WebView view,String url){
         boolean loginPage=url.equals(URL) || url.equals(URL+"index.html") || url.equals(URL+"#") || url.startsWith(URL+"index.html#");
         googleLogin.setVisibility(loginPage ? View.VISIBLE : View.GONE);
+        browserFeatures.setVisibility(loginPage ? View.VISIBLE : View.GONE);
         if(!loginPage)widgetHandler.postDelayed(()->syncWidgetFromWeb(),3500);
         if(loginPage){
-          view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';var b=document.getElementById('teacher-passkey-direct');if(b){b.disabled=true;b.style.display='none'}var p=document.getElementById('teacher-passkey-direct-status');if(p)p.textContent='للدخول استخدم Google؛ بصمة WebAuthn غير مدعومة في تطبيق Android حاليًا.';})()",null);
+          view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';var b=document.getElementById('teacher-passkey-direct');if(b){b.disabled=true;b.style.display='none'}var p=document.getElementById('teacher-passkey-direct-status');if(p)p.textContent='البصمة عبر WebAuthn غير مدعومة داخل نافذة Android هذه. استخدم المتصفح الخارجي لتفعيلها.';})()",null);
         }
       }
       @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
