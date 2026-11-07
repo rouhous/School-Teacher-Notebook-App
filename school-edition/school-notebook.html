@@ -4067,7 +4067,53 @@ function cellMenuNote(day,periodId){
   toast('✓');
   if(document.querySelector('#modalBox .sched-compact')) openM('settings');
 }
+
+// Browser alarms are best-effort while this page remains active.
+// Mobile browsers may suspend timers/audio when the page is closed or backgrounded.
+let lessonAlertContext=null,lessonAlertTimer=null,lessonAlertTimeout=null,lessonAlertBanner=null;
+function unlockLessonAlertAudio(){
+ try{lessonAlertContext=lessonAlertContext||new (window.AudioContext||window.webkitAudioContext)();lessonAlertContext.resume()}catch(e){}
+}
+function stopLessonAlert(){
+ if(lessonAlertTimer){clearInterval(lessonAlertTimer);lessonAlertTimer=null}
+ if(lessonAlertTimeout){clearTimeout(lessonAlertTimeout);lessonAlertTimeout=null}
+ if(lessonAlertBanner){lessonAlertBanner.remove();lessonAlertBanner=null}
+ try{navigator.vibrate?.(0)}catch(e){}
+}
+window.stopLessonAlert=stopLessonAlert;
+function lessonAlertBeep(){
+ try{
+  if(!lessonAlertContext||lessonAlertContext.state!=='running')return;
+  const t=lessonAlertContext.currentTime;
+  for(const [i,f] of [740,990].entries()){
+   const o=lessonAlertContext.createOscillator(),g=lessonAlertContext.createGain();
+   o.frequency.value=f;g.gain.setValueAtTime(.001,t+i*.24);
+   g.gain.exponentialRampToValueAtTime(.14,t+i*.24+.025);
+   g.gain.exponentialRampToValueAtTime(.001,t+i*.24+.19);
+   o.connect(g);g.connect(lessonAlertContext.destination);o.start(t+i*.24);o.stop(t+i*.24+.2);
+  }
+ }catch(e){}
+}
+function startLessonAlert(title){
+ stopLessonAlert();
+ if(document.visibilityState==='visible'){
+  lessonAlertBanner=document.createElement('div');
+  lessonAlertBanner.setAttribute('role','alert');
+  lessonAlertBanner.style.cssText='position:fixed;z-index:2147483646;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));padding:14px;background:#075d4e;color:white;border:2px solid #e9c46a;border-radius:16px;box-shadow:0 6px 24px #0005;display:flex;align-items:center;justify-content:space-between;gap:12px;direction:rtl;font-size:16px;font-weight:700';
+  const label=document.createElement('span');label.textContent='🔔 '+title;
+  const stop=document.createElement('button');stop.type='button';stop.textContent='إيقاف التنبيه';
+  stop.style.cssText='padding:10px;border:0;border-radius:9px;background:#fff;color:#075d4e;font-weight:800;flex-shrink:0';
+  stop.onclick=stopLessonAlert;lessonAlertBanner.append(label,stop);document.body.append(lessonAlertBanner);
+ }
+ lessonAlertBeep();
+ lessonAlertTimer=setInterval(lessonAlertBeep,1400);
+ try{navigator.vibrate?.([400,250,400])}catch(e){}
+ lessonAlertTimeout=setTimeout(stopLessonAlert,20000);
+}
+document.addEventListener('pointerdown',unlockLessonAlertAudio,{once:true,passive:true});
+
 function requestNotifPermission(){
+  unlockLessonAlertAudio();
   if(!('Notification' in window)){toast(db.lang==='ar'?'المتصفح لا يدعم الإشعارات':'Notifications not supported');return}
   Notification.requestPermission().then(p=>{
     if(p==='granted'){toast(db.lang==='ar'?'✓ تم السماح بالإشعارات':'✓ Notifications allowed');scheduleAlarmChecker()}
@@ -4092,7 +4138,6 @@ function checkPeriodAlarms(){
   updateActiveLessonVisual();
   if(db.alarmEnabled===false)return;
   // Visual highlighting works even without notification permission.
-  if(!('Notification' in window)||Notification.permission!=='granted')return;
   const now=new Date();
   const dayIdx=now.getDay();
   if(dayIdx<0||dayIdx>4)return;
@@ -4144,11 +4189,12 @@ function checkPeriodAlarms(){
 }
 function fireNotif(title,body){
   try{
-    if(Notification.permission==='granted'){
-      const n=new Notification(title,{body:body||'',icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📚</text></svg>',tag:'tnb-period',renotify:true});
-      setTimeout(()=>n.close(),12000);
+    if('Notification' in window&&Notification.permission==='granted'){
+      const n=new Notification(title,{body:body||'',tag:'tnb-period',renotify:true,requireInteraction:true});
+      setTimeout(()=>n.close(),20000);
     }
   }catch(e){}
+  startLessonAlert(title);
   try{toast('🔔 '+title)}catch(e){}
 }
 
@@ -4408,6 +4454,7 @@ let managedSchedule=[],managedRoster=[],managedCover=[],loaded=false;
 function statusMessage(message){const node=document.getElementById('school-managed-status');if(node)node.textContent=message;}
 let coverAudio=null;
 function enableCoverAlerts(){
+ unlockLessonAlertAudio();
  try{coverAudio=coverAudio||new (window.AudioContext||window.webkitAudioContext)();coverAudio.resume();}catch(e){}
  if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
  localStorage.setItem('school-cover-alert-enabled:'+schoolNotebookSubject,'1');
@@ -4423,7 +4470,7 @@ function coverNotify(item,kind){
  const msg='الحصة '+item.period+' — الصف '+(item.classId||'غير محدد');
  const title=kind==='new'?'تكليف احتياط جديد':'تذكير: تبقى 5 دقائق لحصة الاحتياط';
  if('Notification' in window&&Notification.permission==='granted'){try{new Notification(title,{body:msg,tag:key})}catch(e){}}
- coverSound();
+ startLessonAlert(title+' · '+msg);
  if(document.visibilityState==='visible')toast(title+' · '+msg);
 }
 function checkCoverAlerts(){
