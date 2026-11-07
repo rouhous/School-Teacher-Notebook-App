@@ -198,7 +198,10 @@ public class MainActivity extends Activity {
         boolean loginPage=url.equals(URL) || url.equals(URL+"index.html") || url.equals(URL+"#") || url.startsWith(URL+"index.html#");
         googleLogin.setVisibility(loginPage ? View.VISIBLE : View.GONE);
         browserFeatures.setVisibility(loginPage ? View.VISIBLE : View.GONE);
-        if(!loginPage)widgetHandler.postDelayed(()->syncWidgetFromWeb(),3500);
+        if(!loginPage){
+          getSharedPreferences("security",MODE_PRIVATE).edit().putBoolean("teacher_session_seen",true).apply();
+          widgetHandler.postDelayed(()->syncWidgetFromWeb(),3500);
+        }
         if(loginPage){
           view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';var b=document.getElementById('teacher-passkey-direct');if(b){b.disabled=true;b.style.display='none'}var p=document.getElementById('teacher-passkey-direct-status');if(p)p.textContent='';})()",null);
         }
@@ -212,10 +215,13 @@ public class MainActivity extends Activity {
     setContentView(shell);
     applySystemBars();
     notebookView.loadUrl(URL);
-    if(getSharedPreferences("security",MODE_PRIVATE).getBoolean("native_google_authenticated",false))promptNativeDeviceUnlock();
+    // Show the welcome screen first. Re-entry biometric unlock is triggered after a verified teacher session.
   }
   private void promptNativeDeviceUnlock(){
     if(deviceUnlocked||unlockPromptShown||android.os.Build.VERSION.SDK_INT<28)return;
+    if(!getSharedPreferences("security",MODE_PRIVATE).getBoolean("teacher_session_seen",false)){
+      Toast.makeText(this,"سجّل دخولك بحساب Google أول مرة لربط البصمة بهذا الجهاز",Toast.LENGTH_LONG).show();return;
+    }
     android.app.KeyguardManager km=(android.app.KeyguardManager)getSystemService(KEYGUARD_SERVICE);
     if(km==null||!km.isDeviceSecure())return;
     unlockPromptShown=true;
@@ -231,6 +237,7 @@ public class MainActivity extends Activity {
       @Override public void onAuthenticationSucceeded(android.hardware.biometrics.BiometricPrompt.AuthenticationResult result){
         deviceUnlocked=true;
         if(notebookShell!=null)notebookShell.setVisibility(View.VISIBLE);
+        if(notebookView!=null&&notebookView.getUrl()!=null&&notebookView.getUrl().equals(URL))Toast.makeText(MainActivity.this,"تم فتح قفل الجهاز؛ يلزم استمرار جلسة Google للدخول إلى الدفتر",Toast.LENGTH_LONG).show();
       }
       @Override public void onAuthenticationError(int code,CharSequence message){
         unlockPromptShown=false;
@@ -303,7 +310,7 @@ public class MainActivity extends Activity {
                notebookView.getUrl().startsWith(URL)){
               notebookView.evaluateJavascript(
                 "window.schoolNotebookNativeGoogleSignIn && window.schoolNotebookNativeGoogleSignIn("+quoted+")",null);
-              getSharedPreferences("security",MODE_PRIVATE).edit().putBoolean("native_google_authenticated",true).apply();
+              // Do not mark login successful until the authenticated teacher page actually loads.
             }
           }catch(Exception ex){Toast.makeText(MainActivity.this,"تعذر قراءة تسجيل Google",Toast.LENGTH_LONG).show();}
         }
