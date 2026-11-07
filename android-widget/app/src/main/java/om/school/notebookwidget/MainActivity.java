@@ -52,6 +52,8 @@ public class MainActivity extends Activity {
     super.onCreate(state);
     receiveSharedSchedule(getIntent());
     requestAndroidNotificationPermission();
+    String cached=getSharedPreferences("widget",MODE_PRIVATE).getString("snapshot","");
+    if(!cached.isEmpty())LessonAlarmScheduler.schedule(this,cached);
     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     getWindow().setStatusBarColor(0xFFF7FAF9);
     getWindow().getDecorView().setFitsSystemWindows(true);
@@ -118,6 +120,7 @@ public class MainActivity extends Activity {
           getSharedPreferences("widget",MODE_PRIVATE).edit().putString("snapshot",payload).apply();
           ScheduleWidget.refresh(this);
           WeeklyScheduleWidget.refresh(this);
+          LessonAlarmScheduler.schedule(this,payload);
         }
       }catch(Exception ignored){}
     });
@@ -308,6 +311,7 @@ public class MainActivity extends Activity {
       getSharedPreferences("widget",MODE_PRIVATE).edit().putString("snapshot",data.toString()).apply();
       ScheduleWidget.refresh(this);
       WeeklyScheduleWidget.refresh(this);
+      LessonAlarmScheduler.schedule(this,data.toString());
       Toast.makeText(this,"تم تحديث ويدجت الجدول بنجاح",Toast.LENGTH_LONG).show();
     }catch(Exception e){
       Toast.makeText(this,"تعذر استيراد الجدول. استخدم زر المشاركة من دفتر المعلم.",Toast.LENGTH_LONG).show();
