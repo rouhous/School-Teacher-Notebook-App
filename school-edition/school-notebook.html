@@ -4486,6 +4486,21 @@ async function schoolEnableWebPush(){
  }catch(e){console.warn('Web Push registration failed',e);toast('تعذر ربط إشعارات الخلفية: '+String(e.message||e));return false}
 }
 window.schoolEnableWebPush=schoolEnableWebPush;
+// Keep an already approved device subscription registered after a PWA update or login.
+// Never request notification permission without a direct user gesture.
+let schoolPushLastAutoCheck=0;
+async function schoolRestoreWebPush(){
+ if(!('Notification' in window)||Notification.permission!=='granted'||!('serviceWorker' in navigator)||!('PushManager' in window))return;
+ if(Date.now()-schoolPushLastAutoCheck<15*60*1000)return;
+ schoolPushLastAutoCheck=Date.now();
+ try{
+  const reg=await navigator.serviceWorker.ready;
+  const existing=await reg.pushManager.getSubscription();
+  if(existing)await schoolEnableWebPush();
+ }catch(e){console.warn('Web Push restoration unavailable',e)}
+}
+window.addEventListener('focus',()=>schoolRestoreWebPush());
+setTimeout(()=>schoolRestoreWebPush(),7000);
 function enableCoverAlerts(){
  unlockLessonAlertAudio();
  try{coverAudio=coverAudio||new (window.AudioContext||window.webkitAudioContext)();coverAudio.resume();}catch(e){}
