@@ -47,6 +47,8 @@ import org.json.JSONArray;
 public class MainActivity extends Activity {
   private WebView notebookView;
   private FrameLayout notebookShell;
+  private boolean deviceUnlocked=false;
+  private boolean unlockPromptShown=false;
   private static final String URL="https://rouhous.github.io/School-Teacher-Notebook-App/";
   @Override public void onCreate(Bundle state){
     super.onCreate(state);
@@ -196,6 +198,47 @@ public class MainActivity extends Activity {
     setContentView(shell);
     applySystemBars();
     notebookView.loadUrl(URL);
+    promptNativeDeviceUnlock();
+  }
+  private void promptNativeDeviceUnlock(){
+    if(deviceUnlocked||unlockPromptShown||android.os.Build.VERSION.SDK_INT<28)return;
+    android.app.KeyguardManager km=(android.app.KeyguardManager)getSystemService(KEYGUARD_SERVICE);
+    if(km==null||!km.isDeviceSecure())return;
+    unlockPromptShown=true;
+    if(notebookShell!=null)notebookShell.setVisibility(View.INVISIBLE);
+    android.hardware.biometrics.BiometricPrompt prompt=new android.hardware.biometrics.BiometricPrompt.Builder(this)
+      .setTitle("فتح دفتر المعلم")
+      .setSubtitle("تحقق ببصمة الجهاز للمتابعة")
+      .setNegativeButton("إلغاء",getMainExecutor(),(dialog,which)->{
+        unlockPromptShown=false;
+        Toast.makeText(this,"يلزم فتح قفل الجهاز قبل عرض الدفتر",Toast.LENGTH_LONG).show();
+      }).build();
+    prompt.authenticate(new CancellationSignal(),getMainExecutor(),new android.hardware.biometrics.BiometricPrompt.AuthenticationCallback(){
+      @Override public void onAuthenticationSucceeded(android.hardware.biometrics.BiometricPrompt.AuthenticationResult result){
+        deviceUnlocked=true;
+        if(notebookShell!=null)notebookShell.setVisibility(View.VISIBLE);
+      }
+      @Override public void onAuthenticationError(int code,CharSequence message){
+        unlockPromptShown=false;
+        if(code==android.hardware.biometrics.BiometricPrompt.BIOMETRIC_ERROR_NO_BIOMETRICS||
+           code==android.hardware.biometrics.BiometricPrompt.BIOMETRIC_ERROR_HW_UNAVAILABLE){
+          // The phone may lack enrolled biometrics; fall back to its system lock screen.
+          android.app.KeyguardManager manager=(android.app.KeyguardManager)getSystemService(KEYGUARD_SERVICE);
+          if(manager!=null){
+            Intent confirm=manager.createConfirmDeviceCredentialIntent("فتح دفتر المعلم","أدخل رمز قفل الجهاز");
+            if(confirm!=null){startActivityForResult(confirm,1008);return;}
+          }
+        }
+        Toast.makeText(MainActivity.this,"لم يتم فتح التطبيق: "+message,Toast.LENGTH_LONG).show();
+      }
+    });
+  }
+  @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+    super.onActivityResult(requestCode,resultCode,data);
+    if(requestCode==1008&&resultCode==RESULT_OK){
+      deviceUnlocked=true;
+      if(notebookShell!=null)notebookShell.setVisibility(View.VISIBLE);
+    }
   }
   private void applySystemBars(){
     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN|WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
