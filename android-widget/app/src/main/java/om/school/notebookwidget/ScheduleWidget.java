@@ -33,7 +33,7 @@ public class ScheduleWidget extends AppWidgetProvider {
     view.setTextViewText(R.id.widget_content,buildText(ctx));
     view.setTextViewText(R.id.widget_date,LocalDate.now().toString());
     view.setTextViewText(R.id.widget_current,currentPeriod(ctx));
-    Intent intent=new Intent(ctx,MainActivity.class);
+    Intent intent=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://rouhous.github.io/School-Teacher-Notebook-App/"));
     PendingIntent open=PendingIntent.getActivity(ctx,0,intent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     view.setOnClickPendingIntent(R.id.widget_content,open);
     view.setOnClickPendingIntent(R.id.widget_title,open);
