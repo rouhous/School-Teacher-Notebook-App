@@ -2,6 +2,10 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <application android:icon="@drawable/school_original_icon" android:roundIcon="@drawable/school_original_icon" android:label="دفتر المعلم" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:usesCleartextTraffic="false" android:allowBackup="false">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
@@ -14,6 +18,7 @@
                 <data android:mimeType="text/plain"/>
             </intent-filter>
         </activity>
+        <service android:name=".LessonAlertService" android:exported="false" android:foregroundServiceType="mediaPlayback"/>
         <receiver android:name=".LessonAlarmReceiver" android:exported="false"/>
         <receiver android:name=".ScheduleWidget" android:exported="true">
             <intent-filter>
