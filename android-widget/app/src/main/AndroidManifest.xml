@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application android:icon="@drawable/school_original_icon" android:roundIcon="@drawable/school_original_icon" android:label="دفتر المعلم" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:usesCleartextTraffic="false" android:allowBackup="false">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
