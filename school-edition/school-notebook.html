@@ -4491,7 +4491,8 @@ function enableCoverAlerts(){
  try{coverAudio=coverAudio||new (window.AudioContext||window.webkitAudioContext)();coverAudio.resume();}catch(e){}
  if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
  localStorage.setItem('school-cover-alert-enabled:'+schoolNotebookSubject,'1');
- toast('تم تفعيل تنبيهات الاحتياط أثناء فتح التطبيق');
+ toast('تم تفعيل التنبيهات أثناء فتح التطبيق؛ جارٍ ربط إشعارات الخلفية...');
+ schoolEnableWebPush().catch(e=>console.warn('Web Push activation',e));
 }
 function coverSound(){
  try{if(!coverAudio||coverAudio.state!=='running')return;for(const [i,f] of [740,990].entries()){const o=coverAudio.createOscillator(),g=coverAudio.createGain(),t=coverAudio.currentTime+i*.24;o.frequency.value=f;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.12,t+.025);g.gain.exponentialRampToValueAtTime(.001,t+.19);o.connect(g);g.connect(coverAudio.destination);o.start(t);o.stop(t+.2)}}catch(e){}
