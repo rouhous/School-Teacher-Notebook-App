@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
   private FrameLayout notebookShell;
   private boolean deviceUnlocked=false;
   private boolean unlockPromptShown=false;
+  private Button biometricLoginButton;
   private static final String URL="https://rouhous.github.io/School-Teacher-Notebook-App/";
   @Override public void onCreate(Bundle state){
     super.onCreate(state);
@@ -180,13 +181,14 @@ public class MainActivity extends Activity {
     buttonParams.setMargins(24,0,24,72);
     shell.addView(googleLogin,buttonParams);
     Button browserFeatures=new Button(this);
-    browserFeatures.setText("البصمة وإشعارات Web Push عبر المتصفح");
+    biometricLoginButton=browserFeatures;
+    browserFeatures.setText("🔐 الدخول بالبصمة / Face ID");
     browserFeatures.setTextColor(0xFFFFFFFF);
     browserFeatures.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF075D4E));
     FrameLayout.LayoutParams browserParams=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
     browserParams.setMargins(24,0,24,14);
     shell.addView(browserFeatures,browserParams);
-    browserFeatures.setOnClickListener(v->openNotebook());
+    browserFeatures.setOnClickListener(v->promptNativeDeviceUnlock());
     browserFeatures.setVisibility(View.GONE);
 
     googleLogin.setVisibility(View.GONE);
@@ -198,7 +200,7 @@ public class MainActivity extends Activity {
         browserFeatures.setVisibility(loginPage ? View.VISIBLE : View.GONE);
         if(!loginPage)widgetHandler.postDelayed(()->syncWidgetFromWeb(),3500);
         if(loginPage){
-          view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';var b=document.getElementById('teacher-passkey-direct');if(b){b.disabled=true;b.style.display='none'}var p=document.getElementById('teacher-passkey-direct-status');if(p)p.textContent='البصمة عبر WebAuthn غير مدعومة داخل نافذة Android هذه. استخدم المتصفح الخارجي لتفعيلها.';})()",null);
+          view.evaluateJavascript("(function(){var x=document.getElementById('teacher-google');if(x)x.style.display='none';var b=document.getElementById('teacher-passkey-direct');if(b){b.disabled=true;b.style.display='none'}var p=document.getElementById('teacher-passkey-direct-status');if(p)p.textContent='';})()",null);
         }
       }
       @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
@@ -210,7 +212,7 @@ public class MainActivity extends Activity {
     setContentView(shell);
     applySystemBars();
     notebookView.loadUrl(URL);
-    promptNativeDeviceUnlock();
+    if(getSharedPreferences("security",MODE_PRIVATE).getBoolean("native_google_authenticated",false))promptNativeDeviceUnlock();
   }
   private void promptNativeDeviceUnlock(){
     if(deviceUnlocked||unlockPromptShown||android.os.Build.VERSION.SDK_INT<28)return;
@@ -223,7 +225,7 @@ public class MainActivity extends Activity {
       .setSubtitle("تحقق ببصمة الجهاز للمتابعة")
       .setNegativeButton("إلغاء",getMainExecutor(),(dialog,which)->{
         unlockPromptShown=false;
-        Toast.makeText(this,"يلزم فتح قفل الجهاز قبل عرض الدفتر",Toast.LENGTH_LONG).show();
+        if(notebookShell!=null)notebookShell.setVisibility(View.VISIBLE);
       }).build();
     prompt.authenticate(new CancellationSignal(),getMainExecutor(),new android.hardware.biometrics.BiometricPrompt.AuthenticationCallback(){
       @Override public void onAuthenticationSucceeded(android.hardware.biometrics.BiometricPrompt.AuthenticationResult result){
@@ -232,6 +234,7 @@ public class MainActivity extends Activity {
       }
       @Override public void onAuthenticationError(int code,CharSequence message){
         unlockPromptShown=false;
+        if(notebookShell!=null)notebookShell.setVisibility(View.VISIBLE);
         if(code==android.hardware.biometrics.BiometricPrompt.BIOMETRIC_ERROR_NO_BIOMETRICS||
            code==android.hardware.biometrics.BiometricPrompt.BIOMETRIC_ERROR_HW_UNAVAILABLE){
           // The phone may lack enrolled biometrics; fall back to its system lock screen.
@@ -300,6 +303,7 @@ public class MainActivity extends Activity {
                notebookView.getUrl().startsWith(URL)){
               notebookView.evaluateJavascript(
                 "window.schoolNotebookNativeGoogleSignIn && window.schoolNotebookNativeGoogleSignIn("+quoted+")",null);
+              getSharedPreferences("security",MODE_PRIVATE).edit().putBoolean("native_google_authenticated",true).apply();
             }
           }catch(Exception ex){Toast.makeText(MainActivity.this,"تعذر قراءة تسجيل Google",Toast.LENGTH_LONG).show();}
         }
