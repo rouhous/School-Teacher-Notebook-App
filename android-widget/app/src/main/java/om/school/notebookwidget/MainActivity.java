@@ -43,6 +43,7 @@ import org.json.JSONArray;
  */
 public class MainActivity extends Activity {
   private WebView notebookView;
+  private FrameLayout notebookShell;
   private static final String URL="https://rouhous.github.io/School-Teacher-Notebook-App/";
   @Override public void onCreate(Bundle state){
     super.onCreate(state);
@@ -135,6 +136,7 @@ public class MainActivity extends Activity {
       }
     });
     FrameLayout shell=new FrameLayout(this);
+    notebookShell=shell;
     shell.setFitsSystemWindows(false);
     shell.addView(notebookView,new FrameLayout.LayoutParams(-1,-1));
     Button googleLogin=new Button(this);
@@ -170,14 +172,20 @@ public class MainActivity extends Activity {
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
     getWindow().setStatusBarColor(0xFFF7FAF9);
     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-    if(android.os.Build.VERSION.SDK_INT>=35){
-      getWindow().getDecorView().setOnApplyWindowInsetsListener((view,insets)->{
-        android.graphics.Insets bars=insets.getInsets(android.view.WindowInsets.Type.statusBars());
-        if(notebookView!=null)notebookView.setPadding(0,bars.top,0,0);
-        return insets;
-      });
-      getWindow().getDecorView().requestApplyInsets();
-    }
+    if(notebookShell==null)return;
+    // Android 15 forces edge-to-edge. Inset the native container, not the web document:
+    // WebView.setPadding can leave the page's header under the status icons.
+    notebookShell.setOnApplyWindowInsetsListener((view,insets)->{
+      android.graphics.Insets bars;
+      if(android.os.Build.VERSION.SDK_INT>=30){
+        bars=insets.getInsets(android.view.WindowInsets.Type.statusBars()|android.view.WindowInsets.Type.navigationBars());
+        view.setPadding(0,bars.top,0,bars.bottom);
+      }else{
+        view.setPadding(0,insets.getSystemWindowInsetTop(),0,insets.getSystemWindowInsetBottom());
+      }
+      return insets;
+    });
+    notebookShell.requestApplyInsets();
   }
   @Override public void onWindowFocusChanged(boolean hasFocus){
     super.onWindowFocusChanged(hasFocus);
