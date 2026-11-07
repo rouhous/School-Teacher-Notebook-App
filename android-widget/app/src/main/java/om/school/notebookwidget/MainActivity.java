@@ -53,41 +53,51 @@ public class MainActivity extends Activity {
   private static final String URL="https://rouhous.github.io/School-Teacher-Notebook-App/";
   @Override public void onCreate(Bundle state){
     super.onCreate(state);
-    receiveSharedSchedule(getIntent());
-    requestAndroidNotificationPermission();
-    requestOptionalFlashPermission();
+    boolean shared=getIntent()!=null && Intent.ACTION_SEND.equals(getIntent().getAction());
+    if(shared)receiveSharedSchedule(getIntent());
     String cached=getSharedPreferences("widget",MODE_PRIVATE).getString("snapshot","");
     if(!cached.isEmpty())LessonAlarmScheduler.schedule(this,cached);
-    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     getWindow().setStatusBarColor(0xFFF7FAF9);
-    getWindow().getDecorView().setFitsSystemWindows(true);
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+    getWindow().setNavigationBarColor(0xFFF7FAF9);
     getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-    getWindow().setNavigationBarColor(0xFF075D4E);
-    getWindow().getDecorView().setSystemUiVisibility(0);
     LinearLayout root=new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
-    root.setPadding(28,48,28,28);
+    root.setPadding(28,40,28,28);
     root.setGravity(Gravity.CENTER);
-    root.setBackgroundColor(0xFFE9F5EF);
+    root.setBackgroundColor(0xFFF7FAF9);
     TextView title=new TextView(this);
-    title.setText("دفتر المعلم المدرسي");
+    title.setText("ويدجت دفتر المعلم");
     title.setTextSize(26);
     title.setTextColor(0xFF075D4E);
     title.setGravity(Gravity.CENTER);
     root.addView(title);
     TextView info=new TextView(this);
-    info.setText("الدفتر الكامل: الجداول، الطلاب، الحضور، التقييم والتقارير.\nتسجيل Google يتم بأمان داخل متصفح موثوق مع الاحتفاظ بجلسة الدخول.\n\nلمزامنة الويدجت: افتح الجدول واضغط «إرسال الجدول إلى ويدجت Android» ثم اختر دفتر المعلم من المشاركة.");
-    info.setTextSize(17);
-    info.setPadding(0,32,0,32);
+    info.setText("الدفتر يعمل في متصفحك المعتاد، مع الاحتفاظ بالبصمة وإشعارات Web Push.\n\nهذا التطبيق مخصص للويدجت وتنبيهات Android المحلية. لتحديث الجدول افتح الدفتر واختر «إرسال الجدول إلى ويدجت Android» من قائمة المشاركة.");
+    info.setTextSize(16);
+    info.setPadding(0,28,0,28);
     info.setGravity(Gravity.CENTER);
     root.addView(info);
     Button open=new Button(this);
-    open.setText("فتح دفتر المعلم الكامل");
+    open.setText("فتح دفتر المعلم في المتصفح");
     open.setOnClickListener(v->openNotebook());
     root.addView(open);
+    Button alertTest=new Button(this);
+    alertTest.setText("اختبار تنبيه Android لمدة 20 ثانية");
+    alertTest.setOnClickListener(v->{
+      requestAndroidNotificationPermission();
+      if(android.os.Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)return;
+      Intent i=new Intent(this,LessonAlertService.class).putExtra("title","اختبار تنبيه دفتر المعلم");
+      try{if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);}
+      catch(Exception e){Toast.makeText(this,"تعذر تشغيل التنبيه: "+e.getMessage(),Toast.LENGTH_LONG).show();}
+    });
+    root.addView(alertTest);
+    Button flash=new Button(this);
+    flash.setText("السماح بالفلاش (اختياري)");
+    flash.setOnClickListener(v->requestOptionalFlashPermission());
+    root.addView(flash);
     setContentView(root);
-    openEmbeddedNotebook();
+    // No embedded WebView: use the user's installed default browser for WebAuthn and Web Push.
+    if(!shared)openNotebook();
   }
   private void requestAndroidNotificationPermission(){
     // Native Android notification permission; this does not grant WebView Web Push support.
@@ -345,13 +355,11 @@ public class MainActivity extends Activity {
   }
   private void openNotebook(){
     try{
-      CustomTabsIntent tab=new CustomTabsIntent.Builder()
-          .setShowTitle(false)
-          .setToolbarColor(0xFF075D4E)
-          .build();
-      tab.launchUrl(this,Uri.parse(URL));
+      Intent browser=new Intent(Intent.ACTION_VIEW,Uri.parse(URL));
+      browser.addCategory(Intent.CATEGORY_BROWSABLE);
+      startActivity(browser);
     }catch(Exception e){
-      startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(URL)));
+      Toast.makeText(this,"ثبّت متصفح Firefox أو Chrome لفتح دفتر المعلم",Toast.LENGTH_LONG).show();
     }
   }
   @Override protected void onNewIntent(Intent intent){
