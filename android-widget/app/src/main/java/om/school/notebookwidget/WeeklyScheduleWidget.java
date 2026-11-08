@@ -47,7 +47,7 @@ public class WeeklyScheduleWidget extends AppWidgetProvider {
           for(int j=0;j<slots.length();j++){
             JSONObject slot=slots.getJSONObject(j);
             if(slot.optInt("weekday",-1)==d&&slot.optInt("period",-1)==period){
-              String name=slot.optString("classId","");
+              String name=slot.optString("className",slot.optString("classId",""));
               if(name.isEmpty()&&!slot.optString("dutyPriority","").isEmpty())name="احتياط "+slot.optString("dutyPriority");
               if(!name.isEmpty()){if(classes.length()>0)classes.append("، ");classes.append(name);}
             }
