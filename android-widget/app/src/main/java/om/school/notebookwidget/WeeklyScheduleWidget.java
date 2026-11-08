@@ -14,12 +14,12 @@ public class WeeklyScheduleWidget extends AppWidgetProvider {
   for(int row=0;row<10;row++){
    JSONObject t=row<timing.length()?timing.optJSONObject(row):null;
    String kind=t==null?"":t.optString("kind","lesson");boolean isBreak="break".equals(kind);boolean assembly="assembly".equals(kind);
-   String label=t==null?"":assembly?"طابور":isBreak?"فسحة":"ح"+(++period);
+   String label=t==null?"":assembly?"الطابور":isBreak?"فسحة":"ح"+(++period)+"\\n"+t.optString("start","");
    WidgetUi.text(c,v,"week_period_"+row,label);
    for(int day=0;day<5;day++){
     String cell="";boolean now=false;
-    if(t!=null){cell=isBreak?"فسحة":assembly?"طابور":WidgetUi.slot(data,day+1,period);
-     now=WidgetUi.weekday()==day+1 && WidgetUi.active(t.optString("start",""),t.optString("end",""));}
+    if(t!=null){cell=isBreak?"فسحة":assembly?"طابور":WidgetUi.slot(data,day,period);
+     now=WidgetUi.weekday()==day && WidgetUi.active(t.optString("start",""),t.optString("end",""));}
     String name="week_cell_"+row+"_"+day;
     WidgetUi.text(c,v,name,cell);
     v.setInt(WidgetUi.id(c,name),"setBackgroundResource",now?R.drawable.widget_cell_active:isBreak?R.drawable.widget_cell_break:R.drawable.widget_cell);
