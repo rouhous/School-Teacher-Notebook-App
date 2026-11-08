@@ -1301,28 +1301,7 @@ document.addEventListener('click',function(event){
  else console.error('Period note editor is not available');
 },true);
 <\/script><script type="module" src="./passkey-auth.js"><\/script>
-<script>
-// Native Android widget shortcuts: execute only after an approved notebook session has loaded.
-// Opening the existing PWA origin lets the browser reuse its cookie / persisted sign-in.
-(function(){
- const destinations={home:'home',att:'att',grades:'grades',live:'live',reports:'classes'};
- function fromWidget(){
-   const m=location.hash.match(/^#widget-(home|att|grades|live|reports)$/);
-   if(!m)return;
-   const target=destinations[m[1]];
-   if(typeof go!=='function'||!document.getElementById('sc-'+target))return;
-   // Avoid moving from the login/approval gate into a private screen.
-   if(typeof loaded!=='undefined'&&!loaded)return;
-   go(target);
-   history.replaceState(null,'',location.pathname+location.search);
- }
- window.addEventListener('hashchange',fromWidget);
- window.addEventListener('load',()=>{
-   let attempts=0;
-   const timer=setInterval(()=>{attempts++;fromWidget();if(!location.hash.startsWith('#widget-')||attempts>=50)clearInterval(timer)},800);
- });
-})();
-</script>
+
 </body></html>`);
   w.document.close();
 }
@@ -5377,6 +5356,28 @@ document.getElementById('teacherChangeAccountOpen').onclick=()=>{
  setTimeout(()=>refresh(true),1800);
  const select=document.getElementById('gradeClass');
  if(select)select.addEventListener('change',()=>refresh(false));
+})();
+</script>
+<script>
+// Native Android widget shortcuts: execute only after an approved notebook session has loaded.
+// Opening the existing PWA origin lets the browser reuse its cookie / persisted sign-in.
+(function(){
+ const destinations={home:'home',att:'att',grades:'grades',live:'live',reports:'classes'};
+ function fromWidget(){
+   const m=location.hash.match(/^#widget-(home|att|grades|live|reports)$/);
+   if(!m)return;
+   const target=destinations[m[1]];
+   if(typeof go!=='function'||!document.getElementById('sc-'+target))return;
+   // Avoid moving from the login/approval gate into a private screen.
+   if(typeof loaded!=='undefined'&&!loaded)return;
+   go(target);
+   history.replaceState(null,'',location.pathname+location.search);
+ }
+ window.addEventListener('hashchange',fromWidget);
+ window.addEventListener('load',()=>{
+   let attempts=0;
+   const timer=setInterval(()=>{attempts++;fromWidget();if(!location.hash.startsWith('#widget-')||attempts>=50)clearInterval(timer)},800);
+ });
 })();
 </script>
 </body></html>
