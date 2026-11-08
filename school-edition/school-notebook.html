@@ -1305,7 +1305,7 @@ document.addEventListener('click',function(event){
 // Native Android widget shortcuts: execute only after an approved notebook session has loaded.
 // Opening the existing PWA origin lets the browser reuse its cookie / persisted sign-in.
 (function(){
- const destinations={home:'home',att:'att',grades:'grades',live:'live',reports:'home'};
+ const destinations={home:'home',att:'att',grades:'grades',live:'live',reports:'classes'};
  function fromWidget(){
    const m=location.hash.match(/^#widget-(home|att|grades|live|reports)$/);
    if(!m)return;
