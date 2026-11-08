@@ -16,12 +16,18 @@ public final class LessonAlarmScheduler {
    Calendar now=Calendar.getInstance();
    for(int j=0;j<7;j++){
     Calendar day=(Calendar)now.clone();day.add(Calendar.DATE,j);
-    int weekday=(day.get(Calendar.DAY_OF_WEEK)+5)%7;
+    int weekday=day.get(Calendar.DAY_OF_WEEK); // Sunday=1 through Thursday=5 in school snapshot
     for(int k=0;k<slots.length();k++){
      JSONObject slot=slots.getJSONObject(k);
      int w=slot.optInt("weekday",-1),period=slot.optInt("period",-1);
-     if(w!=weekday||period<1||period>timing.length())continue;
-     JSONObject t=timing.optJSONObject(period-1);if(t==null)continue;
+     if(w!=weekday||period<1||period>8)continue;
+     // Timings contain assembly and break entries; only lessons count as numbered periods.
+     JSONObject t=null;int lesson=0;
+     for(int ti=0;ti<timing.length();ti++){JSONObject x=timing.optJSONObject(ti);if(x==null)continue;
+      String kind=x.optString("kind","lesson");if("assembly".equals(kind)||"break".equals(kind))continue;
+      if(++lesson==period){t=x;break;}
+     }
+     if(t==null)continue;
      String start=t.optString("start",t.optString("from",""));
      String end=t.optString("end",t.optString("to",""));
      enqueue(context,manager,day,start,5,"بداية الحصة "+period,100000+j*1000+k*2);
