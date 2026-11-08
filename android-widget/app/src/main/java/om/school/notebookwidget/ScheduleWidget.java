@@ -136,6 +136,19 @@ public class ScheduleWidget extends AppWidgetProvider {
           }
         }catch(Exception ignored){} 
       }
+      // Display all eight school periods even if the imported timing omits a period.
+      for(int p=number+1;p<=8;p++){
+        StringBuilder classes=new StringBuilder();
+        for(int j=0;j<slots.length();j++){
+          JSONObject slot=slots.getJSONObject(j);
+          if(slot.optInt("weekday",-1)==weekday&&slot.optInt("period",-1)==p){
+            String cls=slot.optString("className",slot.optString("classId",""));
+            if(cls.isEmpty()&&!slot.optString("dutyPriority","").isEmpty())cls="احتياط "+slot.optString("dutyPriority");
+            if(!cls.isEmpty()){if(classes.length()>0)classes.append("، ");classes.append(cls);}
+          }
+        }
+        out.append("الحصة ").append(String.valueOf(p)).append("  ").append(classes.length()>0?classes:"—").append("\\n");
+      }
       return out;
     }catch(Exception e){return "تعذر قراءة الجدول. افتح الدفتر لتحديث الويدجت.";}
   }
