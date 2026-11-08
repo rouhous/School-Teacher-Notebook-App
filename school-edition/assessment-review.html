@@ -45,7 +45,7 @@ if($('grade').value==='all'){
  if(subject==='english'&&!/Student Assessment Handbook|SUMMARY of MARKS AWARDED/i.test(all))throw Error('لم يُتعرف على دليل تقييم الإنجليزية');
  if(subject==='islamic'&&!/تقويم|التقويم|القرآن/.test(all))throw Error('لم يُتعرف على وثيقة التربية الإسلامية');
  if(subject==='arabic'){
-  const normalized=(all+' '+f.name).normalize('NFKC').replace(/[\\u064B-\\u065F\\u0670]/g,'');
+  const normalized=(all+' '+f.name).normalize('NFKC').replace(/[\u064B-\u065F\u0670]/g,'');
   if(!/العربية|العربيه/.test(normalized)||!/تقويم|تقييم|الطلبة|الطلاب/.test(normalized))throw Error('لم يُتعرف على وثيقة اللغة العربية');
  }
  bulkRecords.clear();
@@ -63,6 +63,13 @@ $('manualDraft').onclick=()=>{
  const f=$('pdf').files[0];
  if(!f){$('status').textContent='اختر وثيقة الوزارة PDF أولًا، ثم أدخل بنودها كما وردت فيها.';return;}
  source=f.name;
+ if($('grade').value==='all'){
+  bulkRecords.clear();
+  for(let grade=1;grade<=12;grade++)bulkRecords.set(grade,[{name:'',max:0}]);
+  renderBulk();
+  $('status').textContent='تم فتح مسودات فارغة للصفوف 1–12. أدخل بنود كل صف كما في وثيقته؛ لا توجد درجات افتراضية، ولن يُنشر أي صف قبل استكمال مجموع 100 درجة ومراجعته.';
+  return;
+ }
  records=[{name:'',max:0}];
  render();
  $('status').textContent='أدخل أسماء أدوات التقويم والدرجات حرفيًا من وثيقة '+f.name+'؛ لا تُنشأ أي بنود أو درجات افتراضية. أضف بقية البنود ثم راجعها قبل النشر.';
