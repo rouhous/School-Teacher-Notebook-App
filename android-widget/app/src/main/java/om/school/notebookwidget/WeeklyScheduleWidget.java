@@ -14,7 +14,7 @@ public class WeeklyScheduleWidget extends AppWidgetProvider {
   for(int row=0;row<10;row++){
    JSONObject t=row<timing.length()?timing.optJSONObject(row):null;
    String kind=t==null?"":t.optString("kind","lesson");boolean isBreak="break".equals(kind);boolean assembly="assembly".equals(kind);
-   String label=t==null?"":assembly?"الطابور":isBreak?"فسحة":"ح"+(++period)+"\\n"+t.optString("start","");
+   String label=t==null?"":assembly?"الطابور":isBreak?"فسحة":"ح"+(++period)+"\n"+t.optString("start","");
    WidgetUi.text(c,v,"week_period_"+row,label);
    for(int day=0;day<5;day++){
     String cell="";boolean now=false;
