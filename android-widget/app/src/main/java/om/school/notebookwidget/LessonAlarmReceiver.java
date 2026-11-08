@@ -3,6 +3,9 @@ import android.content.*;
 import android.os.Build;
 public class LessonAlarmReceiver extends BroadcastReceiver {
  @Override public void onReceive(Context context,Intent intent){
+  // Update highlighted timetable rows whenever a lesson alarm arrives.
+  ScheduleWidget.refresh(context);
+  WeeklyScheduleWidget.refresh(context);
   Intent service=new Intent(context,LessonAlertService.class);
   service.putExtra("title",intent==null?"تنبيه الحصة":intent.getStringExtra("title"));
   try{
