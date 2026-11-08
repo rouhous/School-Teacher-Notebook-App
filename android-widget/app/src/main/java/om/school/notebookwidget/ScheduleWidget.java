@@ -147,7 +147,7 @@ public class ScheduleWidget extends AppWidgetProvider {
             if(!cls.isEmpty()){if(classes.length()>0)classes.append("، ");classes.append(cls);}
           }
         }
-        out.append("الحصة ").append(String.valueOf(p)).append("  ").append(classes.length()>0?classes:"—").append("\\n");
+        out.append("الحصة ").append(String.valueOf(p)).append("  ").append(classes.length()>0?classes:"—").append("\n");
       }
       return out;
     }catch(Exception e){return "تعذر قراءة الجدول. افتح الدفتر لتحديث الويدجت.";}
