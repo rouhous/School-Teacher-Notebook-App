@@ -351,7 +351,32 @@ const dayISO=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()
 $('absenceDate').value=dayISO();
 const teacherName=id=>slots.find(x=>x.teacherId===id)?.teacherName||id;
 function absenceTeachers(){const box=$('absentTeachers');box.replaceChildren();const names=new Map();for(const x of slots.filter(x=>x.schoolId===$('school').value))names.set(x.teacherId,x.teacherName);for(const [id,name] of [...names].sort((a,b)=>a[1].localeCompare(b[1],'ar'))){const lab=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.value=id;check.className='absentCheck';lab.append(check,document.createTextNode(name));box.append(lab)}}
-async function cover(action){if(!(await schoolSupervisorSession())){$('coverStatus').textContent='انتهت الجلسة. افتح الصفحة الرئيسية.';return}const school=$('school').value,date=$('absenceDate').value,absent=[...document.querySelectorAll('.absentCheck:checked')].map(x=>x.value);if(!date){$('coverStatus').textContent='حدد التاريخ';return}if(action==='cover-confirm'&&!confirm('اعتماد التوزيع وإبلاغ المعلمين عند فتح دفاترهم؟'))return;if(action==='cover-save'&&!confirm('تأكيد حفظ الغياب وإعادة توزيع حصص الاحتياط لهذا اليوم؟'))return;try{$('coverStatus').textContent='جارٍ معالجة الغياب والاحتياط...';const res=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-supervisor-timetables',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...await schoolSupervisorSession(),action,school,date,absent})});const j=await res.json();if(!res.ok||!j.ok)throw Error(j.error||'تعذر التوزيع');const data=j.data||{};document.querySelectorAll('.absentCheck').forEach(c=>c.checked=(data.absent||[]).includes(c.value));const target=$('coverResults');target.replaceChildren();for(const a of data.assignments||[]){const el=document.createElement('div');el.className='cover-row';const title=document.createElement('b');title.textContent='الحصة '+a.period+' — '+teacherName(a.absentTeacherId);const detail=document.createElement('div');detail.textContent=a.coverTeacherId?'الاحتياط: '+teacherName(a.coverTeacherId)+' ('+(a.priority||'احتياط')+') — توزيع مبدئي':'لا يوجد معلم احتياط متاح';el.append(title,detail);target.append(el)}$('coverStatus').textContent='الغائبون: '+(data.absent||[]).length+' | حصص تحتاج تغطية: '+(data.assignments||[]).length+' | مغطاة مبدئيًا: '+(data.assignments||[]).filter(x=>x.coverTeacherId).length;}catch(e){$('coverStatus').textContent='تعذر تنفيذ العملية: '+e.message}}
+async function cover(action){if(!(await schoolSupervisorSession())){$('coverStatus').textContent='انتهت الجلسة. افتح الصفحة الرئيسية.';return}const school=$('school').value,date=$('absenceDate').value,absent=[...document.querySelectorAll('.absentCheck:checked')].map(x=>x.value);if(!date){$('coverStatus').textContent='حدد التاريخ';return}if(action==='cover-confirm'&&!confirm('اعتماد التوزيع وإبلاغ المعلمين عند فتح دفاترهم؟'))return;if(action==='cover-save'&&!confirm('تأكيد حفظ الغياب وإعادة توزيع حصص الاحتياط لهذا اليوم؟'))return;try{$('coverStatus').textContent='جارٍ معالجة الغياب والاحتياط...';const res=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-supervisor-timetables',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...await schoolSupervisorSession(),action,school,date,absent})});const j=await res.json();if(!res.ok||!j.ok)throw Error(j.error||'تعذر التوزيع');const data=j.data||{};document.querySelectorAll('.absentCheck').forEach(c=>c.checked=(data.absent||[]).includes(c.value));const target=$('coverResults');target.replaceChildren();
+const grouped=new Map();
+for(const assignment of data.assignments||[]){
+ const absentId=String(assignment.absentTeacherId||'');
+ if(!grouped.has(absentId))grouped.set(absentId,[]);
+ grouped.get(absentId).push(assignment);
+}
+for(const [absentId,lessons] of [...grouped.entries()].sort((a,b)=>teacherName(a[0]).localeCompare(teacherName(b[0]),'ar'))){
+ const group=document.createElement('section');group.className='cover-row';
+ group.style.cssText='border:1px solid #b9d7ce;border-radius:14px;margin:12px 0;padding:14px;background:#fff;text-align:right';
+ const heading=document.createElement('h3');heading.style.cssText='margin:0 0 10px;color:#075b47;font-size:1.1em';
+ heading.textContent='المعلم الغائب: '+teacherName(absentId);group.append(heading);
+ for(const assignment of lessons.sort((a,b)=>Number(a.period)-Number(b.period))){
+  const line=document.createElement('div');
+  line.style.cssText='padding:10px 0;border-top:1px solid #e2e9e6;line-height:1.8';
+  const lesson=document.createElement('b');
+  lesson.textContent='الحصة '+assignment.period+' — الصف '+(assignment.classId||'غير محدد');
+  const cover=document.createElement('div');
+  cover.textContent=assignment.coverTeacherId
+   ?'المعلم البديل: '+teacherName(assignment.coverTeacherId)+' ('+(assignment.priority||'احتياط')+') — '+(assignment.status==='confirmed'?'توزيع معتمد':'توزيع مبدئي')
+   :'لم يُعيَّن معلم بديل بعد';
+  line.append(lesson,cover);group.append(line);
+ }
+ target.append(group);
+}
+$('coverStatus').textContent='الغائبون: '+(data.absent||[]).length+' | حصص تحتاج تغطية: '+(data.assignments||[]).length+' | مغطاة مبدئيًا: '+(data.assignments||[]).filter(x=>x.coverTeacherId).length;}catch(e){$('coverStatus').textContent='تعذر تنفيذ العملية: '+e.message}}
 $('confirmCover').onclick=()=>cover('cover-confirm');$('saveAbsences').onclick=()=>cover('cover-save');$('readAbsences').onclick=()=>cover('cover-read');$('absenceDate').addEventListener('change',()=>cover('cover-read'));$('school').addEventListener('change',()=>{absenceTeachers();cover('cover-read')});
 const schoolFromUrl=new URLSearchParams(location.search).get('school');
 if(['boys','girls'].includes(schoolFromUrl))$('school').value=schoolFromUrl;
