@@ -1,62 +1,31 @@
 package om.school.notebookwidget;
-import android.app.PendingIntent;
-import android.appwidget.AppWidgetManager;
-import android.appwidget.AppWidgetProvider;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.widget.RemoteViews;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
+import android.appwidget.*;
+import android.content.*;
+import android.widget.*;
+import org.json.*;
+import java.time.*;
 public class WeeklyScheduleWidget extends AppWidgetProvider {
-  public static void refresh(Context ctx){
-    AppWidgetManager manager=AppWidgetManager.getInstance(ctx);
-    int[] ids=manager.getAppWidgetIds(new ComponentName(ctx,WeeklyScheduleWidget.class));
-    for(int id:ids)render(ctx,manager,id);
+ public static void refresh(Context c){AppWidgetManager m=AppWidgetManager.getInstance(c);for(int i:m.getAppWidgetIds(new ComponentName(c,WeeklyScheduleWidget.class)))render(c,m,i);}
+ @Override public void onUpdate(Context c,AppWidgetManager m,int[] ids){for(int i:ids)render(c,m,i);}
+ private static void render(Context c,AppWidgetManager m,int id){
+  RemoteViews v=new RemoteViews(c.getPackageName(),R.layout.widget_weekly);JSONObject data=WidgetUi.snapshot(c);
+  JSONArray timing=WidgetUi.array(data,"timing");int period=0;
+  WidgetUi.text(c,v,"weekly_subtitle",timing.length()==0?"شارك جدولك من دفتر المعلم":"الجدول المعتمد • اضغط على أحد الاختصارات لفتح الدفتر");
+  for(int row=0;row<10;row++){
+   JSONObject t=row<timing.length()?timing.optJSONObject(row):null;
+   String kind=t==null?"":t.optString("kind","lesson");boolean isBreak="break".equals(kind);boolean assembly="assembly".equals(kind);
+   String label=t==null?"":assembly?"طابور":isBreak?"فسحة":"ح"+(++period);
+   WidgetUi.text(c,v,"week_period_"+row,label);
+   for(int day=0;day<5;day++){
+    String cell="";boolean now=false;
+    if(t!=null){cell=isBreak?"فسحة":assembly?"طابور":WidgetUi.slot(data,day+1,period);
+     now=WidgetUi.weekday()==day+1 && WidgetUi.active(t.optString("start",""),t.optString("end",""));}
+    String name="week_cell_"+row+"_"+day;
+    WidgetUi.text(c,v,name,cell);
+    v.setInt(WidgetUi.id(c,name),"setBackgroundResource",now?R.drawable.widget_cell_active:isBreak?R.drawable.widget_cell_break:R.drawable.widget_cell);
+   }
+   v.setViewVisibility(WidgetUi.id(c,"week_period_"+row),t==null?android.view.View.INVISIBLE:android.view.View.VISIBLE);
   }
-  @Override public void onUpdate(Context ctx,AppWidgetManager manager,int[] ids){
-    for(int id:ids)render(ctx,manager,id);
-  }
-  private static void render(Context ctx,AppWidgetManager manager,int id){
-    RemoteViews v=new RemoteViews(ctx.getPackageName(),R.layout.widget_weekly);
-    v.setTextViewText(R.id.weekly_content,weeklyText(ctx));
-    PendingIntent open=PendingIntent.getActivity(ctx,0,new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://rouhous.github.io/School-Teacher-Notebook-App/")),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-    v.setOnClickPendingIntent(R.id.weekly_title,open);
-    v.setOnClickPendingIntent(R.id.weekly_content,open);
-    manager.updateAppWidget(id,v);
-  }
-  private static String weeklyText(Context ctx){
-    try{
-      String raw=ctx.getSharedPreferences("widget",Context.MODE_PRIVATE).getString("snapshot",null);
-      if(raw==null)return "افتح دفتر المعلم لعرض جدولك الأسبوعي تلقائيًا";
-      JSONObject data=new JSONObject(raw);
-      JSONArray slots=data.getJSONArray("slots"),timing=data.getJSONArray("timing");
-      String[] days={"الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"};
-      StringBuilder out=new StringBuilder();
-      for(int d=1;d<=5;d++){
-        out.append("◆ ").append(days[d-1]).append("\n");
-        int period=0;
-        for(int t=0;t<timing.length();t++){
-          JSONObject time=timing.getJSONObject(t);
-          String kind=time.optString("kind","lesson");
-          if("assembly".equals(kind))continue;
-          if("break".equals(kind)){out.append("  الفسحة\n");continue;}
-          period++;
-          StringBuilder classes=new StringBuilder();
-          for(int j=0;j<slots.length();j++){
-            JSONObject slot=slots.getJSONObject(j);
-            if(slot.optInt("weekday",-1)==d&&slot.optInt("period",-1)==period){
-              String name=slot.optString("className",slot.optString("classId",""));
-              if(name.isEmpty()&&!slot.optString("dutyPriority","").isEmpty())name="احتياط "+slot.optString("dutyPriority");
-              if(!name.isEmpty()){if(classes.length()>0)classes.append("، ");classes.append(name);}
-            }
-          }
-          out.append("  ").append(period).append("  ").append(classes.length()>0?classes:"—").append("\n");
-        }
-        if(d<5)out.append("\n");
-      }
-      return out.toString();
-    }catch(Exception e){return "تعذر قراءة الجدول. افتح الدفتر لتحديثه.";}
-  }
+  WidgetUi.shortcuts(c,v);WidgetUi.open(c,v,"weekly_title",900);m.updateAppWidget(id,v);
+ }
 }
