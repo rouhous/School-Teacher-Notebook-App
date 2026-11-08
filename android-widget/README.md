@@ -1,6 +1,23 @@
-# School Teacher Notebook Android Widget (pilot)
-Free Android debug APK built by GitHub Actions. This is a pilot, not a production release.
-Open the hosted teacher notebook inside the app, sign in, wait for the approved schedule, then tap **تحديث الويدجت**.
-The widget caches only the approved schedule/cover snapshot on the device. Never store tokens or passwords in widget preferences.
-Caution: Google sign-in may reject embedded WebView; browser-based authentication and secure session handoff must be completed before production rollout. Do not distribute broadly until tested.
-Build: Actions > Build Android Teacher Widget > Run workflow. Download the artifact from the completed run.
+# ويدجيت دفتر المعلم — نسخة أندرويد مساعدة
+هذا المشروع موجود داخل المستودع الأصلي، ويُبنى مجانًا بواسطة GitHub Actions، دون Android Studio ودون كمبيوتر.
+
+## وظائف متوفرة في كود المشروع
+- ويدجيت الجدول اليومي وويدجيت الجدول الأسبوعي.
+- عرض بيانات الحصص والاحتياط من آخر نسخة معتمدة أُرسلت إلى التطبيق.
+- اختصارات تفتح دفتر المعلم في المتصفح الافتراضي (ليس WebView).
+- إمكانية مشاركة نسخة محدودة من الجدول من دفتر المعلم إلى تطبيق الويدجيت من قائمة المشاركة في Android.
+- دعم تنبيهات Android المحلية حسب الجدول المخزن، ويستلزم التحقق على الجهاز من أذونات النظام ودقة المواعيد.
+
+## تثبيت APK عبر الهاتف
+1. افتح https://github.com/rouhous/School-Teacher-Notebook-App/actions/workflows/android-widget.yml
+2. افتح آخر تشغيل ناجح للبناء. إذا لم يوجد، اضغط Run workflow.
+3. من Artifacts نزّل School-Teacher-Notebook-Android-debug.
+4. فك ZIP وثبّت ملف APK على هاتف أندرويد. 
+5. أضف الويدجيت من شاشة الهاتف الرئيسية، ثم افتح دفتر المعلم من المتصفح وشارك الجدول مع التطبيق.
+
+## حالة الربط
+لا يوجد حتى الآن ربط خلفي آلي كامل وموثق بين جلسة PWA والويدجيت؛ مشاركة الجدول تتطلب إجراء من المعلم. لا يمكن للويدجيت الوصول مباشرة إلى localStorage الخاص بالمتصفح. المزامنة الآلية تتطلب هوية جهاز موثقة وواجهة Supabase تصدر بيانات المعلم المصرّح بها فقط. لا تُنشر أي بيانات حساسة أو رموز OAuth في الويدجيت.
+
+## ملاحظات
+- النسخة Debug للاختبار ولا تُعد إصدارًا نهائيًا. مفاتيح توقيع Debug على GitHub المستضاف قد تختلف بين عمليات البناء؛ يُفضّل اختبار التثبيت قبل إزالة أي إصدار سابق.
+- لم يتم التأكد بعد من نجاح آخر بناء، ومن سلوك الويدجيت على الهاتف الفعلي.
