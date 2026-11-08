@@ -81,6 +81,10 @@ public class MainActivity extends Activity {
     open.setText("فتح دفتر المعلم في المتصفح");
     open.setOnClickListener(v->openNotebook());
     root.addView(open);
+    Button sync=new Button(this);
+    sync.setText("إرسال الجدول إلى الويدجيت (من الدفتر)");
+    sync.setOnClickListener(v->{Toast.makeText(this,"افتح الدفتر، ثم اختر مشاركة الجدول إلى ويدجيت Android. الربط التلقائي الآمن قيد الإعداد.",Toast.LENGTH_LONG).show();openNotebook();});
+    root.addView(sync);
     Button alertTest=new Button(this);
     alertTest.setText("اختبار تنبيه Android لمدة 20 ثانية");
     alertTest.setOnClickListener(v->{
@@ -97,7 +101,7 @@ public class MainActivity extends Activity {
     root.addView(flash);
     setContentView(root);
     // No embedded WebView: use the user's installed default browser for WebAuthn and Web Push.
-    if(!shared)openNotebook();
+    // Remain in the native widget companion; open the PWA only on explicit user action.
   }
   private void requestAndroidNotificationPermission(){
     // Native Android notification permission; this does not grant WebView Web Push support.
