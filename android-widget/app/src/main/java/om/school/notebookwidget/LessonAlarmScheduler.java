@@ -16,7 +16,7 @@ public final class LessonAlarmScheduler {
    Calendar now=Calendar.getInstance();
    for(int j=0;j<7;j++){
     Calendar day=(Calendar)now.clone();day.add(Calendar.DATE,j);
-    int weekday=day.get(Calendar.DAY_OF_WEEK); // Sunday=1 through Thursday=5 in school snapshot
+    int weekday=(day.get(Calendar.DAY_OF_WEEK)+6)%7; // Sunday=0, Monday=1, ... same as notebook schedule
     for(int k=0;k<slots.length();k++){
      JSONObject slot=slots.getJSONObject(k);
      int w=slot.optInt("weekday",-1),period=slot.optInt("period",-1);
