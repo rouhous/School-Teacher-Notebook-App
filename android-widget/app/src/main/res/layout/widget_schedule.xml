@@ -10,7 +10,7 @@
     <TextView android:id="@+id/widget_current" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:background="@drawable/widget_current" android:padding="11dp" android:gravity="right"
         android:text="الحصة الحالية" android:textSize="16sp" android:textColor="#76500F" android:textStyle="bold"/>
-    <TextView android:id="@+id/widget_content" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="13" android:ellipsize="end"
+    <TextView android:id="@+id/widget_content" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="24"
             android:gravity="right" android:padding="8dp" android:lineSpacingExtra="5dp"
-            android:text="افتح دفتر المعلم واضغط تحديث الويدجت" android:textSize="14sp" android:textColor="#153E32"/>
+            android:text="افتح دفتر المعلم واضغط تحديث الويدجت" android:textSize="13sp" android:textColor="#153E32"/>
 </LinearLayout>
