@@ -14,7 +14,7 @@ final class WidgetUi {
  static void text(Context c,RemoteViews v,String id,String txt){v.setTextViewText(id(c,id),txt);}
  static JSONObject snapshot(Context c){try{return new JSONObject(c.getSharedPreferences("widget",0).getString("snapshot","{}"));}catch(Exception e){return new JSONObject();}}
  static JSONArray array(JSONObject o,String key){JSONArray a=o.optJSONArray(key);return a==null?new JSONArray():a;}
- static int weekday(){return LocalDate.now().getDayOfWeek().getValue()%7+1;}
+ static int weekday(){return LocalDate.now().getDayOfWeek().getValue()%7;}
  static String clock(String start,String end){return "\u2066"+start+" – "+end+"\u2069";}
  static boolean active(String start,String end){try{LocalTime n=LocalTime.now();return !n.isBefore(LocalTime.parse(start))&&n.isBefore(LocalTime.parse(end));}catch(Exception e){return false;}}
  static String slot(JSONObject data,int day,int period){
