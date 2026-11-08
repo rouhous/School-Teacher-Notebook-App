@@ -49,7 +49,7 @@ public class ScheduleWidget extends AppWidgetProvider {
       JSONArray slots=data.getJSONArray("slots");
       JSONArray cover=data.optJSONArray("cover");
       LocalTime now=LocalTime.now();
-      int weekday=LocalDate.now().getDayOfWeek().getValue();
+      int weekday=(LocalDate.now().getDayOfWeek().getValue()%7)+1;
       if(weekday>5)return "عطلة نهاية الأسبوع";
       int number=0;
       for(int i=0;i<timing.length();i++){
@@ -66,7 +66,7 @@ public class ScheduleWidget extends AppWidgetProvider {
           for(int j=0;j<slots.length();j++){
             JSONObject slot=slots.getJSONObject(j);
             if(slot.optInt("weekday",-1)==weekday&&slot.optInt("period",-1)==number){
-              String item=slot.optString("classId","");
+              String item=slot.optString("className",slot.optString("classId",""));
               if(item.isEmpty()&&!slot.optString("dutyPriority","").isEmpty())item="احتياط "+slot.optString("dutyPriority");
               if(!item.isEmpty())cls+=(cls.isEmpty()?"":"، ")+item;
             }
@@ -95,7 +95,7 @@ public class ScheduleWidget extends AppWidgetProvider {
       JSONArray slots=data.getJSONArray("slots");
       JSONArray timing=data.getJSONArray("timing");
       JSONArray cover=data.optJSONArray("cover");
-      int weekday=LocalDate.now().getDayOfWeek().getValue();
+      int weekday=(LocalDate.now().getDayOfWeek().getValue()%7)+1;
       String date=LocalDate.now().toString();
       SpannableStringBuilder out=new SpannableStringBuilder();
       int number=0;
@@ -112,7 +112,7 @@ public class ScheduleWidget extends AppWidgetProvider {
         for(int j=0;j<slots.length();j++){
           JSONObject s=slots.getJSONObject(j);
           if(s.optInt("weekday",-1)==weekday && s.optInt("period",-1)==number){
-            String cls=s.optString("classId","");
+            String cls=s.optString("className",s.optString("classId",""));
             String duty=s.optString("dutyPriority","");
             if(!cls.isEmpty())classes+= (classes.isEmpty()?"":"، ")+cls;
             else if(!duty.isEmpty())classes+=(classes.isEmpty()?"":"، ")+"احتياط "+duty;
