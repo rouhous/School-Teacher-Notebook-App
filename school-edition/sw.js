@@ -1,6 +1,6 @@
 /* Offline shell only. Authorization remains in application/session layer. */
-const CACHE='school-notebook-shell-v20-push-alerts';
-const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./session-auth.js','./offline-pin.js'];
+const CACHE='school-notebook-shell-v21-offline-entry';
+const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./session-auth.js','./offline-pin.js','./passkey-auth.js','../index.html','../assets/school-home-approved.png','../assets/school-home-reference-clean1.png','../assets/school-home-reference-clean2.png'];
 self.addEventListener('install',e=>{
  e.waitUntil(caches.open(CACHE).then(async cache=>{
   await Promise.allSettled(ASSETS.map(path=>cache.add(path)));
