@@ -1956,6 +1956,11 @@ ${cloudSettingsHTML()}
  <p style="font-size:.8rem;color:var(--mu);line-height:1.7;margin:8px 0">يتيح فتح بيانات الدفتر المحفوظة دون اتصال لمدة 24 ساعة من آخر تحقق ناجح. يلزم إعداد الرمز أثناء الاتصال بالإنترنت.</p>
  <button type="button" class="btn btn-outline btn-block" onclick="window.schoolChangeOfflinePin?.()">🔐 إنشاء / تغيير رمز الدخول</button>
 </div>
+<div class="form-group" style="padding:12px;border:1px solid var(--bd);border-radius:14px;margin:12px 0">
+ <label style="font-weight:800">📴 العمل دون إنترنت</label>
+ <p style="font-size:.8rem;color:var(--mu);line-height:1.7;margin:8px 0">نزّل ملفات الواجهة وآخر بيانات جدولك أثناء الاتصال. تبقى البيانات المحلية محفوظة ويجري تحديثها عند عودة الإنترنت.</p>
+ <button type="button" class="btn btn-outline btn-block" onclick="window.schoolPrepareOffline?.()">⬇️ حفظ ملفات التطبيق دون إنترنت</button>
+</div>
 <div class="form-group theme-settings" style="padding:12px;border:1px solid var(--bd);border-radius:14px">
  <label style="font-weight:800">🎨 ${db.lang==='ar'?'ألوان التطبيق':'App theme colors'}</label>
  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:8px">
@@ -4795,6 +4800,11 @@ window.openM=function(type,data){
   <div class="form-group"><label>التنبيه قبل نهاية الحصة (دقائق)</label><input id="schoolAlarmEnd" type="number" min="0" max="30" value="${Number(db.alarmBeforeEndMin??5)}"></div>
   <button class="btn btn-outline btn-block" onclick="requestNotifPermission()">🔔 السماح بإشعارات المتصفح</button>
   <button class="btn btn-primary btn-block" onclick="saveSchoolAlarmSettings()">حفظ إعدادات المنبه</button>
+  <div class="form-group" style="padding:12px;border:1px solid var(--bd);border-radius:14px;margin:12px 0">
+    <label style="font-weight:800">📴 العمل دون إنترنت</label>
+    <p style="font-size:.8rem;color:var(--mu);line-height:1.7;margin:8px 0">حفظ ملفات الواجهة والجدول الحالي على هذا الجهاز. تحتاج المزامنة فقط إلى الإنترنت.</p>
+    <button type="button" class="btn btn-outline btn-block" onclick="window.schoolPrepareOffline?.()">⬇️ حفظ ملفات التطبيق دون إنترنت</button>
+  </div>
   <hr><h4>النسخ الاحتياطي المحلي</h4>
   <button class="btn btn-outline btn-block" onclick="exportBackup()">⬇️ تصدير نسخة احتياطية</button>
   <label class="btn btn-ghost btn-block" style="display:block;text-align:center">⬆️ استيراد نسخة احتياطية محلية<input type="file" accept="application/json,.json" style="display:none" onchange="importBackup(this)"></label>`;
@@ -5432,6 +5442,30 @@ document.getElementById('teacherChangeAccountOpen').onclick=()=>{
    let attempts=0;
    const timer=setInterval(()=>{attempts++;fromWidget();if(!location.hash.startsWith('#widget-')||attempts>=50)clearInterval(timer)},800);
  });
+})();
+</script>
+<script id="school-offline-package-control">
+(function(){
+window.schoolPrepareOffline=async function(){
+ if(!navigator.onLine){alert('اتصل بالإنترنت مرة واحدة لتنزيل ملفات التطبيق. الجدول المحفوظ يبقى متاحًا دون اتصال.');return}
+ if(!('serviceWorker' in navigator)){alert('هذا المتصفح لا يدعم حفظ ملفات PWA دون اتصال.');return}
+ try{
+  const registration=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+  await navigator.serviceWorker.ready;
+  const worker=registration.active||registration.waiting||registration.installing;
+  if(!worker)throw Error('لم تكتمل تهيئة حفظ التطبيق.');
+  const result=await new Promise((resolve,reject)=>{
+   const channel=new MessageChannel();
+   const timer=setTimeout(()=>{channel.port1.close();reject(Error('لم يصل تأكيد حفظ الملفات. أعد فتح الدفتر متصلًا.'))},30000);
+   channel.port1.onmessage=event=>{clearTimeout(timer);channel.port1.close();resolve(event.data||{})};
+   worker.postMessage({type:'PREPARE_NOTEBOOK_OFFLINE'},[channel.port2]);
+  });
+  if(!result.ok)throw Error(result.error||'تعذر حفظ ملفات التطبيق.');
+  // The data model and published timetable are saved separately in localStorage.
+  if(typeof save==='function'&&!save())throw Error('تم حفظ ملفات الواجهة، لكن تعذر حفظ بيانات الدفتر. صدّر نسخة احتياطية.');
+  alert('تم حفظ ملفات الدفتر الأساسية. يمكنك الآن إيقاف الإنترنت واختبار عرض الجدول. يجب تفعيل رمز الدخول المحلي قبل ذلك. '+(result.optionalFailed?'بعض الصفحات الإضافية لم تُحفظ؛ افتحها مرة واحدة وأنت متصل.':''));
+ }catch(e){alert('تعذر إكمال تنزيل التطبيق دون إنترنت: '+String(e.message||e))}
+};
 })();
 </script>
 </body></html>
