@@ -4469,6 +4469,40 @@ const originalOpenM=window.openM;
 const forbidden=new Set(['addClass','editClass','addStudent','editStudent','addStu','editStu','editSchedule','importSched','importStu','importStudents','editPeriods','schedGrid','schedImage','schedImport','addPeriod']);
 const schoolApi='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/';
 let managedSchedule=[],managedRoster=[],managedCover=[],loaded=false;
+// Per-approved-teacher offline display snapshot; the complete notebook data stays in
+// the existing local 'schoolNotebookKey' store, including attendance and grades.
+const schoolManagedOfflineKey='school-notebook-managed-v2:'+schoolNotebookSubject;
+function restoreManagedOffline(){
+ try{
+  const raw=localStorage.getItem(schoolManagedOfflineKey);
+  if(raw){
+   const saved=JSON.parse(raw);
+   if(saved&&Array.isArray(saved.slots)&&saved.slots.length&&Array.isArray(saved.timing)){
+    managedSchedule=saved.slots;
+    managedCover=Array.isArray(saved.dailyCover)?saved.dailyCover:[];
+    window.schoolPublishedTiming={periods:saved.timing,revision:saved.timingRevision||'محفوظ محليًا'};
+    window.schoolManagedSchoolId=saved.schoolId||'';
+    loaded=true;
+    return true;
+   }
+  }
+ }catch(e){console.warn('Offline timetable snapshot unavailable',e)}
+ // Older installations already store the full approved timetable in db.
+ // Keep that usable rather than rendering a blank managed schedule.
+ if(Array.isArray(db.schedule)&&db.schedule.length){loaded=true;return false}
+ return false;
+}
+function storeManagedOffline(table){
+ try{
+  if(!Array.isArray(managedSchedule)||!managedSchedule.length)return;
+  const timing=window.schoolPublishedTiming?.periods||table?.timing||[];
+  localStorage.setItem(schoolManagedOfflineKey,JSON.stringify({
+   slots:managedSchedule,dailyCover:managedCover,timing,
+   timingRevision:window.schoolPublishedTiming?.revision||'',
+   schoolId:window.schoolManagedSchoolId||'',updatedAt:Date.now()
+  }));
+ }catch(e){console.warn('Unable to cache approved timetable; existing teacher data retained',e)}
+}
 function statusMessage(message){const node=document.getElementById('school-managed-status');if(node)node.textContent=message;}
 let coverAudio=null;
 async function schoolEnableWebPush(){
@@ -4681,8 +4715,8 @@ window.openSchoolGeneralTimetable=async function(){
 
 function managedHTML(){
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- if(!loaded)return '<div class="school-managed-notice">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
- if(!managedSchedule.length)return '<div class="school-managed-notice">لم يتوفر جدول منشور لهذا الحساب. لن يتم تعديل بياناتك المحلية.</div>';
+ if(!loaded)return (Array.isArray(db.schedule)&&db.schedule.length)?buildScheduleTableHTML():'<div class="school-managed-notice">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
+ if(!managedSchedule.length)return (Array.isArray(db.schedule)&&db.schedule.length)?('<div class="school-managed-notice">الجدول المحفوظ على الجهاز — لم تتوفر بيانات النشر أثناء عدم الاتصال.</div>'+buildScheduleTableHTML()):'<div class="school-managed-notice">لم يتوفر جدول محفوظ لهذا الحساب. افتح الدفتر متصلًا لتحميل الجدول أول مرة.</div>';
  // Reuse the ORIGINAL notebook's weekly timetable, rather than a separate school-only list.
  const weekly=buildScheduleTableHTML().replace(/\s+onclick="[^"]*"/g,'');
  // Published timing is displayed separately; the teacher's lessons remain unchanged.
@@ -4961,8 +4995,9 @@ async function syncManaged(){
   for(const sc of db.classes){
    ensureOfficialAssessments(sc.id);
   }
-  // Persist the approved timetable even when no student list has been returned.
+  // Persist approved teacher data and the display snapshot for reliable offline use.
   save();
+  storeManagedOffline(table);
   replaceHome();
   const approvedLessons=db.schedule.filter(s=>s.type==='lesson').length;
   const studentCount=db.students.length;
@@ -4971,7 +5006,7 @@ async function syncManaged(){
   const syncIssue=rosterResult.status==='rejected'?'تعذر جلب قائمة الطلاب من الخادم: '+String(rosterResult.reason?.message||rosterResult.reason):(!managedRoster.length?'أعاد الخادم قائمة طلاب فارغة لهذا الحساب.':'');
   // Diagnostic counts remain internal; do not display a review banner in the teacher notebook.
   document.querySelectorAll('.school-sync-diagnostic').forEach(el=>el.remove());
- }catch(e){loaded=true;replaceHome();const body=document.getElementById('homeBody');if(body){const notice=document.createElement('div');notice.className='school-managed-notice';notice.textContent='تعذر تحميل بيانات المعلم: '+String(e.message||e)+' — لم تُحذف البيانات المحلية.';const retry=document.createElement('button');retry.type='button';retry.className='btn btn-primary';retry.textContent='إعادة محاولة تحميل الجدول والطلاب';retry.onclick=()=>{retry.disabled=true;syncManaged()};notice.append(document.createElement('div'),retry);body.prepend(notice);}console.error('Teacher approved data sync failed',e);}
+ }catch(e){restoreManagedOffline();loaded=true;replaceHome();const body=document.getElementById('homeBody');if(body){const notice=document.createElement('div');notice.className='school-managed-notice';notice.textContent='تعذر تحميل بيانات المعلم: '+String(e.message||e)+' — لم تُحذف البيانات المحلية.';const retry=document.createElement('button');retry.type='button';retry.className='btn btn-primary';retry.textContent='إعادة محاولة تحميل الجدول والطلاب';retry.onclick=()=>{retry.disabled=true;syncManaged()};notice.append(document.createElement('div'),retry);body.prepend(notice);}console.error('Teacher approved data sync failed',e);}
 }
 // Read-only linkage audit. Counts only; no student names or identifiers leave the device.
 window.schoolLinkAudit=function(){
@@ -5005,6 +5040,18 @@ window.showSchoolLinkAudit=function(){
  ];
  alert(lines.join('\n'));
 };
+// The offline snapshot must be rendered before any network request.
+const restoredManagedSnapshot=restoreManagedOffline();
+if(restoredManagedSnapshot)replaceHome();
+else if(Array.isArray(db.schedule)&&db.schedule.length)renderHome();
+if(!navigator.onLine){
+ const home=document.getElementById('homeBody');
+ if(home&&Array.isArray(db.schedule)&&db.schedule.length){
+  const banner=document.createElement('div');banner.className='school-managed-notice';
+  banner.textContent='📴 وضع دون إنترنت — آخر جدول وبيانات محفوظة على هذا الجهاز.';
+  home.prepend(banner);
+ }
+}
 // Automatically refresh supervisor-approved rosters and timetables while the notebook is in use.
 let schoolSyncRunning=false;
 const schoolSyncOriginal=syncManaged;
