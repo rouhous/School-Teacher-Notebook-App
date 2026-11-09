@@ -688,12 +688,12 @@ async function verifiedTeacher(response){
  const pinProfile=window.schoolOfflinePin?.read();
  if(pinProfile){
   const panel=document.createElement('div');
-  panel.style.cssText='padding:12px;margin:10px auto;border:1px solid #b5d6c7;border-radius:12px;max-width:320px;background:#effaf5;text-align:center';
-  const heading=document.createElement('strong');heading.textContent='الدخول دون إنترنت';
-  const input=document.createElement('input');input.type='password';input.inputMode='numeric';input.maxLength=10;input.placeholder='رمز الدخول المحلي';input.style.cssText='display:block;width:100%;margin:10px 0;padding:10px';
-  const button=document.createElement('button');button.type='button';button.textContent='فتح الدفتر';button.style.cssText='padding:10px;background:#075a47;color:white;border:0;border-radius:8px';
-  const msg=document.createElement('p');msg.setAttribute('role','status');
-  panel.append(heading,input,button,msg);holder.after(panel);
+  panel.style.cssText='display:flex;align-items:center;gap:7px;padding:7px;margin:8px auto;border:1px solid #b5d6c7;border-radius:12px;max-width:340px;width:100%;background:#effaf5;box-sizing:border-box;flex-wrap:wrap';
+  
+  const input=document.createElement('input');input.type='password';input.inputMode='numeric';input.maxLength=10;input.placeholder='رمز الدخول';input.setAttribute('aria-label','رمز الدخول دون إنترنت');input.style.cssText='flex:1 1 150px;min-width:0;width:1px;height:42px;margin:0;padding:8px 10px;border:1px solid #afcfc3;border-radius:9px;box-sizing:border-box;font-size:15px';
+  const button=document.createElement('button');button.type='button';button.textContent='دخول';button.style.cssText='flex:0 0 auto;height:42px;padding:0 14px;background:#075a47;color:white;border:0;border-radius:9px;font-size:14px;font-weight:bold';
+  const msg=document.createElement('p');msg.setAttribute('role','status');msg.style.cssText='flex-basis:100%;margin:0;font-size:12px;color:#9a5732;text-align:center';
+  panel.append(input,button,msg);holder.after(panel);
   input.addEventListener('keydown',e=>{if(e.key==='Enter')button.click()});
   button.onclick=async()=>{
    try{
