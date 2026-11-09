@@ -1951,6 +1951,11 @@ ${cloudSettingsHTML()}
  <button type="button" class="btn btn-primary btn-block" id="teacherActivatePasskey" onclick="activateTeacherPasskeyFromSettings()">🔐 ${db.lang==='ar'?'تفعيل البصمة / Face ID':'Enable fingerprint / Face ID'}</button>
  <p id="teacherPasskeySettingsStatus" role="status" aria-live="polite" style="font-size:.78rem;line-height:1.7;margin-top:8px;color:var(--mu)">${db.lang==='ar'?'يجب تفعيل مفتاح المرور مرة واحدة قبل استخدام زر الدخول بالبصمة.':'Register once before using passkey sign-in.'}</p>
 </div>
+<div class="form-group" style="padding:14px;border:1px solid var(--bd);border-radius:14px;margin:12px 0;background:var(--card,#fff)">
+ <label style="font-weight:800">🔢 رمز الدخول دون إنترنت</label>
+ <p style="font-size:.8rem;color:var(--mu);line-height:1.7;margin:8px 0">يتيح فتح بيانات الدفتر المحفوظة دون اتصال لمدة 24 ساعة من آخر تحقق ناجح. يلزم إعداد الرمز أثناء الاتصال بالإنترنت.</p>
+ <button type="button" class="btn btn-outline btn-block" onclick="window.schoolChangeOfflinePin?.()">🔐 إنشاء / تغيير رمز الدخول</button>
+</div>
 <div class="form-group theme-settings" style="padding:12px;border:1px solid var(--bd);border-radius:14px">
  <label style="font-weight:800">🎨 ${db.lang==='ar'?'ألوان التطبيق':'App theme colors'}</label>
  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:8px">
@@ -4391,8 +4396,10 @@ scheduleAlarmChecker();
 (function(){
  async function setupPin(change){
   if(!window.schoolOfflinePin||!schoolNotebookSubject)return;
-  if(!change&&schoolOfflinePin.read())return;
-  if(!navigator.onLine){if(change)alert('تغيير الرمز يتطلب الاتصال بالإنترنت.');return}
+  const existing=schoolOfflinePin.read();
+  if(!change&&existing?.subject===schoolNotebookSubject)return;
+  if(document.getElementById('schoolOfflinePinSetup'))return;
+  if(!navigator.onLine){alert('لإنشاء الرمز أو تغييره، اتصل بالإنترنت وتحقق من حسابك أولًا.');return}
   const overlay=document.createElement('div');
   overlay.id='schoolOfflinePinSetup';
   overlay.style.cssText='position:fixed;inset:0;background:#001a1599;z-index:2147483647;display:grid;place-items:center;padding:20px';
@@ -4401,20 +4408,25 @@ scheduleAlarmChecker();
   const heading=document.createElement('h3');heading.textContent=change?'تغيير رمز الدخول المحلي':'إنشاء رمز الدخول دون إنترنت';
   const info=document.createElement('p');info.textContent='أدخل رمزًا من 6 إلى 10 أرقام، ثم أكّده. صالح لمدة 24 ساعة من آخر تحقق بالإنترنت.';
   function field(placeholder){const i=document.createElement('input');i.type='password';i.inputMode='numeric';i.maxLength=10;i.autocomplete='new-password';i.placeholder=placeholder;i.style.cssText='display:block;width:100%;padding:12px;margin:10px 0;border:1px solid #b6ccc4;border-radius:9px';return i}
+  const previous=change&&existing?.subject===schoolNotebookSubject?field('رمز الدخول الحالي'):null;
   const first=field('رمز الدخول الجديد');const second=field('تأكيد رمز الدخول');
   const save=document.createElement('button');save.type='button';save.textContent='حفظ الرمز';save.style.cssText='padding:11px 22px;background:#0f766e;color:white;border:0;border-radius:10px';
   const cancel=document.createElement('button');cancel.type='button';cancel.textContent='لاحقًا';cancel.style.cssText='padding:11px;margin-inline-start:10px;border:1px solid #ddd;border-radius:10px;background:white';
   const message=document.createElement('p');message.setAttribute('role','status');
-  card.append(heading,info,first,second,save,cancel,message);overlay.append(card);document.body.append(overlay);
+  card.append(heading,info);if(previous)card.append(previous);
+  card.append(first,second,save,cancel,message);overlay.append(card);document.body.append(overlay);
   cancel.onclick=()=>overlay.remove();
   save.onclick=async()=>{
    try{
     if(first.value!==second.value)throw Error('الرمزان غير متطابقين.');
     if(!/^[0-9]{6,10}$/.test(first.value))throw Error('الرمز يجب أن يتكون من 6 إلى 10 أرقام.');
     save.disabled=true;
-    const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential:schoolNotebookCredential})});
+    if(previous)await schoolOfflinePin.unlock(previous.value);
+    const auth=schoolNotebookCredential?{credential:schoolNotebookCredential}:{access_token:await schoolNotebookPasskeyToken()};
+    if(!auth.credential&&!auth.access_token)throw Error('يلزم التحقق من حساب Google أو البصمة أثناء الاتصال بالإنترنت.');
+    const response=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-teacher-session',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(auth)});
     const data=await response.json();
-    if(!response.ok||!data.ok||!data.data?.approved)throw Error('يلزم تسجيل الدخول بحساب Google المعتمد.');
+    if(!response.ok||!data.ok||!data.data?.approved)throw Error('تعذر تأكيد اعتماد حساب المعلم.');
     await schoolOfflinePin.enroll(schoolNotebookSubject,first.value);
     overlay.remove();
    }catch(e){message.textContent=e.message}finally{save.disabled=false}
@@ -4422,12 +4434,7 @@ scheduleAlarmChecker();
  }
  window.schoolChangeOfflinePin=()=>setupPin(true);
  window.schoolOfferOfflinePin=()=>setupPin(false);
- document.addEventListener('DOMContentLoaded',()=>{
-  const button=document.createElement('button');button.type='button';button.textContent='تغيير رمز الدخول دون إنترنت';button.style.cssText='display:block;margin:12px auto;padding:10px;border:1px solid #0f766e;border-radius:10px;background:#fff;color:#0f766e';
-  button.onclick=()=>setupPin(true);
-  const settings=document.getElementById('teacherPasskeySettingsStatus')?.parentElement;
-  if(settings)settings.append(button);
- });
+
 })();
 </script>
 <script>
