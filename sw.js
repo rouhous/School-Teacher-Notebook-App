@@ -1,10 +1,13 @@
-const VERSION='school-pwa-v27-offline-pin-background';
+const VERSION='school-pwa-v28-managed-offline';
 const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png','./assets/school-home-approved.png','./school-edition/school-notebook.html','./school-edition/session-auth.js','./school-edition/offline-pin.js','./school-edition/passkey-auth.js','./school-edition/manifest.webmanifest'];
+const REQUIRED=['./','./index.html','./school-edition/school-notebook.html','./school-edition/session-auth.js','./school-edition/offline-pin.js'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(VERSION).then(async cache=>{
-   await Promise.allSettled(SHELL.map(path=>cache.add(path)));
+   // Only activate a new version after every essential offline document is cached.
+   await Promise.all(REQUIRED.map(path=>cache.add(new Request(path,{cache:'reload'}))));
+   await Promise.allSettled(SHELL.filter(path=>!REQUIRED.includes(path)).map(path=>cache.add(new Request(path,{cache:'reload'}))));
+   await self.skipWaiting();
  }));
- self.skipWaiting();
 });
 self.addEventListener('activate',event=>{
  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('school-pwa-')&&k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
