@@ -1,11 +1,22 @@
 /* Offline shell only. Authorization remains in application/session layer. */
-const CACHE='school-notebook-shell-v21-offline-entry';
+const CACHE='school-notebook-shell-v22-timetable-offline';
 const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./session-auth.js','./offline-pin.js','./passkey-auth.js','../index.html','../assets/school-home-approved.png','../assets/school-home-reference-clean1.png','../assets/school-home-reference-clean2.png'];
+const REQUIRED=['./school-notebook.html','./session-auth.js','./offline-pin.js','../index.html'];
+async function cacheOfflineFiles(){
+ const cache=await caches.open(CACHE);
+ // Reject installation if an essential document is missing, preserving the old worker.
+ await Promise.all(REQUIRED.map(path=>cache.add(new Request(path,{cache:'reload'}))));
+ const additional=ASSETS.filter(path=>!REQUIRED.includes(path));
+ const results=await Promise.allSettled(additional.map(path=>cache.add(new Request(path,{cache:'reload'}))));
+ return {required:REQUIRED.length,optionalCached:results.filter(x=>x.status==='fulfilled').length,optionalFailed:results.filter(x=>x.status==='rejected').length};
+}
 self.addEventListener('install',e=>{
- e.waitUntil(caches.open(CACHE).then(async cache=>{
-  await Promise.allSettled(ASSETS.map(path=>cache.add(path)));
- }));
- self.skipWaiting();
+ e.waitUntil(cacheOfflineFiles().then(()=>self.skipWaiting()));
+});
+self.addEventListener('message',e=>{
+ if(e.data?.type!=='PREPARE_NOTEBOOK_OFFLINE')return;
+ e.waitUntil(cacheOfflineFiles().then(summary=>e.ports?.[0]?.postMessage({ok:true,...summary}))
+   .catch(error=>e.ports?.[0]?.postMessage({ok:false,error:String(error?.message||error)})));
 });
 self.addEventListener('activate',e=>{
  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('school-notebook-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
@@ -28,7 +39,7 @@ self.addEventListener('fetch',e=>{
   })());
   return;
  }
- if(/\.(?:js|css|html|svg|webmanifest)$/.test(u.pathname)){
+ if(/\.(?:js|css|html|svg|webmanifest|png|jpg|jpeg|webp)$/.test(u.pathname)){
   e.respondWith((async()=>{
    const cache=await caches.open(CACHE);
    try{
