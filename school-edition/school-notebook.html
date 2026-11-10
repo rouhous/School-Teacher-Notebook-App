@@ -1412,6 +1412,18 @@ function ensureOfficialAssessments(classId){
   // Imported English columns are authoritative for this class; do not overwrite after Save.
   if(db.englishAssessmentManualImportAt&&db.assessments.some(x=>String(x.classId)===String(classId)&&x.officialKey))return;
   const current=db.assessments.filter(x=>String(x.classId)===String(classId));
+  // Never clear or regenerate column IDs when actual student marks exist.
+  // Preserve historical grades and add missing canonical assessment columns only.
+  if(current.some(assessmentHasRecordedMarks)){
+   let added=false;
+   for(const item of preset){
+    if(current.some(a=>a.name===item.name))continue;
+    db.assessments.push({id:uid(),classId,name:item.name,max:Number(item.max),type:item.type,official:true,officialKey:subj+'|'+band+'|'+item.name});
+    added=true;
+   }
+   if(added)save();
+   return;
+  }
   const canonical=preset.map(x=>({name:x.name,max:Number(x.max),type:x.type}));
   const matches=current.length===canonical.length&&canonical.every(x=>current.some(y=>y.name===x.name&&Number(y.max)===x.max&&y.type===x.type));
   if(!matches){
@@ -3563,7 +3575,10 @@ function assessmentHasRecordedMarks(a){
 }
 function applyAllClassAssessmentCatalog(){
  const result={updated:0,unchanged:0,skipped:[],created:0,conflicts:0};
- const classes=activeTeacherClasses();
+ // Include every linked class/section, not only one representative per grade.
+ const classes=(db.classes||[]).filter(c=>
+  (db.students||[]).some(st=>String(st.classId)===String(c.id))||
+  (db.schedule||[]).some(slot=>slot.type==='lesson'&&String(slot.classId)===String(c.id)));
  const recorded=db.assessments||[];
  const staged=[];
  const stamps=[];
