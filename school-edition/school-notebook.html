@@ -1397,6 +1397,9 @@ function resetEnglishTrialDataAutomatically(){
  for(const id of ids)ensureOfficialAssessments(id);
 }
 function ensureOfficialAssessments(classId){
+ const docResult=ministry2026UpdateClass(classId);
+ if(docResult.status==='updated'){save();return;}
+ if(docResult.status==='review'||docResult.status==='unchanged')return;
  const c=db.classes.find(x=>String(x.id)===String(classId));if(!c)return;
  const grade=Number((String(c.grade||c.gradeLevel||c.name||'').match(/\d+/)||[])[0]);if(!grade)return;
  const aliases={'English':'إنجليزي','انجليزي':'إنجليزي','اللغة الإنجليزية':'إنجليزي','Arabic':'لغة عربية','عربي':'لغة عربية','اسلامية':'تربية إسلامية','إسلامية':'تربية إسلامية','دراسات':'دراسات اجتماعية','رياضيات متقدمة':'رياضيات','رياضيات أساسية':'رياضيات','Math':'رياضيات','تربية بدنية وصحية':'تربية بدنية','التربية البدنية والصحية':'تربية بدنية','الرياضة المدرسية':'تربية بدنية','الفنون التشكيلية':'فنون بصرية','الفنون الموسيقية':'مهارات موسيقية','الجغرافيا':'جغرافيا','التاريخ':'دراسات اجتماعية','العلوم البيئية':'العلوم البيئية'};
@@ -2719,8 +2722,121 @@ const ASSESSMENT_CATALOG={
   'رياضيات أساسية':'رياضيات',
   'رياضيات متقدمة':'رياضيات',
 };
+
+/* Ministry of Education Oman, September 2026: reviewed assessment record sheets.
+ * Visual arts 1-4 p8, 5-12 p15; music 1-4 p8, 5-12 p18;
+ * PE 1-4 p7, 5-12 p14. Source tracking is per grade band.
+ * Do not merge yearly instruments (grades 1-4) into semester assessments.
+ */
+const MINISTRY_2026_CATALOG={
+ 'فنون بصرية':{
+  '1-4':[
+   {name:'الملاحظة (العام الدراسي)',max:20,type:'activity'},
+   {name:'الأنشطة العملية — الوحدة الأولى',max:40,type:'activity'},
+   {name:'الأنشطة العملية — الوحدة الثانية',max:40,type:'activity'}],
+  '5-10':[
+   {name:'الملاحظة',max:20,type:'activity'},
+   {name:'الأنشطة العملية — الوحدة الأولى',max:40,type:'activity'},
+   {name:'الأنشطة العملية — الوحدة الثانية',max:40,type:'activity'}],
+  '11-12':[
+   {name:'الملاحظة',max:10,type:'activity'},
+   {name:'الأنشطة العملية — الوحدة الأولى',max:15,type:'activity'},
+   {name:'الأنشطة العملية — الوحدة الثانية',max:15,type:'activity'},
+   {name:'الأنشطة العملية — الوحدة الثالثة',max:15,type:'activity'},
+   {name:'الاختبار القصير',max:15,type:'activity'},
+   {name:'الامتحان النهائي',max:30,type:'exam'}]},
+ 'مهارات موسيقية':{
+  '1-4':[
+   {name:'الملاحظة — الأولى',max:10,type:'activity'},
+   {name:'الملاحظة — الثانية',max:10,type:'activity'},
+   ...['الصولفيج الإيقاعي','الصولفيج الغنائي','الإنشاد','العزف'].flatMap(n=>[
+    {name:n+' — التقييم الأول',max:10,type:'activity'},
+    {name:n+' — التقييم الثاني',max:10,type:'activity'}])],
+  '5-10':[
+   {name:'العرض الشفوي',max:20,type:'activity'},
+   ...['الصولفيج الإيقاعي','الصولفيج الغنائي','الإنشاد','العزف'].map(n=>({name:n,max:20,type:'activity'}))],
+  '11-12':[
+   {name:'الاختبار القصير',max:10,type:'activity'},
+   {name:'الصولفيج الإيقاعي — الأول',max:5,type:'activity'},
+   {name:'الصولفيج الإيقاعي — الثاني',max:5,type:'activity'},
+   {name:'الصولفيج الغنائي — الأول',max:5,type:'activity'},
+   {name:'الصولفيج الغنائي — الثاني',max:5,type:'activity'},
+   {name:'الإنشاد — الأول',max:10,type:'activity'},
+   {name:'الإنشاد — الثاني',max:10,type:'activity'},
+   {name:'العزف — الأول',max:10,type:'activity'},
+   {name:'العزف — الثاني',max:10,type:'activity'},
+   {name:'الامتحان النهائي',max:30,type:'exam'}]},
+ 'تربية بدنية':{
+  '1-4':[
+   {name:'الأنشطة العملية — القياس الأول (الدرجة ×2)',max:40,type:'activity'},
+   {name:'الأنشطة العملية — القياس الثاني (الدرجة ×2)',max:40,type:'activity'},
+   {name:'الملاحظة — الأولى',max:10,type:'activity'},
+   {name:'الملاحظة — الثانية',max:10,type:'activity'}],
+  '5-8':[
+   {name:'الاختبار العملي الأول',max:30,type:'activity'},
+   {name:'الاختبار العملي الثاني',max:30,type:'activity'},
+   {name:'الملاحظة',max:40,type:'activity'}],
+  '9-10':[
+   {name:'الاختبار العملي (30 درجة ×2)',max:60,type:'activity'},
+   {name:'الملاحظة',max:40,type:'activity'}],
+  '11-12':[
+   {name:'الاختبار القصير',max:10,type:'activity'},
+   {name:'الملاحظة',max:10,type:'activity'},
+   {name:'الاختبار العملي الأول',max:25,type:'activity'},
+   {name:'الاختبار العملي الثاني',max:25,type:'activity'},
+   {name:'امتحان نهاية الفصل',max:30,type:'exam'}]}
+};
+for(const [subject,bands] of Object.entries(MINISTRY_2026_CATALOG)){
+ for(const [band,items] of Object.entries(bands)){
+  if(items.reduce((sum,x)=>sum+x.max,0)!==100)throw Error('Invalid ministry marks: '+subject+' '+band);
+ }
+ ASSESSMENT_CATALOG[subject]=bands;
+}
+function ministry2026Subject(value){
+ const v=String(value||'').trim();
+ if(/رياضة|بدني|physical education|school sports/i.test(v))return 'تربية بدنية';
+ if(/موسيق|music/i.test(v))return 'مهارات موسيقية';
+ if(/فنون|بصري|تشكيلي|visual art/i.test(v))return 'فنون بصرية';
+ return '';
+}
+function ministry2026Band(subject,grade){
+ if(subject==='تربية بدنية'){
+  return grade<=4?'1-4':grade<=8?'5-8':grade<=10?'9-10':'11-12';
+ }
+ return grade<=4?'1-4':grade<=10?'5-10':'11-12';
+}
+function ministry2026UpdateClass(classId){
+ const c=(db.classes||[]).find(x=>String(x.id)===String(classId));
+ if(!c)return {status:'skip'};
+ const grade=Number(String(c.grade||c.gradeLevel||c.name||'').match(/\d+/)?.[0])||0;
+ const subject=ministry2026Subject(c.subject||classDisplaySubject(c)||'');
+ if(!subject||grade<1||grade>12)return {status:'skip'};
+ const band=ministry2026Band(subject,grade);
+ const desired=MINISTRY_2026_CATALOG[subject][band];
+ const previous=(db.assessments||[]).filter(a=>String(a.classId)===String(classId)&&!a.hidden);
+ const exact=previous.length===desired.length&&desired.every(a=>previous.some(x=>x.name===a.name&&Number(x.max)===Number(a.max)&&x.type===a.type));
+ if(exact)return {status:'unchanged',grade,subject};
+ const scored=previous.filter(a=>assessmentHasRecordedMarks(a));
+ if(scored.length){
+  // Do not duplicate the total or change assessment IDs when marks have been recorded.
+  (db.ministry2026ReviewNeeded||(db.ministry2026ReviewNeeded={}))[String(classId)]='توجد درجات على نموذج سابق؛ يلزم مراجعة ترحيل البنود قبل الاستبدال.';
+  return {status:'review',grade,subject};
+ }
+ // Preserve old records, but hide their unscored columns to avoid double counting.
+ for(const old of previous){old.hidden=true;old.supersededBy='ministry-2026';}
+ for(const item of desired){
+  const matching=db.assessments.find(x=>String(x.classId)===String(classId)&&x.name===item.name&&Number(x.max)===item.max&&x.type===item.type);
+  if(matching){matching.hidden=false;matching.official=true;matching.officialKey='OM-2026|'+subject+'|'+grade+'|'+item.name;}
+  else db.assessments.push({id:uid(),classId,name:item.name,max:item.max,type:item.type,official:true,officialKey:'OM-2026|'+subject+'|'+grade+'|'+item.name});
+ }
+ db.ministry2026InstalledByClass ||= {};
+ db.ministry2026InstalledByClass[String(classId)]=subject+'|'+band;
+ return {status:'updated',grade,subject};
+}
+
 function resolveAssessmentPreset(subject,band){
-  const aliases={'اللغة العربية':'لغة عربية','التربية الإسلامية':'تربية إسلامية','الدراسات الاجتماعية':'دراسات اجتماعية','الدراسات':'دراسات اجتماعية','التربية البدنية':'تربية بدنية','التربية الرياضية':'تربية بدنية','الفنون':'فنون بصرية','التربية الفنية':'فنون بصرية','الموسيقى':'مهارات موسيقية','التربية الموسيقية':'مهارات موسيقية','اللغة الإنجليزية':'إنجليزي','الانجليزية':'إنجليزي','English':'إنجليزي','الرياضيات':'رياضيات','الرياضيات الأساسية':'رياضيات','الرياضيات المتقدمة':'رياضيات','العلوم':'علوم','الأحياء':'أحياء','الفيزياء':'فيزياء','الكيمياء':'كيمياء','علوم البيئة':'العلوم والبيئة'};
+  const ministry=subject&&ministry2026Subject(subject);if(ministry)subject=ministry;
+ const aliases={'اللغة العربية':'لغة عربية','التربية الإسلامية':'تربية إسلامية','الدراسات الاجتماعية':'دراسات اجتماعية','الدراسات':'دراسات اجتماعية','التربية البدنية':'تربية بدنية','التربية الرياضية':'تربية بدنية','الفنون':'فنون بصرية','التربية الفنية':'فنون بصرية','الموسيقى':'مهارات موسيقية','التربية الموسيقية':'مهارات موسيقية','اللغة الإنجليزية':'إنجليزي','الانجليزية':'إنجليزي','English':'إنجليزي','الرياضيات':'رياضيات','الرياضيات الأساسية':'رياضيات','الرياضيات المتقدمة':'رياضيات','العلوم':'علوم','الأحياء':'أحياء','الفيزياء':'فيزياء','الكيمياء':'كيمياء','علوم البيئة':'العلوم والبيئة'};
   subject=aliases[String(subject||'').trim()]||String(subject||'').trim();
   const g=Number(String(band||'').match(/\\d+/)?.[0])||0;
   if(subject==='إنجليزي')return englishAssessmentsForGrade(g>=10?g:9,Number(document.getElementById('presetSemester')?.value)||1);
@@ -3583,6 +3699,10 @@ function applyAllClassAssessmentCatalog(){
  const staged=[];
  const stamps=[];
  for(const cls of classes){
+  const docResult=ministry2026UpdateClass(cls.id);
+  if(docResult.status==='updated'){result.updated++;result.created+=(MINISTRY_2026_CATALOG[docResult.subject][ministry2026Band(docResult.subject,docResult.grade)]?.length||0);continue;}
+  if(docResult.status==='unchanged'){result.unchanged++;continue;}
+  if(docResult.status==='review'){result.skipped.push(cls.name+' — توجد درجات محفوظة في نموذج قديم، لا يُستبدل تلقائيًا');continue;}
   const grade=assessmentGradeOfClass(cls);
   const subject=schoolAssessmentSubject(cls.subject||classDisplaySubject(cls)||'');
   const bands=bandsForSubject(subject);
