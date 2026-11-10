@@ -2832,8 +2832,14 @@ function ministry2026UpdateClass(classId){
   (db.ministry2026ReviewNeeded||(db.ministry2026ReviewNeeded={}))[String(classId)]='توجد درجات على نموذج سابق؛ يلزم مراجعة ترحيل البنود قبل الاستبدال.';
   return {status:'review',grade,subject};
  }
- // Preserve old records, but hide their unscored columns to avoid double counting.
- for(const old of previous){old.hidden=true;old.supersededBy='ministry-2026';}
+ // Archive previous *unscored* columns, then replace them. Do not leave hidden
+ // totals in db.assessments because historical summary helpers may include them.
+ db.ministry2026Archive ||= {};
+ if(previous.length&&!db.ministry2026Archive[String(classId)]){
+  db.ministry2026Archive[String(classId)]=previous.map(x=>({...x}));
+ }
+ const supersededIds=new Set(previous.map(x=>String(x.id)));
+ db.assessments=db.assessments.filter(x=>!supersededIds.has(String(x.id)));
  for(const item of desired){
   const matching=db.assessments.find(x=>String(x.classId)===String(classId)&&x.name===item.name&&Number(x.max)===item.max&&x.type===item.type);
   if(matching){matching.hidden=false;matching.official=true;matching.officialKey='OM-2026|'+subject+'|'+grade+'|'+item.name;}
