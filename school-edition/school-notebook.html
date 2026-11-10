@@ -1501,6 +1501,16 @@ function loadGrades(){
     body.before(p);
    }
   }else document.getElementById('ministry2026ReviewNotice')?.remove();
+  const selectedClass=db.classes.find(c=>String(c.id)===String(cid));
+  const selectedGrade=selectedClass?Number(String(selectedClass.grade||selectedClass.gradeLevel||selectedClass.name||'').match(/\d+/)?.[0]):0;
+  const doubledPE=ministry2026Subject(selectedClass?.subject||classDisplaySubject(selectedClass)||'')==='تربية بدنية'&&selectedGrade>=1&&selectedGrade<=4||ministry2026Subject(selectedClass?.subject||classDisplaySubject(selectedClass)||'')==='تربية بدنية'&&selectedGrade>=9&&selectedGrade<=10;
+  let multiplierNotice=document.getElementById('ministry2026MultiplierNotice');
+  if(doubledPE&&!multiplierNotice){
+   multiplierNotice=document.createElement('div');multiplierNotice.id='ministry2026MultiplierNotice';
+   multiplierNotice.className='school-managed-notice';multiplierNotice.style.cssText='background:#eaf7f2;padding:9px;border-radius:10px;margin-bottom:8px';
+   multiplierNotice.textContent='🏃 وثيقة الرياضة 2026: القياس العملي من 20 (للصفوف 1–4) أو 30 (للصفين 9–10) تُضاعف درجته في السجل. أدخل الدرجة بعد الضرب في 2 في العمود المخصص (من 40 أو 60).';
+   body.before(multiplierNotice);
+  }else if(!doubledPE&&multiplierNotice)multiplierNotice.remove();
   if(!assesses.length){body.innerHTML=`<div class="empty"><div class="icon">📊</div><p>لم يُحدد نموذج تقييم لهذا الصف بعد. يمكن إضافة تقييم وبدء رصد الدرجات دون تغيير بيانات الطلاب.</p><p>${students.length} طالبًا مرتبطًا بهذا الصف</p></div>`;return}
   if(!students.length){body.innerHTML=`<div class="empty"><p>لا توجد قائمة طلاب معتمدة مرتبطة بهذا الصف حتى الآن. يجب استيراد قائمة الصف من حساب المدير لتفعيل رصد الدرجات.</p></div>`;return}
   // Group: continuous sub-sections, finals, others
