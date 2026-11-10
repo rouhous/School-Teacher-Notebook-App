@@ -2093,7 +2093,14 @@ else if(type==='addClass'){h=`<div class="modal-head"><h3>${t('addClass')}</h3><
   h+=`</tbody></table></div>
   <button class="btn btn-primary btn-block" onclick="saveManualSchedule()">${t('save')}</button>`;
 }else if(type==='importSched'){h=`<div class="modal-head"><h3>${t('importSchedule')}</h3><button class="modal-x" onclick="closeM()">×</button></div><p style="font-size:.8rem;color:var(--mu);margin-bottom:8px">${t('manualEdit')}</p><label class="import-zone compact"><span class="ic">➕</span><p>${db.lang==='ar'?'استيراد الجدول':'Import schedule'}</p><span>PDF · JPG · PNG</span><input type="file" accept="image/*,.pdf,application/pdf" capture="environment" onchange="handleSchedPdf(this)"></label><div id="importPreview"></div>`}else if(type==='importStu'){h=`<div class="modal-head"><h3>${t('importStudents')}</h3><button class="modal-x" onclick="closeM()">×</button></div><p style="font-size:.8rem;color:var(--mu);margin-bottom:8px">${t('manualEdit')}</p><div class="form-group"><label>${t('classLabel')}</label><select id="impClass">${db.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></div><label class="import-zone compact"><span class="ic">➕</span><p>${db.lang==='ar'?'استيراد الطلاب':'Import students'}</p><span>PDF · JPG · PNG</span><input type="file" accept="image/*,.pdf,application/pdf" capture="environment" onchange="handleStuPdf(this)"></label><div id="importPreview"></div>`}
-else if(type==='importGrades'){h=`<div class="modal-head"><h3>${t('importGrades')}</h3><button class="modal-x" onclick="closeM()">×</button></div><p style="font-size:.8rem;color:var(--mu);margin-bottom:8px">${t('manualEdit')}</p><div class="form-group"><label>${t('classLabel')}</label><select id="impGradeClass" onchange="loadCatalogPresetUI(this.value)">${activeTeacherClasses().map(c=>`<option value="${escHTML(c.id)}">${escHTML(schoolGradeLabel(c.name)||c.name)}</option>`).join('')}</select></div><button class="btn btn-outline btn-block btn-sm" style="margin-bottom:8px" type="button" onclick="loadCatalogPresetUI(document.getElementById('impGradeClass').value)">${db.lang==='ar'?'نموذج تقويم جاهز (المادة ← الصف)':'Assessment preset (subject → grade)'}</button><label class="import-zone compact"><span class="ic">➕</span><p>${db.lang==='ar'?'استيراد التقييمات والدرجات':'Import grades'}</p><span>PDF · JPG · PNG</span><input type="file" accept="image/*,.pdf,application/pdf" capture="environment" onchange="handleGradesPdf(this)"></label><div id="importPreview"></div>`}
+else if(type==='importGrades'){h=`<div class="modal-head"><h3>${t('importGrades')}</h3><button class="modal-x" onclick="closeM()">×</button></div><p style="font-size:.8rem;color:var(--mu);margin-bottom:8px">${t('manualEdit')}</p><div class="form-group"><label>${t('classLabel')}</label><select id="impGradeClass" onchange="loadCatalogPresetUI(this.value)">${activeTeacherClasses().map(c=>`<option value="${escHTML(c.id)}">${escHTML(schoolGradeLabel(c.name)||c.name)}</option>`).join('')}</select></div><button class="btn btn-outline btn-block btn-sm" style="margin-bottom:8px" type="button" onclick="loadCatalogPresetUI(document.getElementById('impGradeClass').value)">${db.lang==='ar'?'نموذج تقويم جاهز (المادة ← الصف)':'Assessment preset (subject → grade)'}</button><div class="card" style="padding:12px;margin:8px 0;border:1px solid #9acdbb;background:#f2faf6">
+ <strong>📄 وثيقة التقويم لجميع الصفوف</strong>
+ <p style="font-size:.78rem;color:var(--mu);line-height:1.7;margin:6px 0">اختَر وثيقة التقويم مرة واحدة لتطبيق النماذج المعتمدة المتاحة على جميع الصفوف المرتبطة بك، حسب مادة وصف كل فصل. لا تُحذف درجات الطلاب المسجلة.</p>
+ <label class="import-zone compact"><span class="ic">📥</span><p>إدراج وثيقة التقويم لجميع الصفوف</p><span>PDF · JPG · PNG</span><input type="file" accept="image/*,.pdf,application/pdf" onchange="handleAllGradesAssessmentDocument(this)"></label>
+ <button type="button" class="btn btn-outline btn-block" style="margin-top:8px" onclick="applyAllClassAssessmentCatalog()">تحديث جميع الصفوف من نماذج التقويم المحفوظة</button>
+ <div id="allGradesAssessmentStatus" role="status" style="font-size:.8rem;line-height:1.7;margin-top:7px"></div>
+ </div>
+ <label class="import-zone compact"><span class="ic">➕</span><p>${db.lang==='ar'?'استيراد التقييمات والدرجات':'Import grades'}</p><span>PDF · JPG · PNG</span><input type="file" accept="image/*,.pdf,application/pdf" capture="environment" onchange="handleGradesPdf(this)"></label><div id="importPreview"></div>`}
 box.innerHTML=h;document.getElementById('modalBg').classList.add('open')}
 function closeM(){document.getElementById('modalBg').classList.remove('open')}
 
@@ -3545,6 +3552,93 @@ function parseGradesFromText(text){
   return{assessments,grades:grades.slice(0,500)};
 }
 
+
+// Bulk grade-framework import. Never create students or overwrite a recorded score.
+function assessmentGradeOfClass(cls){
+ const m=String(cls?.grade||cls?.gradeLevel||cls?.name||'').match(/(?:^|\D)(1[0-2]|[1-9])(?=\D|$)/);
+ return m?Number(m[1]):0;
+}
+function assessmentHasRecordedMarks(a){
+ return Object.entries(db.grades||{}).some(([k,v])=>k.startsWith(String(a.id)+'_')&&v!==''&&v!==null&&v!==undefined);
+}
+function applyAllClassAssessmentCatalog(){
+ const result={updated:0,unchanged:0,skipped:[],created:0,conflicts:0};
+ const classes=activeTeacherClasses();
+ const recorded=db.assessments||[];
+ const staged=[];
+ const stamps=[];
+ for(const cls of classes){
+  const grade=assessmentGradeOfClass(cls);
+  const subject=schoolAssessmentSubject(cls.subject||classDisplaySubject(cls)||'');
+  const bands=bandsForSubject(subject);
+  const band=bands.find(b=>b===String(grade))||bands.find(b=>{
+   const match=String(b).match(/^(\d+)\s*[-–]\s*(\d+)$/);
+   return match&&grade>=Number(match[1])&&grade<=Number(match[2]);
+  });
+  if(!grade||!band){result.skipped.push((cls.name||'غير محدد')+' — لا يوجد نموذج مطابق للمادة/الصف');continue;}
+  const items=resolveAssessmentPreset(subject,band);
+  if(!Array.isArray(items)||!items.length){result.skipped.push((cls.name||'غير محدد')+' — تعذر تحميل النموذج');continue;}
+  let changed=false;
+  for(const item of items){
+   if(!item?.name||!Number.isFinite(Number(item.max))||Number(item.max)<=0)continue;
+   const key=subject+'|'+grade+'|'+item.name;
+   const existing=recorded.find(a=>String(a.classId)===String(cls.id)&&
+    (a.officialKey===key||String(a.name).trim()===String(item.name).trim()));
+   if(existing){
+    if(assessmentHasRecordedMarks(existing)){
+     if(Number(existing.max)!==Number(item.max)||String(existing.type)!==String(item.type||'activity'))result.conflicts++;
+     // Existing grade IDs and their recorded marks remain entirely untouched.
+     continue;
+    }
+    if(Number(existing.max)!==Number(item.max)||String(existing.type)!==String(item.type||'activity')||!existing.official){
+     existing.max=Number(item.max);existing.type=item.type||'activity';existing.official=true;
+     existing.officialKey=key;changed=true;
+    }
+   }else{
+    staged.push({id:uid(),classId:cls.id,name:String(item.name),max:Number(item.max),
+      type:item.type||'activity',official:true,officialKey:key});
+    changed=true;result.created++;
+   }
+  }
+  if(changed){result.updated++;if(subject==='إنجليزي')stamps.push(cls.id);}
+  else result.unchanged++;
+ }
+ if(staged.length)db.assessments.push(...staged);
+ if(stamps.length)db.englishAssessmentManualImportAt=new Date().toISOString();
+ if(result.updated){
+  db.onboarded=true;
+  if(!save())throw Error('تعذر حفظ التحديث محليًا. لم تُمس درجات الطلاب.');
+ }
+ const summary='✅ تم تحديث '+result.updated+' صف/صفوف، وإضافة '+result.created+' بند/بنود، دون تغيير الدرجات. '+
+   'صفوف دون تغيير: '+result.unchanged+'، بنود درجات تتطلب مراجعة: '+result.conflicts+
+   (result.skipped.length?'\nغير مشمولة: '+result.skipped.join('، '):'');
+ const status=document.getElementById('allGradesAssessmentStatus');
+ if(status)status.textContent=summary;
+ else alert(summary);
+ if(result.updated&&document.getElementById('gradeClass')?.value)loadGrades();
+ return result;
+}
+async function handleAllGradesAssessmentDocument(input){
+ const file=input.files?.[0];if(!file)return;
+ const status=document.getElementById('allGradesAssessmentStatus');
+ if(status)status.textContent='جارٍ قراءة وثيقة التقويم وتحديد نطاقها…';
+ try{
+  const output=await extractDocumentText(file,msg=>{if(status)status.textContent=msg});
+  const content=String(output.text||'').replace(/\s+/g,' ');
+  // This is a ministry-style assessment framework, not a student marks file.
+  // A scanned document with no readable text must not be silently mapped to every class.
+  if(content.length<80)throw Error('النص المستخرج غير كافٍ. راجع وضوح الملف، أو استخدم النماذج المحفوظة.');
+  const evidence=/(?:تقويم\s*(?:تعلّ?م|الطلبة|التعلم|مستمر)|وثيقة\s*التقويم|assessment\s*(?:framework|criteria|document)|أدوات\s*التقويم)/i.test(content);
+  if(!evidence)throw Error('لم أتعرف على الملف كوثيقة لتقويم التعلم. لم تُحدَّث أي صفوف.');
+  // The existing approved per-grade catalog supplies grade-specific criteria.
+  // We do not copy a single grade's extracted items into unrelated grades.
+  const outcome=applyAllClassAssessmentCatalog();
+  if(status)status.textContent='وثيقة: '+file.name+'\nتم تطبيق نماذج التقويم المحلية حسب المادة والصف. '+
+    'تم تحديث '+outcome.updated+' صف، وتُركت الدرجات المسجلة دون تغيير.'+
+    (outcome.skipped.length?'\nراجع الصفوف غير المشمولة: '+outcome.skipped.join('، '):'');
+ }catch(e){if(status)status.textContent='تعذر تطبيق الوثيقة: '+String(e.message||e)}
+ finally{input.value=''}
+}
 async function handleGradesPdf(input){
   const file=input.files?.[0];if(!file)return;
   const prev=document.getElementById('importPreview');
