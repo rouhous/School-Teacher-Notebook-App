@@ -1491,6 +1491,16 @@ function loadGrades(){
   const assesses=db.assessments.filter(a=>String(a.classId)===String(cid)&&!a.hidden);
   const students=db.students.filter(s=>String(s.classId)===String(cid));
   const body=document.getElementById('gradesBody');
+  const officialReview=db.ministry2026ReviewNeeded?.[String(cid)]||'';
+  if(officialReview&&body){
+   const warning=document.getElementById('ministry2026ReviewNotice');
+   if(!warning){
+    const p=document.createElement('div');p.id='ministry2026ReviewNotice';p.className='school-managed-notice';
+    p.style.cssText='background:#fff8df;color:#70521c;border:1px solid #dbb764;padding:10px;border-radius:10px;margin-bottom:8px';
+    p.textContent='⚠️ تحديث تقويم 2026: '+officialReview+' لم تُحذف درجات الطلبة أو تُضاف أعمدة قد تكرر المجموع.';
+    body.before(p);
+   }
+  }else document.getElementById('ministry2026ReviewNotice')?.remove();
   if(!assesses.length){body.innerHTML=`<div class="empty"><div class="icon">📊</div><p>لم يُحدد نموذج تقييم لهذا الصف بعد. يمكن إضافة تقييم وبدء رصد الدرجات دون تغيير بيانات الطلاب.</p><p>${students.length} طالبًا مرتبطًا بهذا الصف</p></div>`;return}
   if(!students.length){body.innerHTML=`<div class="empty"><p>لا توجد قائمة طلاب معتمدة مرتبطة بهذا الصف حتى الآن. يجب استيراد قائمة الصف من حساب المدير لتفعيل رصد الدرجات.</p></div>`;return}
   // Group: continuous sub-sections, finals, others
