@@ -1,6 +1,6 @@
 /* Offline shell only. Authorization remains in application/session layer. */
-const CACHE='school-notebook-shell-v22-timetable-offline';
-const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./session-auth.js','./offline-pin.js','./passkey-auth.js','../index.html','../assets/school-home-approved.png','../assets/school-home-reference-clean1.png','../assets/school-home-reference-clean2.png'];
+const CACHE='school-notebook-shell-v23-firefox-prep-2821';
+const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./firefox-addon-install.js','./session-auth.js','./offline-pin.js','./passkey-auth.js','../index.html','../assets/school-home-approved.png','../assets/school-home-reference-clean1.png','../assets/school-home-reference-clean2.png'];
 const REQUIRED=['./school-notebook.html','./session-auth.js','./offline-pin.js','../index.html'];
 async function cacheOfflineFiles(){
  const cache=await caches.open(CACHE);
