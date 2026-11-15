@@ -1,9 +1,9 @@
-name: Package unified Noor Firefox extension (unsigned)
+name: Build clean unified Noor Firefox extension (unsigned)
 on:
   workflow_dispatch:
   push:
     paths:
-      - "addons/unified/Noor-Unified-v2.8.22-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.23-CLEAN-source.zip"
       - ".github/workflows/build-unified-noor-addon.yml"
 permissions:
   contents: read
@@ -15,30 +15,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Expand source archive
+      - name: Extract and verify clean source
         run: |
           set -euo pipefail
           mkdir -p extension
-          unzip -q addons/unified/Noor-Unified-v2.8.22-source.zip -d extension
+          unzip -q addons/unified/Noor-Unified-v2.8.23-CLEAN-source.zip -d extension
           test -f extension/manifest.json
           test -f extension/notebook-bridge.js
           test -f extension/teacher-profile.js
           test -f extension/unified-panel.js
+          test ! -e extension/lessons.js
           test ! -e extension/META-INF/mozilla.rsa
-          node -e "const m=require('./extension/manifest.json'); if(m.version!=='2.8.22'||!m.browser_specific_settings.gecko.update_url||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io')process.exit(1)"
-          for p in extension/content.js extension/gemini-background.js extension/notebook-bridge.js extension/teacher-profile.js extension/unified-panel.js; do
+          node -e "const m=require('./extension/manifest.json');if(m.version!=='2.8.23'||!m.browser_specific_settings.gecko.update_url||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io'||m.content_scripts.some(s=>s.js.includes('lessons.js')))process.exit(1)"
+          for p in extension/content.js extension/gemini-background.js extension/notebook-bridge.js extension/teacher-profile.js extension/unified-panel.js extension/page-helper.js; do
             node --check "$p"
           done
-      - name: Make development XPI — unsigned, not a permanent Firefox install
+          grep -Fq "noor_prepared_titles_v1" extension/content.js
+          grep -Fq "localStorage.removeItem(key)" extension/content.js
+      - name: Package unsigned XPI for Mozilla signing
         run: |
           set -euo pipefail
           cd extension
-          zip -q -r ../Noor-Unified-v2.8.22-unsigned.xpi . -x 'README.md' '*.DS_Store'
+          zip -q -r ../Noor-Unified-v2.8.23-CLEAN-unsigned.xpi . -x 'README.md' '*.DS_Store'
           cd ..
-          unzip -t Noor-Unified-v2.8.22-unsigned.xpi | tail -1
-          sha256sum Noor-Unified-v2.8.22-unsigned.xpi
+          unzip -t Noor-Unified-v2.8.23-CLEAN-unsigned.xpi | tail -1
+          if unzip -Z1 Noor-Unified-v2.8.23-CLEAN-unsigned.xpi | grep -q 'lessons.js'; then exit 1; fi
+          sha256sum Noor-Unified-v2.8.23-CLEAN-unsigned.xpi
       - uses: actions/upload-artifact@v4
         with:
-          name: Noor-Unified-v2.8.22-unsigned-for-Mozilla-signing
-          path: Noor-Unified-v2.8.22-unsigned.xpi
+          name: Noor-Unified-v2.8.23-CLEAN-unsigned-for-Mozilla-signing
+          path: Noor-Unified-v2.8.23-CLEAN-unsigned.xpi
           retention-days: 30

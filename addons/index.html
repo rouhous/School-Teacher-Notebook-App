@@ -31,24 +31,16 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:2
 <header><h1>🧩 مكتبة إضافات Firefox</h1><p>دفتر المعلم المدرسي — أدوات مساعدة لمنصة نور</p></header>
 <main>
 <a class="back" href="../school-edition/school-notebook.html">↩ العودة إلى دفتر المعلم</a>
-<p class="notice"><strong>الإصدار الحالي 2.8.21:</strong> الحزمة تتضمن توقيع خدمة Mozilla Add-ons ومهيّأة للتثبيت بعد موافقتك في Firefox المتوافق. لا يتم تثبيت إضافات المتصفح تلقائيًا أو في الخفاء.</p>
+<p class="notice"><strong>جديد — نسخة نظيفة 2.8.23:</strong> حذفنا جميع التحاضير السابقة المدمجة. تم إيقاف تحميل النسخ القديمة للمعلمين حتى توقيع النسخة النظيفة من Mozilla.</p>
 <div class="grid">
 <article class="card">
-<span class="tag">توقيع Mozilla · 2.8.21</span>
-<h2>📚 تحضير دروس نور</h2>
-<p>إضافة تحضير الدروس في منصة نور مع مكتبة المحتوى وإمكانات التحضير الذكي. تعمل داخل Firefox عند فتح صفحات نور المعتمدة.</p>
-<p><strong>الإصدار:</strong> 2.8.21</p>
-<a class="button" id="install-xpi" href="./files/Noor-Prep-Filler-v2.8.21-signed.xpi">تثبيت الإضافة في Firefox</a>
-<a class="button secondary" href="./files/Noor-Prep-Filler-v2.8.21-signed.xpi" download="Noor-Prep-Filler-v2.8.21-signed.xpi">تنزيل ملف XPI</a>
-<p class="note">بعد التثبيت افتح <a href="https://lms.moe.gov.om/" target="_blank" rel="noopener noreferrer">منصة نور</a> لتظهر أدوات التحضير. على الهاتف يُستخدم خيار «تثبيت إضافة من ملف» الموضح أدناه.</p>
-</article>
-<article class="card">
-<span class="tag soon">إصدار التطوير 2.8.22 · غير موقّع</span>
-<h2>🧩 أدوات نور الموحدة (معاينة التطوير)</h2>
-<p>يجمع النسخة الحالية من تحضير الدروس مع الربط الشخصي بمفتاح Gemini لكل معلم، ومعاينة نقل الدرجات، واستيراد بنك الأنشطة والاختبارات. اختبار الإدراج الكامل للأسئلة في نور ما زال مطلوبًا.</p>
-<a class="button secondary" href="./unified/Noor-Unified-v2.8.22-source.zip" download>تنزيل حزمة المصدر 2.8.22</a>
-<a class="button secondary" href="./unified/README.md">تفاصيل الإصدار</a>
-<p class="note">هذه ليست حزمة تثبيت جديدة للمعلمين. يتطلب نشر التحديث توقيعه من Mozilla أولًا؛ الإصدار الموقّع المتاح حاليًا للتثبيت هو 2.8.21 أعلاه.</p>
+<span class="tag">2.8.23 — بداية نظيفة · بانتظار التوقيع</span>
+<h2>🧩 أدوات نور الموحدة</h2>
+<p>تحضير الدروس ودرجات دفتر المعلم وأنشطة واختبارات نور في إضافة واحدة. لا تتضمن النسخة 2.8.23 أي تحضير محفوظ أو بنك تحاضير قديم. يمكن للمعلم استيراد ملفه الخاص أو إنشاء تحضير جديد عبر Gemini.</p>
+<p><strong>تنبيه:</strong> حزمة المصدر ليست قابلة للتثبيت الدائم في Firefox. تحتاج هذه النسخة الجديدة توقيع Mozilla أولًا.</p>
+<a class="button secondary" href="./unified/Noor-Unified-v2.8.23-CLEAN-source.zip" download>تنزيل حزمة المصدر النظيفة للمراجعة</a>
+<a class="button secondary" href="./unified/README.md">تفاصيل التنظيف والتحديث</a>
+<p class="note">النسخة الموقّعة القديمة 2.8.21 أوقِف توزيعها لأنها تحتوي تحاضير مُضمّنة، ولن نضع زر تثبيت للمعلمين قبل توقيع 2.8.23.</p>
 </article>
 <article class="card">
 <span class="tag soon">قيد الدمج</span>
@@ -76,23 +68,10 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:2
 <li>يتطلب هذا الإصدار Firefox Android 142 أو أحدث.</li>
 </ol></details>
 <p class="note" id="browser-note" role="status" aria-live="polite"></p>
-<details><summary>🔐 Gemini والتحضير الذكي</summary>
-<p class="note">يستخدم الإصدار 2.8.21 مفتاح Gemini الشخصي الذي يُدخله المعلم عند تفعيل التحضير، ولا ينشئ المفتاح تلقائيًا من حساب Google بعد. عند توليد التحضير يُمرَّر المفتاح إلى خدمة Supabase الخاصة بالتحضير؛ لا يعني تسجيل الدخول إلى دفتر المعلم تفويضًا تلقائيًا لـ Gemini. مسار تفويض Google الشخصي ما زال مؤجلًا للاختبار.</p>
-</details>
+<details><summary>🔐 Gemini والتحضير الذكي</summary><p class="note">مفتاح Gemini مستقل لكل معلم، ولا ينشئه تسجيل Google تلقائيًا في هذا الإصدار. لا تُحذف المفاتيح الشخصية عند مسح تحاضير الإضافة القديمة.</p></details>
 <p class="note">التثبيت يتم بموافقة المعلم؛ لا يستطيع دفتر المعلم تثبيت إضافة Firefox تلقائيًا، ولا يستطيع موقع الويب التأكد من وجود الإضافة ما لم تتضمن الإضافة آلية تواصل مخصصة.</p>
 <footer>دفتر المعلم المدرسي · 2026–2027 · تطوير: حسام لطفي الرواتبي</footer>
 </main>
-<script>
-(function(){
-const ua=navigator.userAgent;const firefox=/Firefox\/\d+/.test(ua)&&!/FxiOS/.test(ua);
-const android=/Android/.test(ua); const version=Number((ua.match(/Firefox\/(\d+)/)||[])[1]||0);
-const note=document.getElementById('browser-note'),button=document.getElementById('install-xpi');
-if(!firefox){note.textContent='افتح الصفحة من Firefox لتثبيت الإضافة. على iPhone لا يدعم Firefox تثبيت إضافات XPI.';return;}
-if(android){button.textContent='تنزيل XPI للهاتف';button.setAttribute('download','Noor-Prep-Filler-v2.8.21-signed.xpi');}
-const min=android?142:140;
-if(version<min){note.textContent='إصدار Firefox الحالي قديم؛ حدّث المتصفح إلى الإصدار '+min+' أو أحدث قبل التثبيت.';return;}
-note.textContent=android?'تم التعرف على Firefox Android؛ نزّل الملف ثم اتبع خطوات تثبيت إضافة من ملف.':'تم التعرف على Firefox للكمبيوتر؛ جرّب زر التثبيت، أو استخدم «تثبيت إضافة من ملف».';
-})();
-</script>
+<script>(function(){const note=document.getElementById('browser-note');note.textContent=/Firefox\/\d+/.test(navigator.userAgent)?'أنت تستخدم Firefox. النسخة النظيفة 2.8.23 بانتظار توقيع Mozilla.':'افتح هذه الصفحة من Firefox بعد توفر النسخة النظيفة الموقّعة.';})();</script>
 </body>
 </html>
