@@ -5376,15 +5376,16 @@ if(!navigator.onLine){
 // Repaint immediately from local records and refresh on resume without requiring tab changes.
 let schoolSyncRunning=false,schoolLastSyncStarted=0;
 const schoolSyncOriginal=syncManaged;
-syncManaged=async function(){
- if(schoolSyncRunning||!navigator.onLine)return;
+syncManaged=async function(force=false){
+ if(schoolSyncRunning||(!force&&!navigator.onLine))return;
  schoolSyncRunning=true;schoolLastSyncStarted=Date.now();
  try{await schoolSyncOriginal()}finally{schoolSyncRunning=false}
 };
-window.schoolRetryManagedSync=()=>syncManaged();
+// A direct retry should attempt the server even when navigator.onLine is inaccurate.
+window.schoolRetryManagedSync=()=>syncManaged(true);
 function restoreSchoolHomeOnEntry(){
  if(document.getElementById('sc-home')?.classList.contains('active'))replaceHome();
- if(navigator.onLine&&Date.now()-schoolLastSyncStarted>15000)syncManaged();
+ if(Date.now()-schoolLastSyncStarted>15000)syncManaged(true);
 }
 replaceHome();
 setTimeout(restoreSchoolHomeOnEntry,300);
@@ -5394,6 +5395,14 @@ document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState==='visible')restoreSchoolHomeOnEntry();
 });
 window.addEventListener('online',restoreSchoolHomeOnEntry);
+// Recheck immediately after the login/approval overlay finishes verification.
+const schoolBootCover=document.getElementById('schoolAuthCover');
+if(schoolBootCover?.parentNode){
+ const watchCover=new MutationObserver(()=>{
+  if(!schoolBootCover.isConnected){watchCover.disconnect();restoreSchoolHomeOnEntry()}
+ });
+ watchCover.observe(schoolBootCover.parentNode,{childList:true});
+}
 setInterval(()=>{if(document.visibilityState==='visible')syncManaged()},120000);
 setTimeout(()=>{
  const body=document.getElementById('homeBody');
