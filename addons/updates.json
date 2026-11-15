@@ -1,0 +1,17 @@
+{
+  "addons": {
+    "noor-prep-filler-private-2026@rouhous.github.io": {
+      "updates": [
+        {
+          "version": "2.8.21",
+          "update_link": "https://rouhous.github.io/School-Teacher-Notebook-App/addons/files/Noor-Prep-Filler-v2.8.21-signed.xpi",
+          "applications": {
+            "gecko": {
+              "strict_min_version": "140.0"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
