@@ -1,5 +1,5 @@
 /* Offline shell only. Authorization remains in application/session layer. */
-const CACHE='school-notebook-shell-v23-firefox-prep-2821';
+const CACHE='school-notebook-shell-v24-firefox-and-phone-push';
 const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./firefox-addon-install.js','./session-auth.js','./offline-pin.js','./passkey-auth.js','../index.html','../assets/school-home-approved.png','../assets/school-home-reference-clean1.png','../assets/school-home-reference-clean2.png'];
 const REQUIRED=['./school-notebook.html','./session-auth.js','./offline-pin.js','../index.html'];
 async function cacheOfflineFiles(){
@@ -59,8 +59,8 @@ self.addEventListener('push',event=>{
  const options={
   body:String(payload.body||'لديك إشعار جديد').slice(0,300),
   tag:String(payload.tag||'school-'+kind).slice(0,100),
-  icon:'./app-icon.svg',
-  badge:'./app-icon.svg',
+  icon:'../assets/school-icon-192.png',
+  badge:'../assets/school-icon-192.png',
   requireInteraction:true,
   renotify:true,
   vibrate:[400,250,400,250,400],
