@@ -9,6 +9,7 @@ const version=Number((ua.match(/Firefox\/(\d+)/)||[])[1]||0);
 const MIN_VERSION=android?142:140;
 const FILE='../addons/files/Noor-Prep-Filler-v2.8.21-signed.xpi';
 const LIB='../addons/';
+let addonLinked=false;
 const STORAGE='school-notebook-ff-prep-2.8.21:'+(typeof schoolNotebookSubject==='string'?schoolNotebookSubject:'browser');
 function makeLink(text,href,extraClass){
  const a=document.createElement('a');a.textContent=text;a.href=href;
@@ -29,7 +30,7 @@ function dismiss(){
  document.getElementById('schoolFirefoxPrepOffer')?.remove();
 }
 function offer(){
- if(dismissed()||!navigator.onLine||document.getElementById('schoolFirefoxPrepOffer'))return;
+ if(addonLinked||dismissed()||!navigator.onLine||document.getElementById('schoolFirefoxPrepOffer'))return;
  const box=document.createElement('aside');
  box.id='schoolFirefoxPrepOffer';box.setAttribute('role','region');box.setAttribute('aria-label','إضافة تحضير نور لمتصفح Firefox');
  box.dir='rtl';
@@ -47,6 +48,22 @@ function offer(){
  close.addEventListener('click',dismiss);
  actions.append(action,guide,close);box.append(heading,p,actions);document.body.appendChild(box);
 }
+// The Firefox extension requests only an opaque teacher identifier AFTER approved login.
+// Google ID tokens and Gemini API keys never pass through this window message.
+window.addEventListener('message',event=>{
+ if(event.source!==window||event.origin!==location.origin||!event.data||typeof event.data!=='object')return;
+ if(event.data.type==='STN_NOOR_WHOAMI'){
+   if(!document.getElementById('schoolAuthCover')&&typeof schoolNotebookSubject==='string'&&schoolNotebookSubject){
+     window.postMessage({type:'STN_NOOR_ACTIVE_TEACHER',teacherId:schoolNotebookSubject},location.origin);
+   }
+ }
+ if(event.data.type==='STN_NOOR_ADDON_CONNECTED'){
+   addonLinked=true;
+   document.getElementById('schoolFirefoxPrepOffer')?.remove();
+   const anchor=document.getElementById('noorFirefoxInstallService');
+   if(anchor){anchor.textContent='✅ إضافة نور متصلة — إدارة الأدوات';anchor.href='../addons/';anchor.removeAttribute('download');}
+ }
+});
 function ready(){
  enhanceServices();
  let count=0;
