@@ -4848,7 +4848,13 @@ function coverNotify(item,kind){
  localStorage.setItem(key,String(Date.now()));
  const msg='الحصة '+item.period+' — الصف '+(item.classId||'غير محدد');
  const title=kind==='new'?'تكليف احتياط جديد':'تذكير: تبقى 5 دقائق لحصة الاحتياط';
- if('Notification' in window&&Notification.permission==='granted'){try{new Notification(title,{body:msg,tag:key})}catch(e){}}
+ if('Notification' in window&&Notification.permission==='granted'){
+  (async()=>{try{
+    const reg=('serviceWorker' in navigator)?await navigator.serviceWorker.getRegistration('./'):null;
+    if(reg&&reg.active)await reg.showNotification(title,{body:msg,tag:key,icon:'./app-icon.svg',vibrate:[350,200,350]});
+    else new Notification(title,{body:msg,tag:key});
+  }catch(e){console.warn('Cover phone notification unavailable',e)}})();
+ }
  startLessonAlert(title+' · '+msg);
  if(document.visibilityState==='visible')toast(title+' · '+msg);
 }
