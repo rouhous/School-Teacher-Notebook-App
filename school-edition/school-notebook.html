@@ -5008,8 +5008,16 @@ window.openSchoolGeneralTimetable=async function(){
 
 function managedHTML(){
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- if(!loaded)return (Array.isArray(db.schedule)&&db.schedule.length)?buildScheduleTableHTML():'<div class="school-managed-notice">جارٍ تحميل الجدول المعتمد من إدارة المدرسة…</div>';
- if(!managedSchedule.length)return (Array.isArray(db.schedule)&&db.schedule.length)?('<div class="school-managed-notice">الجدول المحفوظ على الجهاز — لم تتوفر بيانات النشر أثناء عدم الاتصال.</div>'+buildScheduleTableHTML()):'<div class="school-managed-notice">لم يتوفر جدول محفوظ لهذا الحساب. افتح الدفتر متصلًا لتحميل الجدول أول مرة.</div>';
+ const hasLocalSchedule=Array.isArray(db.schedule)&&db.schedule.length>0;
+ // Do not mistake an absent managed snapshot for a network outage.
+ if(!managedSchedule.length){
+  const state=!navigator.onLine?'📴 لا يوجد اتصال الآن — يُعرض الجدول المحفوظ على الهاتف.':
+   (!loaded?'جارٍ التحقق من آخر جدول معتمد…':'يُعرض آخر جدول محفوظ على الهاتف. يمكنك تحديثه من المدرسة.');
+  const retry='<button type="button" class="btn btn-outline btn-sm" style="display:block;margin:8px auto 0" onclick="window.schoolRetryManagedSync?.()">↻ تحديث الجدول الآن</button>';
+  if(hasLocalSchedule)return '<div class="school-managed-notice">'+state+retry+'</div>'+buildScheduleTableHTML();
+  return '<div class="school-managed-notice" role="status">'+
+   (loaded?'لا يوجد جدول معتمد متاح لهذا الحساب.':'جارٍ تحميل الجدول المعتمد من إدارة المدرسة…')+retry+'</div>';
+ }
  // Reuse the ORIGINAL notebook's weekly timetable, rather than a separate school-only list.
  const weekly=buildScheduleTableHTML().replace(/\s+onclick="[^"]*"/g,'');
  // Published timing is displayed separately; the teacher's lessons remain unchanged.
@@ -5027,9 +5035,17 @@ function managedHTML(){
 }
 function replaceHome(){
  const body=document.getElementById('homeBody');if(!body)return;
- body.innerHTML=managedHTML();
- // The managed school view replaces the entire timetable; refresh the live gold highlight after each replacement.
- if(typeof updateActiveLessonVisual==='function')updateActiveLessonVisual();
+ try{
+  const content=managedHTML();
+  if(!content||!String(content).trim())throw Error('EMPTY_HOME_MARKUP');
+  body.innerHTML=content;
+  if(typeof updateActiveLessonVisual==='function')updateActiveLessonVisual();
+ }catch(e){
+  console.error('Timetable home rendering failed',e);
+  if(!body.textContent.trim()){
+   body.innerHTML='<div class="school-managed-notice" role="alert">تعذر عرض الجدول مؤقتًا. بياناتك محفوظة. <button class="btn btn-outline btn-sm" onclick="window.schoolRetryManagedSync?.()">إعادة المحاولة</button></div>';
+  }
+ }
 }
 window.schoolPublishedTiming=null;
 async function refreshPublishedTiming(){
@@ -5302,6 +5318,7 @@ async function syncManaged(){
   // Persist approved teacher data and the display snapshot for reliable offline use.
   save();
   storeManagedOffline(table);
+  try{localStorage.setItem('school-notebook-last-synced:'+schoolNotebookSubject,new Date().toISOString())}catch(_){}
   replaceHome();
   const approvedLessons=db.schedule.filter(s=>s.type==='lesson').length;
   const studentCount=db.students.length;
@@ -5356,18 +5373,32 @@ if(!navigator.onLine){
   home.prepend(banner);
  }
 }
-// Automatically refresh supervisor-approved rosters and timetables while the notebook is in use.
-let schoolSyncRunning=false;
+// Repaint immediately from local records and refresh on resume without requiring tab changes.
+let schoolSyncRunning=false,schoolLastSyncStarted=0;
 const schoolSyncOriginal=syncManaged;
 syncManaged=async function(){
  if(schoolSyncRunning||!navigator.onLine)return;
- schoolSyncRunning=true;
+ schoolSyncRunning=true;schoolLastSyncStarted=Date.now();
  try{await schoolSyncOriginal()}finally{schoolSyncRunning=false}
 };
-setTimeout(syncManaged,250);
+window.schoolRetryManagedSync=()=>syncManaged();
+function restoreSchoolHomeOnEntry(){
+ if(document.getElementById('sc-home')?.classList.contains('active'))replaceHome();
+ if(navigator.onLine&&Date.now()-schoolLastSyncStarted>15000)syncManaged();
+}
+replaceHome();
+setTimeout(restoreSchoolHomeOnEntry,300);
+window.addEventListener('pageshow',restoreSchoolHomeOnEntry);
+window.addEventListener('focus',restoreSchoolHomeOnEntry);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible')restoreSchoolHomeOnEntry();
+});
+window.addEventListener('online',restoreSchoolHomeOnEntry);
 setInterval(()=>{if(document.visibilityState==='visible')syncManaged()},120000);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncManaged()});
-window.addEventListener('online',syncManaged);
+setTimeout(()=>{
+ const body=document.getElementById('homeBody');
+ if(body&&!body.textContent.trim())replaceHome();
+},1600);
 })();
 </script><script>
 
