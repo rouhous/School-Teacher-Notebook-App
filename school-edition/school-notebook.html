@@ -4465,14 +4465,18 @@ function checkPeriodAlarms(){
   });
 }
 function fireNotif(title,body){
-  try{
-    if('Notification' in window&&Notification.permission==='granted'){
-      const n=new Notification(title,{body:body||'',tag:'tnb-period',renotify:true,requireInteraction:true});
-      setTimeout(()=>n.close(),20000);
-    }
-  }catch(e){}
   startLessonAlert(title);
   try{toast('🔔 '+title)}catch(e){}
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  (async()=>{
+    try{
+      const reg=('serviceWorker' in navigator)?await navigator.serviceWorker.getRegistration('./'):null;
+      if(reg&&reg.active){
+        await reg.showNotification(title,{body:body||'',tag:'tnb-period-'+Date.now(),
+          icon:'./app-icon.svg',badge:'./app-icon.svg',vibrate:[350,200,350]});
+      }else new Notification(title,{body:body||''});
+    }catch(e){console.warn('Phone notification unavailable',e)}
+  })();
 }
 
 
@@ -4785,10 +4789,28 @@ async function schoolEnableWebPush(){
   let subscription=await reg.pushManager.getSubscription();
   if(!subscription)subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(config.publicKey)});
   await post({action:'subscribe',subscription:subscription.toJSON()});
+   await post({action:'preferences',enabled:db.alarmEnabled!==false,
+     beforeStart:Math.max(0,Math.min(60,Number(db.alarmBeforeMin??5))),
+     beforeEnd:Math.max(0,Math.min(30,Number(db.alarmBeforeEndMin??5)))});
   toast('✓ تم ربط إشعارات الخلفية بهذا الجهاز');return true;
  }catch(e){console.warn('Web Push registration failed',e);toast('تعذر ربط إشعارات الخلفية: '+String(e.message||e));return false}
 }
 window.schoolEnableWebPush=schoolEnableWebPush;
+async function schoolTestWebPush(){
+  if(!(await schoolEnableWebPush()))return;
+  try{
+    const credential=typeof schoolAuthRestore==='function'?schoolAuthRestore():null;
+    const auth=credential?{credential}:{access_token:await schoolNotebookPasskeyToken()};
+    if(!auth.credential&&!auth.access_token){toast('يلزم تسجيل الدخول لاختبار إشعارات الهاتف');return}
+    const r=await fetch('https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-web-push-subscription',{
+      method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...auth,action:'test'})
+    });
+    const x=await r.json();
+    if(!r.ok||!x.ok){toast('تعذر إرسال إشعار الاختبار: '+(x.error||r.status));return}
+    toast('✓ أُرسل إشعار الاختبار إلى '+x.sent+' جهاز. راجع شريط إشعارات الهاتف');
+  }catch(e){toast('فشل اختبار الإشعارات: '+String(e.message||e))}
+}
+window.schoolTestWebPush=schoolTestWebPush;
 // Keep an already approved device subscription registered after a PWA update or login.
 // Never request notification permission without a direct user gesture.
 let schoolPushLastAutoCheck=0;
@@ -4805,6 +4827,10 @@ async function schoolRestoreWebPush(){
 window.addEventListener('focus',()=>schoolRestoreWebPush());
 setTimeout(()=>schoolRestoreWebPush(),7000);
 async function enableCoverAlerts(){
+  db.alarmEnabled=true;
+  const settingToggle=document.getElementById('schoolAlarmEnabled');
+  if(settingToggle)settingToggle.checked=true;
+  save();
  unlockLessonAlertAudio();
  try{coverAudio=coverAudio||new (window.AudioContext||window.webkitAudioContext)();await coverAudio.resume();}catch(e){}
  localStorage.setItem('school-cover-alert-enabled:'+schoolNotebookSubject,'1');
@@ -5020,11 +5046,15 @@ async function refreshPublishedTiming(){
 window.addEventListener('focus',refreshPublishedTiming);
 window.renderHome=replaceHome;
 window.loadSample=function(){toast('البيانات التجريبية غير متاحة في النسخة المدرسية.')};
-window.saveSchoolAlarmSettings=function(){
+window.saveSchoolAlarmSettings=async function(){
  db.alarmEnabled=document.getElementById('schoolAlarmEnabled').checked;
  db.alarmBeforeMin=Math.max(0,Math.min(60,Number(document.getElementById('schoolAlarmBefore').value)||0));
  db.alarmBeforeEndMin=Math.max(0,Math.min(30,Number(document.getElementById('schoolAlarmEnd').value)||0));
- save();closeM();toast('تم حفظ إعدادات المنبه');
+ save();closeM();scheduleAlarmChecker();
+ if('Notification' in window&&Notification.permission==='granted'){
+   const synced=await schoolEnableWebPush();
+   if(!synced)toast('حُفظت الإعدادات محليًا، لكن ربط إشعارات الخلفية لم يكتمل');
+ }else toast('تم الحفظ. فعّل إشعارات الهاتف من زر التفعيل لتعمل في الخلفية');
 };
 window.openM=function(type,data){
  if(forbidden.has(type)){toast('إدارة الصفوف والطلاب والجداول من صلاحيات المدير فقط.');return;}
@@ -5054,7 +5084,9 @@ window.openM=function(type,data){
   <div class="form-group"><label><input id="schoolAlarmEnabled" type="checkbox" ${db.alarmEnabled!==false?'checked':''}> تفعيل تنبيهات الحصص</label></div>
   <div class="form-group"><label>التنبيه قبل بداية الحصة (دقائق)</label><input id="schoolAlarmBefore" type="number" min="0" max="60" value="${Number(db.alarmBeforeMin??5)}"></div>
   <div class="form-group"><label>التنبيه قبل نهاية الحصة (دقائق)</label><input id="schoolAlarmEnd" type="number" min="0" max="30" value="${Number(db.alarmBeforeEndMin??5)}"></div>
-  <button class="btn btn-outline btn-block" onclick="requestNotifPermission()">🔔 السماح بإشعارات المتصفح</button>
+  <button class="btn btn-outline btn-block" onclick="enableCoverAlerts()">🔔 تفعيل إشعارات الهاتف والخلفية</button>
+  <button class="btn btn-outline btn-block" onclick="schoolTestWebPush()" style="margin-top:7px">🧪 إرسال إشعار تجريبي للهاتف</button>
+  <p style="font-size:.75rem;color:var(--mu);line-height:1.7;margin:8px 0">بعد التفعيل ستصل تنبيهات الحصص تلقائيًا عند الاتصال بالإنترنت حتى لو أغلقت التطبيق. يمكن اختبار وصول الإشعار فورًا.</p>
   <button class="btn btn-primary btn-block" onclick="saveSchoolAlarmSettings()">حفظ إعدادات المنبه</button>
   <div class="form-group" style="padding:12px;border:1px solid var(--bd);border-radius:14px;margin:12px 0">
     <label style="font-weight:800">📴 العمل دون إنترنت</label>
