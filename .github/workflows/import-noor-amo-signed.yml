@@ -1,0 +1,79 @@
+name: Import already signed Noor add-on from Mozilla and publish
+on:
+  push:
+    paths:
+      - ".github/workflows/import-noor-amo-signed.yml"
+      - ".github/scripts/import-noor-amo-signed.mjs"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Already signed Mozilla version to import"
+        required: true
+        type: string
+        default: "2.8.26"
+permissions:
+  contents: write
+concurrency:
+  group: noor-mozilla-sign-publish
+  cancel-in-progress: false
+jobs:
+  import_signed_version:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[import-amo-2.8.26]')
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ inputs.version || '2.8.26' }}
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check required secrets and release branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+             echo "::error::Only main may publish signed releases."
+             exit 1
+          fi
+          if [[ -z "$AMO_JWT_ISSUER" || -z "$AMO_JWT_SECRET" ]]; then
+             echo "::error::Add AMO_JWT_ISSUER and AMO_JWT_SECRET GitHub Actions repository secrets."
+             exit 1
+          fi
+          node --check .github/scripts/import-noor-amo-signed.mjs
+          node --check .github/scripts/publish-noor-release.mjs
+      - name: Retrieve signed XPI for exact release from Mozilla AMO
+        run: node .github/scripts/import-noor-amo-signed.mjs
+      - name: Verify Firefox manifest, bundled modules, and Mozilla signature files
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="addons/files/Noor-Unified-v${RELEASE_VERSION}-signed.xpi"
+          test -s "$FILE"
+          unzip -t "$FILE" | tail -1
+          unzip -Z1 "$FILE" | grep -Eq '^META-INF/[^/]+\.rsa$'
+          for path in noor-hub.js noor-scorm.js smart-background.js; do
+            unzip -Z1 "$FILE" | grep -Fxq "$path"
+          done
+          if unzip -Z1 "$FILE" | grep -Fxq "lessons.js"; then
+            echo "::error::Old bundled preparations found in this XPI."
+            exit 1
+          fi
+          unzip -p "$FILE" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const m=JSON.parse(s);if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io"||m.browser_specific_settings?.gecko?.update_url!=="https://rouhous.github.io/School-Teacher-Notebook-App/addons/updates.json")process.exit(1)})'
+      - name: Update library and Firefox auto-update feed
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="addons/files/Noor-Unified-v${RELEASE_VERSION}-signed.xpi"
+          node .github/scripts/publish-noor-release.mjs "$RELEASE_VERSION" "$FILE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$FILE" addons/updates.json addons/latest.json addons/index.html
+          git diff --cached --quiet && { echo "::error::Nothing to publish"; exit 1; }
+          git commit -m "Publish Mozilla approved Noor unified v${RELEASE_VERSION}"
+          git push origin HEAD:main
+          echo "Mozilla-signed version ${RELEASE_VERSION} published to main."
