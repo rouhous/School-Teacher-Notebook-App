@@ -1,78 +1,90 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#075b47">
-<title>مكتبة إضافات Firefox | دفتر المعلم المدرسي</title>
+<meta name="description" content="تنزيل إضافة نور لدفتر المعلم المدرسي وطريقة تثبيتها على الكمبيوتر وأندرويد.">
+<title>إضافة نور | دفتر المعلم المدرسي</title>
 <style>
 :root{font-family:Tahoma,"Noto Sans Arabic",Arial,sans-serif;color:#173f35;background:#f8f5ec}
-*{box-sizing:border-box}body{margin:0;line-height:1.8}a{color:#075c48}
-header{background:linear-gradient(110deg,#075b47,#0d8066);color:#fff;padding:24px max(18px,calc((100vw - 1020px)/2));border-bottom:5px solid #b48a38}
-header h1{font-size:clamp(1.35rem,3.5vw,2rem);margin:0}header p{margin:6px 0 0;color:#e9f7ef}
-main{max-width:1020px;padding:18px 15px 48px;margin:auto}
-.back{display:inline-block;margin:4px 0 16px;padding:7px 14px;background:#fff;border:1px solid #d9d0b5;border-radius:11px;text-decoration:none;font-weight:700}
-.card{background:#fff;border:1px solid #e2e6d9;border-radius:17px;padding:20px;margin-bottom:15px;box-shadow:0 5px 20px #194b3412}
-.card h2{font-size:1.17rem;line-height:1.55;margin:3px 0 8px}.card p{color:#486257;margin:5px 0 10px}
-.tag{display:inline-block;background:#e4f3e9;color:#075b47;padding:4px 10px;border-radius:99px;font-size:.8rem;font-weight:700}
-.button{display:inline-block;margin:8px 4px 2px 0;background:#087a5b;color:white;text-decoration:none;border-radius:11px;padding:11px 16px;font-weight:800}
-.button.secondary{background:#fff;color:#075b47;border:1px solid #075b47}
-.notice{background:#f0f8f3;border:1px solid #b4d5c1;padding:14px 17px;border-radius:14px;color:#184e35;margin-bottom:18px}
-.note{font-size:.9rem;color:#485d54}h2.section{font-size:1.15rem;margin:24px 0 10px}
-details{background:#fff;border:1px solid #e5dfcc;border-radius:12px;padding:10px 14px;margin:10px 0}
-summary{cursor:pointer;font-weight:800;color:#075b47}ol{padding-inline-start:25px}
-footer{text-align:center;color:#677a70;font-size:.82rem;margin-top:28px}
-a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:2px}
+*{box-sizing:border-box}
+body{margin:0;line-height:1.8;min-width:300px}
+a{color:#075c48}
+header{background:linear-gradient(110deg,#075b47,#0d8066);color:white;padding:25px 18px;border-bottom:5px solid #b48a38;text-align:center}
+header h1{font-size:clamp(1.45rem,5vw,2.1rem);margin:0}
+header p{margin:5px 0 0;color:#e9f7ef;font-size:.94rem}
+main{max-width:660px;padding:20px 15px 40px;margin:auto}
+.back{display:inline-block;margin:0 0 17px;padding:7px 15px;background:white;border:1px solid #d9d0b5;border-radius:12px;text-decoration:none;font-weight:700}
+.card{background:#fff;border:1px solid #e2e6d9;border-radius:19px;padding:clamp(20px,5vw,28px);margin-bottom:20px;box-shadow:0 6px 24px #194b3414;text-align:center}
+.card h2{font-size:clamp(1.18rem,4.4vw,1.55rem);margin:0 0 10px}
+.summary{color:#486257;margin:0 auto 20px;max-width:540px;line-height:2}
+.button{display:inline-block;background:#087a5b;color:white;text-decoration:none;border-radius:14px;padding:13px 24px;font-weight:800;min-width:min(100%,280px);box-shadow:0 3px 8px #087a5b20}
+.button:hover{background:#056d50}
+.status{min-height:1.4em;color:#146c42;font-size:.88rem;margin:12px 0 0}
+.section{font-size:1.16rem;margin:25px 0 12px}
+details{background:white;border:1px solid #e5dfcc;border-radius:14px;padding:12px 17px;margin:11px 0}
+summary{cursor:pointer;font-weight:800;color:#075b47}
+ol{padding-inline-start:24px;margin:11px 0 5px}
+li{margin:8px 0}
+footer{text-align:center;color:#677a70;font-size:.8rem;margin-top:30px}
+a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:3px}
+@media(max-width:450px){header{padding:20px 12px}main{padding:15px 12px 30px}.card{padding:20px 15px}.back{font-size:.92rem}}
 </style>
-</head><body>
-<header><h1>🧩 مكتبة إضافات Firefox</h1><p>دفتر المعلم المدرسي — أداة موحّدة لخدمات منصة نور</p></header>
+</head>
+<body>
+<header><h1>🧩 إضافة نور</h1><p>دفتر المعلم المدرسي</p></header>
 <main>
 <a class="back" href="../school-edition/school-notebook.html">↩ العودة إلى دفتر المعلم</a>
-<p class="notice"><strong>الإصدار 2.8.24 متوفر للتثبيت:</strong> تم استلام حزمة XPI تتضمن توقيع Mozilla، مع دعم المفاتيح الجديدة Gemini AQ. والقديمة AIza. يفحص Firefox صحة التوقيع عند التثبيت ويطلب موافقتك على الأذونات.</p>
-<article class="card">
-<span class="tag">نسخة XPI موقّعة · 2.8.24</span>
-<h2>🧩 أدوات نور | دفتر المعلم المدرسي</h2>
-<p>إضافة موحّدة لتحضير الدروس ومراجعة درجات الطلاب واستيراد الأنشطة والاختبارات. لا تحتوي الحزمة على أي بنك تحاضير سابق. يُحفظ مفتاح Gemini بصورة منفصلة لكل حساب معلم، ويتم اختباره مباشرة مع Google.</p>
-<a class="button" id="install-xpi" href="./files/Noor-Unified-v2.8.24-Gemini-AQ-signed.xpi">تثبيت الإضافة في Firefox</a>
-<a class="button secondary" id="download-xpi" href="./files/Noor-Unified-v2.8.24-Gemini-AQ-signed.xpi" download="Noor-Unified-v2.8.24-Gemini-AQ-signed.xpi">تنزيل ملف XPI</a>
-<p class="note">بعد التثبيت افتح <a href="https://lms.moe.gov.om/" target="_blank" rel="noopener noreferrer">منصة نور</a> لتشغيل الإضافة. نقل الدرجات يحتاج مراجعة المعلم قبل الحفظ، كما أن إدراج الاختبارات كاملًا في نور ما زال بحاجة لاختبار عملي.</p>
-</article>
-<article class="card">
-<span class="tag">تطوير 2.8.26 · قيد الاختبار · غير موقّع</span>
-<h2>🧩 إضافة نور موحّدة: تحضير، أنشطة، درجات، SCORM</h2>
-<p>تم دمج مصدر أنشطة نور الذكية 0.6.11 مع إضافة التحضير 2.8.25. تظهر الآن لوحة واحدة لاختيار الخدمة، الفصل، الوحدة/Theme والدرس، ثم التوليد بمفتاح Gemini الشخصي نفسه أو الاستيراد من ملف.</p>
-<p>تُقرأ أسماء الدروس من شجرة نور، وتُربط الفصول بمعرفاتها الظاهرة فقط. عند تعذر إثبات الفصل أو الحقل الصحيح تتوقف الإضافة بدل التعديل في فصل مختلف. توليد حزمة SCORM 1.2 اجتاز فحص ZIP وXML؛ أما رفعها في Noor ونشر الأنشطة/الدرجات فيحتاج اختبار حساب فعلي.</p>
-<p class="note"><strong>لا تستبدل النسخة 2.8.24 الموقّعة بهذا الملف قبل الحصول على توقيع Mozilla.</strong> ستبقى التحديثات التلقائية الحالية على 2.8.24.</p>
-<a class="button secondary" href="./unified/Noor-Unified-v2.8.26-Integrated-source.zip" download>تنزيل المصدر الموحد 2.8.26 للتوقيع</a>
-<a class="button secondary" href="./unified/README.md">حالة الوظائف وملاحظات الاختبار</a>
-</article>
+<section class="card" aria-label="تنزيل إضافة نور">
+<h2>أدوات نور للمعلم</h2>
+<p class="summary">تحضير الدروس تلقائيًا، إدخال الدرجات، إدراج الاختبارات والأنشطة، وإضافة الدروس التفاعلية.</p>
+<a class="button" id="install-xpi" href="./files/Noor-Unified-v2.8.24-Gemini-AQ-signed.xpi">تنزيل إضافة Firefox</a>
+<p class="status" id="browser-note" role="status" aria-live="polite"></p>
+</section>
 <h2 class="section">طريقة التثبيت</h2>
-<details open><summary>💻 Firefox على الكمبيوتر</summary>
-<ol><li>اضغط «تثبيت الإضافة في Firefox» ثم وافق على طلب التثبيت والصلاحيات.</li><li>إذا نُزّل ملف XPI بدل فتح نافذة التثبيت، اذهب إلى <code>about:addons</code> ← ⚙️ ← «تثبيت إضافة من ملف» واختر ملف XPI الذي نزّلته.</li><li>افتح منصة نور وتأكد من ظهور لوحة «أدوات نور». يتطلب هذا الإصدار Firefox 140 أو أحدث.</li></ol>
+<details id="desktop-guide">
+<summary>💻 التثبيت على الكمبيوتر</summary>
+<ol>
+<li>افتح هذه الصفحة باستخدام Firefox، ثم اضغط «تنزيل إضافة Firefox» ووافق على التثبيت إذا ظهرت نافذته.</li>
+<li>إذا نُزّل ملف الإضافة فقط، افتح <code>about:addons</code> ثم ⚙️ ← «تثبيت إضافة من ملف»، واختر الملف الذي نزّلته.</li>
+<li>افتح منصة نور لبدء استخدام الإضافة.</li>
+</ol>
 </details>
-<details><summary>📱 Firefox على Android</summary>
-<ol><li>نزّل ملف XPI من الرابط أعلاه.</li><li>في إعدادات Firefox انتقل إلى «حول Firefox» واضغط شعار Firefox خمس مرات إن كانت خيارات المطور مخفية.</li><li>ارجع إلى الإعدادات ← <span dir="ltr">Install Extension from File</span> ← اختر ملف XPI ووافق على التثبيت.</li><li>يتطلب هذا الإصدار Firefox Android 142 أو أحدث.</li></ol>
+<details id="android-guide">
+<summary>📱 التثبيت على أندرويد</summary>
+<ol>
+<li>افتح هذه الصفحة باستخدام Firefox على الهاتف، واضغط «تنزيل إضافة Firefox».</li>
+<li>افتح إعدادات Firefox ← «حول Firefox»، واضغط شعار Firefox خمس مرات لإظهار خيارات المطور عند الحاجة.</li>
+<li>ارجع للإعدادات واختر <span dir="ltr">Install Extension from File</span>، ثم حدد الملف الذي نزّلته ووافق على التثبيت.</li>
+</ol>
 </details>
-<p class="note" id="browser-note" role="status" aria-live="polite"></p>
-<details><summary>🔄 كيف تصل التحديثات القادمة؟</summary>
-<p class="note">يتحقق Firefox من الإصدارات الجديدة الموقّعة عبر <a href="./updates.json">ملف التحديثات</a> الخاص بمستودع الدفتر. بعد تثبيت هذا الإصدار، يمكن وصول التحديثات الموقّعة التالية تلقائيًا إن كانت التحديثات التلقائية مفعّلة. لن يتم تثبيت أي إضافة جديدة من دون موافقة المتصفح.</p></details>
-<details><summary>🔐 Gemini بمفتاح خاص لكل معلم</summary>
-<p class="note">يدعم الإصدار مفاتيح Google التي تبدأ بـ AQ. أو AIza، ويتصل بخدمة Gemini مباشرة بمفتاح المعلم. إنشاء المفتاح تلقائيًا من خلال تفويض Google ليس جزءًا من هذا الإصدار.</p></details>
-<p class="note">رمز التحقق SHA-256 للملف: <code dir="ltr" style="overflow-wrap:anywhere">29be232ea4f76b0436f7f1302497459e15d6cd4a1a2cb84cbcbfcbddab888cb1</code></p>
-<footer>دفتر المعلم المدرسي · 2026–2027 · تطوير: حسام لطفي الرواتبي</footer>
+<footer>دفتر المعلم المدرسي · 2026–2027</footer>
 </main>
 <script>
 (function(){
  const ua=navigator.userAgent||'';
- const isFirefox=/Firefox\/\d+/.test(ua)&&!/FxiOS/.test(ua);
- const isAndroid=/Android/.test(ua);
+ const android=/Android/i.test(ua);
+ const firefox=/Firefox\/\d+/.test(ua)&&!/FxiOS/.test(ua);
  const version=Number((ua.match(/Firefox\/(\d+)/)||[])[1]||0);
- const min=isAndroid?142:140;
+ const min=android?142:140;
+ const link=document.getElementById('install-xpi');
  const note=document.getElementById('browser-note');
- const install=document.getElementById('install-xpi');
- if(!isFirefox){note.textContent='افتح هذه الصفحة في Firefox لتثبيت الإضافة. على iPhone لا يدعم Firefox تثبيت إضافات XPI.';return}
- if(isAndroid){install.textContent='تنزيل XPI لهاتف Android';install.setAttribute('download','Noor-Unified-v2.8.24-Gemini-AQ-signed.xpi');}
- if(version<min){note.textContent='يرجى تحديث Firefox إلى الإصدار '+min+' أو أحدث أولًا.';return}
- note.textContent=isAndroid?'تم التعرف على Firefox Android — اتبع خطوات «Install Extension from File».':'تم التعرف على Firefox — اضغط التثبيت ووافق على الأذونات.';
+ document.getElementById(android?'android-guide':'desktop-guide').open=true;
+ if(android)link.setAttribute('download','Noor-Unified-v2.8.24-Gemini-AQ-signed.xpi');
+ if(!firefox){
+  note.textContent='يرجى فتح هذه الصفحة باستخدام Firefox لتثبيت الإضافة.';
+ }else if(version<min){
+  note.textContent='يرجى تحديث متصفح Firefox قبل التثبيت.';
+ }
+ // Show an installed state only if the running extension explicitly confirms it.
+ window.addEventListener('message',function(event){
+  if(event.source!==window||event.origin!==location.origin||!event.data||typeof event.data!=='object')return;
+  if(event.data.type==='STN_NOOR_ADDON_CONNECTED'){
+   note.textContent='✅ إضافة نور مفعّلة';
+  }
+ });
 })();
 </script>
-</body></html>
+</body>
+</html>
