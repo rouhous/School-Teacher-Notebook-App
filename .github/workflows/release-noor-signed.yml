@@ -1,0 +1,152 @@
+name: Sign and publish Noor Firefox extension via Mozilla
+on:
+  push:
+    paths:
+      - ".github/workflows/release-noor-signed.yml"
+      - ".github/scripts/publish-noor-release.mjs"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tested unified source version, e.g. 2.8.26"
+        type: string
+        required: true
+        default: "2.8.26"
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: noor-mozilla-sign-publish
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      archive: ${{ steps.source.outputs.archive }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check source and expected extension ID
+        id: source
+        env:
+          RELEASE_VERSION: ${{ inputs.version || '2.8.26' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          shopt -s nullglob
+          files=(addons/unified/*-v"$RELEASE_VERSION"-*-source.zip)
+          if [[ ${#files[@]} -ne 1 ]]; then
+            echo "::error::Expected exactly one source ZIP for version $RELEASE_VERSION; found ${#files[@]}"
+            exit 1
+          fi
+          echo "archive=${files[0]}" >> "$GITHUB_OUTPUT"
+          mkdir -p extension
+          unzip -q "${files[0]}" -d extension
+          test -f extension/manifest.json
+          test ! -e extension/lessons.js
+          test ! -e extension/META-INF/mozilla.rsa
+          node -e 'const m=require("./extension/manifest.json");if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io"||m.browser_specific_settings?.gecko?.update_url!=="https://rouhous.github.io/School-Teacher-Notebook-App/addons/updates.json")process.exit(1)'
+          node --check .github/scripts/publish-noor-release.mjs
+          find extension -type f -name '*.js' \
+             ! -name 'pdf.min.js' ! -name 'pdf.worker.min.js' ! -name 'mammoth.browser.min.js' \
+             -print0 | xargs -0 -r -n1 node --check
+          echo "Source validated. Only manual workflow runs request signing and publishing."
+  sign_and_publish:
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      RELEASE_VERSION: ${{ inputs.version || '2.8.26' }}
+      WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+      WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+      ARCHIVE: ${{ needs.validate.outputs.archive }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify one-time signing credentials and release branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+             echo "::error::Only main can publish releases"
+             exit 1
+          fi
+          if [[ -z "$WEB_EXT_API_KEY" || -z "$WEB_EXT_API_SECRET" ]]; then
+             echo "::error::Add secrets AMO_JWT_ISSUER and AMO_JWT_SECRET under GitHub repository Actions secrets"
+             exit 1
+          fi
+          node -e 'const f=require("./addons/updates.json");const x=f.addons["noor-prep-filler-private-2026@rouhous.github.io"].updates;if(x.some(e=>e.version===process.env.RELEASE_VERSION))throw Error("Version already published")'
+      - name: Prepare source for Mozilla signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p extension signed
+          unzip -q "$ARCHIVE" -d extension
+          npm install --prefix "$RUNNER_TEMP/noor-sign-cli" --no-save --ignore-scripts --no-audit --no-fund web-ext@10
+      - name: Sign on Mozilla as unlisted add-on
+        shell: bash
+        timeout-minutes: 35
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/noor-sign-cli/node_modules/.bin/web-ext" sign \
+            --source-dir extension \
+            --artifacts-dir signed \
+            --channel unlisted \
+            --approval-timeout 1500000
+      - name: Verify the returned signed XPI
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(signed/*.xpi)
+          if [[ ${#files[@]} -ne 1 ]]; then
+            echo "::error::Mozilla must return exactly one signed XPI"
+            exit 1
+          fi
+          dest="addons/files/Noor-Unified-v${RELEASE_VERSION}-signed.xpi"
+          mkdir -p addons/files
+          cp "${files[0]}" "$dest"
+          unzip -t "$dest" | tail -n 1
+          unzip -Z1 "$dest" | grep -Eq '^META-INF/[^/]+\.rsa$'
+          unzip -p "$dest" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const m=JSON.parse(s);if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io")process.exit(1)})'
+          sha256sum "$dest"
+          echo "SIGNED_XPI=$dest" >> "$GITHUB_ENV"
+      - name: Save the signed XPI as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Noor-v${{ inputs.version }}-Mozilla-signed
+          path: ${{ env.SIGNED_XPI }}
+          retention-days: 30
+      - name: Publish the signed XPI and update manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          node .github/scripts/publish-noor-release.mjs "$RELEASE_VERSION" "$SIGNED_XPI"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$SIGNED_XPI" addons/updates.json addons/latest.json addons/index.html
+          git commit -m "Publish Mozilla-signed Noor Tools v${RELEASE_VERSION}"
+          git push origin HEAD:main
+      - name: Remove temporary source and signing files
+        shell: bash
+        run: rm -rf extension signed
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Wait for GitHub Pages artifact indexing
+        run: sleep 20
+      - name: Deploy signed XPI and the updated Notebook library
+        id: deployment
+        uses: actions/deploy-pages@v4
