@@ -4,13 +4,14 @@ on:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
+      - "addons/unified/Noor-Unified-v2.8.28-Release-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.26"
+        description: "Tested unified source version, e.g. 2.8.28"
         type: string
         required: true
-        default: "2.8.26"
+        default: "2.8.28"
 permissions:
   contents: write
   pages: write
@@ -31,7 +32,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.26' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.28' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -53,16 +54,16 @@ jobs:
           find extension -type f -name '*.js' \
              ! -name 'pdf.min.js' ! -name 'pdf.worker.min.js' ! -name 'mammoth.browser.min.js' \
              -print0 | xargs -0 -r -n1 node --check
-          echo "Source validated. Only manual workflow runs request signing and publishing."
+          echo "Source validated. Signing requires workflow_dispatch or an explicitly tagged [release-noor] source commit."
   sign_and_publish:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release-noor]'))
     needs: validate
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.26' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.28' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       ARCHIVE: ${{ needs.validate.outputs.archive }}
@@ -116,10 +117,14 @@ jobs:
           fi
           dest="addons/files/Noor-Unified-v${RELEASE_VERSION}-signed.xpi"
           mkdir -p addons/files
-          cp "${files[0]}" "$dest"
+          # Re-import the approved XPI from Mozilla using the developer API; verify its hash against AMO.
+          node .github/scripts/import-noor-amo-signed.mjs
+          test -s "$dest"
           unzip -t "$dest" | tail -n 1
           unzip -Z1 "$dest" | grep -Eq '^META-INF/[^/]+\.rsa$'
           unzip -p "$dest" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const m=JSON.parse(s);if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io")process.exit(1)})'
+          for f in noor-course-catalog.js noor-pipeline.js noor-pipeline-background.js noor-grade-csv.js; do unzip -Z1 "$dest" | grep -Fxq "$f"; done
+          ! unzip -Z1 "$dest" | grep -Fxq lessons.js
           sha256sum "$dest"
           echo "SIGNED_XPI=$dest" >> "$GITHUB_ENV"
       - name: Save the signed XPI as a build artifact

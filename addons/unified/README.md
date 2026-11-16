@@ -1,3 +1,15 @@
+# Noor Unified 2.8.28 — Combined lesson publication
+
+The development source includes an integrated, teacher-initiated process that generates a preparation, assessment/questions, and interactive SCORM 1.2 course for each selected lesson, with lesson/unit/semester scope. The tool carries start date and number of periods, reads Noor's own curriculum tree and verified course links, and stores a teacher-specific progress log across page navigation. A personal Gemini API key is shared by the three generation services; grades remain a separate, preview-first process.
+
+**Safety and verification:** The workflow refuses to guess class or attachment CID/TID identifiers, refuses to publish an unverified lesson-tree selection, verifies preparation period choices, and avoids repeating a Save after an uncertain response. The original grade matching and quiz insertion engines remain available. Lesson preparation → activity → SCORM uses the first date actually selected by Noor's preparation timetable for all three services.
+
+**Testing status:** JavaScript syntax, archive/manifest integrity, class label parsing, curriculum matching, and mock Gemini bundle validation passed. Live authenticated Noor end-to-end save, question insertion, and SCORM upload controls have NOT been verified. If Noor's DOM is different, the extension pauses with a reason rather than claiming success. Manual teacher review is strongly advised for the initial rollout.
+
+[Source 2.8.28](./Noor-Unified-v2.8.28-Release-source.zip) | [Firefox signed downloads](../index.html) | [Automatic update manifest](../updates.json)
+
+---
+
 # أدوات نور الموحدة — الإصدار الموقّع 2.8.26
 
 تم استلام حزمة **Noor Unified Tools 2.8.26** الموقّعة من Mozilla آليًا عبر API حساب المطوّر، والتحقق من تطابق رقم الإصدار ومعرف الإضافة وملفات التوقيع وبنية الحزمة قبل وضعها في المستودع.
