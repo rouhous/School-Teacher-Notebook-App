@@ -1,9 +1,9 @@
-name: Build clean unified Noor Firefox extension (unsigned)
+name: Build integrated Noor Firefox extension 2.8.26 (unsigned)
 on:
   workflow_dispatch:
   push:
     paths:
-      - "addons/unified/Noor-Unified-v2.8.25-Simplified-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.26-Integrated-source.zip"
       - ".github/workflows/build-unified-noor-addon.yml"
 permissions:
   contents: read
@@ -15,41 +15,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Extract and verify clean source
+      - name: Extract and verify integration
         run: |
           set -euo pipefail
           mkdir -p extension
-          unzip -q addons/unified/Noor-Unified-v2.8.25-Simplified-source.zip -d extension
+          unzip -q addons/unified/Noor-Unified-v2.8.26-Integrated-source.zip -d extension
           test -f extension/manifest.json
-          test -f extension/notebook-bridge.js
-          test -f extension/teacher-profile.js
-          test -f extension/unified-panel.js
+          test -f extension/noor-hub.js
+          test -f extension/noor-scorm.js
+          test -f extension/smart-background.js
+          test -f extension/smart/src/noor-automator.js
+          test -f extension/smart/src/noor-panel.js
           test ! -e extension/lessons.js
-          grep -Fq 'AQ\.' extension/gemini-background.js
-          grep -Fq "NOOR_GEMINI_TEST_KEY" extension/gemini-background.js
-          if grep -Fq 'functions/v1/noor-generate-prep' extension/gemini-background.js; then echo 'Old prep relay found'; exit 1; fi
           test ! -e extension/META-INF/mozilla.rsa
-          grep -Fq "activeTreeLesson" extension/page-helper.js
-          grep -Fq "noor-context-semester" extension/content.js
-          grep -Fq "noor-key-setup" extension/content.js
-          grep -Fq "noor-prep-primary-actions" extension/content.js
-          node -e "const m=require('./extension/manifest.json');if(m.version!=='2.8.25'||!m.browser_specific_settings.gecko.update_url||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io'||m.content_scripts.some(s=>s.js.includes('lessons.js')))process.exit(1)"
-          for p in extension/content.js extension/gemini-background.js extension/notebook-bridge.js extension/teacher-profile.js extension/unified-panel.js extension/page-helper.js; do
-            node --check "$p"
-          done
-          grep -Fq "noor_prepared_titles_v1" extension/content.js
-          grep -Fq "localStorage.removeItem(key)" extension/content.js
+          node -e "const fs=require('fs'),m=require('./extension/manifest.json');if(m.version!=='2.8.26'||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io'||!m.browser_specific_settings.gecko.update_url)process.exit(1);for(const s of [...m.background.scripts,...m.content_scripts.flatMap(c=>[...c.js,...(c.css||[])])])if(!fs.existsSync('extension/'+s))process.exit(1)"
+          find extension -name '*.js' -not -name 'pdf.min.js' -not -name 'pdf.worker.min.js' -not -name 'mammoth.browser.min.js' -print0 | xargs -0 -n1 node --check
+          grep -Fq 'stnGeminiKey:' extension/smart-background.js
+          grep -Fq 'NOOR_ACTIVITY_GEMINI_GENERATE' extension/smart-background.js
+          grep -Fq 'LMSSetValue' extension/noor-scorm.js
       - name: Package unsigned XPI for Mozilla signing
         run: |
           set -euo pipefail
           cd extension
-          zip -q -r ../Noor-Unified-v2.8.25-Simplified-unsigned.xpi . -x 'README.md' '*.DS_Store'
+          zip -q -r ../Noor-Unified-v2.8.26-unsigned.xpi . -x 'README.md' '*.DS_Store'
           cd ..
-          unzip -t Noor-Unified-v2.8.25-Simplified-unsigned.xpi | tail -1
-          if unzip -Z1 Noor-Unified-v2.8.25-Simplified-unsigned.xpi | grep -q 'lessons.js'; then exit 1; fi
-          sha256sum Noor-Unified-v2.8.25-Simplified-unsigned.xpi
+          unzip -t Noor-Unified-v2.8.26-unsigned.xpi | tail -1
+          if unzip -Z1 Noor-Unified-v2.8.26-unsigned.xpi | grep -q 'lessons.js'; then exit 1; fi
+          sha256sum Noor-Unified-v2.8.26-unsigned.xpi
       - uses: actions/upload-artifact@v4
         with:
-          name: Noor-Unified-v2.8.25-Simplified-unsigned-for-Mozilla-signing
-          path: Noor-Unified-v2.8.25-Simplified-unsigned.xpi
+          name: Noor-Unified-v2.8.26-unsigned-for-Mozilla
+          path: Noor-Unified-v2.8.26-unsigned.xpi
           retention-days: 30
