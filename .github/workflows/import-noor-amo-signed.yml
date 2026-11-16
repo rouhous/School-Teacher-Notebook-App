@@ -10,7 +10,7 @@ on:
         description: "Already signed Mozilla version to import"
         required: true
         type: string
-        default: "2.8.26"
+        default: "2.8.28"
 permissions:
   contents: write
 concurrency:
@@ -18,10 +18,10 @@ concurrency:
   cancel-in-progress: false
 jobs:
   import_signed_version:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[import-amo-2.8.26]')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[import-amo-2.8.28]')
     runs-on: ubuntu-latest
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.26' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.28' }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
       AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
     steps:

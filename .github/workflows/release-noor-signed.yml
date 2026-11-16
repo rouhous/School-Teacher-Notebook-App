@@ -66,6 +66,8 @@ jobs:
       RELEASE_VERSION: ${{ inputs.version || '2.8.28' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       ARCHIVE: ${{ needs.validate.outputs.archive }}
     steps:
       - uses: actions/checkout@v4
