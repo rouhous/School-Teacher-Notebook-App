@@ -1,3 +1,7 @@
+# ✅ Noor Unified Tools 2.8.28 — Mozilla signed and published
+
+The signed extension was imported directly from Mozilla and published as `addons/files/Noor-Unified-v2.8.28-signed.xpi`. `addons/updates.json` now includes version 2.8.28, and the Notebook's installation link points to the new signed package. Automatic publishing does not constitute a live end-to-end Noor workflow test; teacher sessions should first run one lesson and verify its three saved resources before a large batch.
+
 # Noor Unified 2.8.28 — Combined lesson publication
 
 The development source includes an integrated, teacher-initiated process that generates a preparation, assessment/questions, and interactive SCORM 1.2 course for each selected lesson, with lesson/unit/semester scope. The tool carries start date and number of periods, reads Noor's own curriculum tree and verified course links, and stores a teacher-specific progress log across page navigation. A personal Gemini API key is shared by the three generation services; grades remain a separate, preview-first process.
