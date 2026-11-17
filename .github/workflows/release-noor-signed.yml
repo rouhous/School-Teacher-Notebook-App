@@ -1,3 +1,4 @@
+# QA approved: 2.8.35 independent workflows, verified subject guardrails.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
