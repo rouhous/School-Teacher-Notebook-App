@@ -25,7 +25,15 @@ window.addEventListener('message',event=>{
  if(event.data.type==='STN_NOOR_WHOAMI'){
   void (async()=>{
    const installId=String(event.data.installId||'');
-   if(!/^[a-f0-9]{32}$/.test(installId))return; // License challenge is created by this Firefox extension.
+   if(!/^[a-f0-9]{32}$/.test(installId)){
+    // Compatibility with earlier, already distributed signed XPIs. These older
+    // builds only support the legacy identity handshake; do not revoke them.
+    // The 2.8.37 extension always sends a 32-character install challenge.
+    if(!document.getElementById('schoolAuthCover')&&typeof schoolNotebookSubject==='string'&&schoolNotebookSubject){
+     window.postMessage({type:'STN_NOOR_ACTIVE_TEACHER',teacherId:schoolNotebookSubject},location.origin);
+    }
+    return;
+   }
    if(document.getElementById('schoolAuthCover')||typeof schoolNotebookSubject!=='string'||!schoolNotebookSubject)return;
    try{
     // The Google/Passkey credential is sent ONLY from this page to our trusted
