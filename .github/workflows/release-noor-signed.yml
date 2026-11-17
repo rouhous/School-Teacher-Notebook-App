@@ -1,4 +1,4 @@
-# QA approved: 2.8.37 independent workflows, verified subject guardrails.
+# QA passed 2.8.37 teacher-membership and before-generation save-mode tests.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
