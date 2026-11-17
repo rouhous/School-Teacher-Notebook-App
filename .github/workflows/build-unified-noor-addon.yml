@@ -1,9 +1,9 @@
-name: Validate Noor 2.8.33 Gemini model routing and safe fallback (unsigned)
+name: Validate Noor 2.8.34 Gemini 503 backoff and bounded fallback (unsigned)
 on:
   workflow_dispatch:
   push:
     paths:
-      - "addons/unified/Noor-Unified-v2.8.33-GeminiRouter-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.34-Gemini503-source.zip"
       - ".github/workflows/build-unified-noor-addon.yml"
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p extension
-          unzip -q addons/unified/Noor-Unified-v2.8.33-GeminiRouter-source.zip -d extension
+          unzip -q addons/unified/Noor-Unified-v2.8.34-Gemini503-source.zip -d extension
           test -f extension/manifest.json
           test -f extension/noor-hub.js
           test -f extension/noor-scorm.js
@@ -28,7 +28,7 @@ jobs:
           test -f extension/smart/src/noor-panel.js
           test ! -e extension/lessons.js
           test ! -e extension/META-INF/mozilla.rsa
-          node -e "const fs=require('fs'),m=require('./extension/manifest.json');if(m.version!=='2.8.33'||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io'||!m.browser_specific_settings.gecko.update_url)process.exit(1);for(const s of [...m.background.scripts,...m.content_scripts.flatMap(c=>[...c.js,...(c.css||[])])])if(!fs.existsSync('extension/'+s))process.exit(1)"
+          node -e "const fs=require('fs'),m=require('./extension/manifest.json');if(m.version!=='2.8.34'||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io'||!m.browser_specific_settings.gecko.update_url)process.exit(1);for(const s of [...m.background.scripts,...m.content_scripts.flatMap(c=>[...c.js,...(c.css||[])])])if(!fs.existsSync('extension/'+s))process.exit(1)"
           find extension -name '*.js' -not -name 'pdf.min.js' -not -name 'pdf.worker.min.js' -not -name 'mammoth.browser.min.js' -print0 | xargs -0 -n1 node --check
           grep -Fq 'stnGeminiKey:' extension/smart-background.js
           grep -Fq 'NOOR_ACTIVITY_GEMINI_GENERATE' extension/smart-background.js
@@ -41,6 +41,8 @@ jobs:
           grep -Fq 'classMatchesForRun' extension/smart/src/noor-automator.js
           test -f extension/noor-gemini-models.js
           grep -Fq 'gemini-3.5-flash-lite' extension/noor-gemini-models.js
+          grep -Fq 'r.status===503' extension/noor-gemini-models.js
+          grep -Fq 'setTimeout(resolve,ms)' extension/noor-gemini-models.js
           grep -Fq 'NoorGeminiModels.generate' extension/smart-background.js
           grep -Fq 'NoorGeminiModels.generate' extension/gemini-background.js
           grep -Fq 'NoorGeminiModels.generate' extension/noor-pipeline-background.js
@@ -50,13 +52,13 @@ jobs:
         run: |
           set -euo pipefail
           cd extension
-          zip -q -r ../Noor-Unified-v2.8.33-unsigned.xpi . -x 'README.md' '*.DS_Store'
+          zip -q -r ../Noor-Unified-v2.8.34-unsigned.xpi . -x 'README.md' '*.DS_Store'
           cd ..
-          unzip -t Noor-Unified-v2.8.33-unsigned.xpi | tail -1
-          if unzip -Z1 Noor-Unified-v2.8.33-unsigned.xpi | grep -q 'lessons.js'; then exit 1; fi
-          sha256sum Noor-Unified-v2.8.33-unsigned.xpi
+          unzip -t Noor-Unified-v2.8.34-unsigned.xpi | tail -1
+          if unzip -Z1 Noor-Unified-v2.8.34-unsigned.xpi | grep -q 'lessons.js'; then exit 1; fi
+          sha256sum Noor-Unified-v2.8.34-unsigned.xpi
       - uses: actions/upload-artifact@v4
         with:
-          name: Noor-Unified-v2.8.33-unsigned-for-Mozilla
-          path: Noor-Unified-v2.8.33-unsigned.xpi
+          name: Noor-Unified-v2.8.34-unsigned-for-Mozilla
+          path: Noor-Unified-v2.8.34-unsigned.xpi
           retention-days: 30
