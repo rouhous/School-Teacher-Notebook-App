@@ -1,3 +1,19 @@
+# Noor Unified Tools 2.8.29 — إصلاح اختيار الصف (قيد التوقيع التلقائي)
+
+**إصلاح مشكلة Firefox في نافذة اختيار الصف:** كانت قائمة الصفوف يعيد بناءها محركان منفصلان، وهو ما يؤدي إلى اختفاء قائمة Firefox الأصلية أثناء اختيار الصف. أصبح `noor-hub.js` هو المسؤول الوحيد عن القائمة، و`noor-pipeline.js` يطلب التحديث دون تعديل الخيارات بنفسه.
+
+- لا تُغيَّر الخيارات حين تكون قائمة الصفوف مفتوحة، ولا تُنشأ من جديد إن لم يتغير محتواها.
+- يحتفظ المعلم بالصف الذي اختاره، بما في ذلك الانتقال بين صفحات نور ضمن الجلسة، مع فصل الاختيار بحسب حسابه.
+- يكتشف الصفوف من بطاقات صفحة المعلم حتى عندما يظهر اسم الصف في متن البطاقة بدل عنوانها.
+- يطالب بفتح بطاقة الصف في نور إذا لم يظهر معرف Course ID رسمي؛ لا يخترع معرفات ولا يُدخل بيانات في صف خاطئ.
+- لم تتغير وظائف Gemini والتحضير الجماعي والأنشطة وSCORM ونقل الدرجات من 2.8.28.
+
+**الاختبار:** اجتاز اختبار إعادة فتح القائمة وتحديثها وفصل الصفوف وحماية المعرفات عبر محاكاة DOM، وفحص ملفات JavaScript وسلامة ZIP. **اختبار Noor الحي لم يتم بعد**.
+
+[تنزيل مصدر 2.8.29](./Noor-Unified-v2.8.29-ClassDropdown-source.zip) · [مكتبة الإضافات](../index.html)
+
+---
+
 # ✅ Noor Unified Tools 2.8.28 — Mozilla signed and published
 
 The signed extension was imported directly from Mozilla and published as `addons/files/Noor-Unified-v2.8.28-signed.xpi`. `addons/updates.json` now includes version 2.8.28, and the Notebook's installation link points to the new signed package. Automatic publishing does not constitute a live end-to-end Noor workflow test; teacher sessions should first run one lesson and verify its three saved resources before a large batch.
