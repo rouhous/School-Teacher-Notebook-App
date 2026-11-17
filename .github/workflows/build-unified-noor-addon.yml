@@ -1,9 +1,9 @@
-name: Validate Noor 2.8.37 independent services (unsigned)
+name: Validate Noor 2.8.38 Omani interactive SCORM (unsigned)
 on:
   workflow_dispatch:
   push:
     paths:
-      - "addons/unified/Noor-Unified-v2.8.37-Membership-SaveModes-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.38-OmaniSCORM-source.zip"
       - ".github/workflows/build-unified-noor-addon.yml"
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p extension
-          unzip -q addons/unified/Noor-Unified-v2.8.37-Membership-SaveModes-source.zip -d extension
+          unzip -q addons/unified/Noor-Unified-v2.8.38-OmaniSCORM-source.zip -d extension
           test -f extension/manifest.json
           test -f extension/noor-license.js
           test -f extension/noor-license-ui.js
@@ -37,7 +37,7 @@ jobs:
           test -f extension/smart/src/noor-panel.js
           test ! -e extension/lessons.js
           test ! -e extension/META-INF/mozilla.rsa
-          node -e "const fs=require('fs'),m=require('./extension/manifest.json');if(m.version!=='2.8.37'||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io'||!m.browser_specific_settings.gecko.update_url)process.exit(1);for(const s of [...m.background.scripts,...m.content_scripts.flatMap(c=>[...c.js,...(c.css||[])])])if(!fs.existsSync('extension/'+s))process.exit(1)"
+          node -e "const fs=require('fs'),m=require('./extension/manifest.json');if(m.version!=='2.8.38'||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io'||!m.browser_specific_settings.gecko.update_url)process.exit(1);for(const s of [...m.background.scripts,...m.content_scripts.flatMap(c=>[...c.js,...(c.css||[])])])if(!fs.existsSync('extension/'+s))process.exit(1)"
           find extension -name '*.js' -not -name 'pdf.min.js' -not -name 'pdf.worker.min.js' -not -name 'mammoth.browser.min.js' -print0 | xargs -0 -n1 node --check
           grep -Fq 'stnGeminiKey:' extension/smart-background.js
           grep -Fq 'NOOR_ACTIVITY_GEMINI_GENERATE' extension/smart-background.js
@@ -83,17 +83,37 @@ jobs:
           if(a.resolve(units,{semester:'1',unit:'4',lesson:'9'}).ok)throw Error('Missing lesson must not match');
           console.log('Numeric unit and lesson mapping safeguards passed');
           NODE
+      - name: Verify Oman learning quest SCORM renderer and dedicated Gemini request
+        run: |
+          grep -Fq 'NOOR_GEMINI_SCORM_GENERATE' extension/gemini-background.js
+          grep -Fq 'NOOR_GEMINI_SCORM_GENERATE' extension/noor-hub.js
+          grep -Fq 'matchQuestion' extension/noor-scorm.js
+          grep -Fq 'orderQuestion' extension/noor-scorm.js
+          grep -Fq 'three stages' extension/gemini-background.js
+          node - <<'NODE'
+          const vm=require('vm'),fs=require('fs');
+          const c={Blob,TextEncoder,Uint8Array,Math,Array,Number,Object,String,Set,Error};
+          c.globalThis=c;vm.runInNewContext(fs.readFileSync('extension/noor-scorm.js','utf8'),c);
+          const qs=[{type:'mcq',question:'Which is an Omani sailing boat?',options:['Dhow','Rocket','Bus','Train'],correct:0,explanation:'A dhow is a sailing boat.'},
+           {type:'truefalse',question:'Traditional forts are part of Omani history.',correct:0,explanation:'Forts are historical buildings.'},
+           {type:'order',question:'Put the story steps into order.',items:['Plan','Write','Review'],explanation:'Start by planning.'},
+           {type:'match',question:'Match the vocabulary to the meanings.',pairs:[{left:'Dhow',right:'Boat'},{left:'Fort',right:'Building'},{left:'Sea',right:'Water'}],explanation:'Each term matches its meaning.'}];
+          if(c.NoorScorm.normalize(qs).length!==4)throw Error('four challenge types missing');
+          c.NoorScorm.create('Unit 1 • Lesson 1',{questions:qs,intro:'Explore Oman',mission:'Complete the stages'},{subject:'English',grade:10,unit:'Unit1: Stories',lesson:'Lesson1'}).arrayBuffer()
+           .then(buf=>{if(!c.NoorScorm.hasManifest(buf)||buf.byteLength<4000)process.exitCode=1;else console.log('Omani offline SCORM package verified')})
+           .catch(e=>{console.error(e);process.exitCode=1});
+          NODE
       - name: Package unsigned XPI for Mozilla signing
         run: |
           set -euo pipefail
           cd extension
-          zip -q -r ../Noor-Unified-v2.8.37-unsigned.xpi . -x 'README.md' '*.DS_Store'
+          zip -q -r ../Noor-Unified-v2.8.38-unsigned.xpi . -x 'README.md' '*.DS_Store'
           cd ..
-          unzip -t Noor-Unified-v2.8.37-unsigned.xpi | tail -1
-          if unzip -Z1 Noor-Unified-v2.8.37-unsigned.xpi | grep -q 'lessons.js'; then exit 1; fi
-          sha256sum Noor-Unified-v2.8.37-unsigned.xpi
+          unzip -t Noor-Unified-v2.8.38-unsigned.xpi | tail -1
+          if unzip -Z1 Noor-Unified-v2.8.38-unsigned.xpi | grep -q 'lessons.js'; then exit 1; fi
+          sha256sum Noor-Unified-v2.8.38-unsigned.xpi
       - uses: actions/upload-artifact@v4
         with:
-          name: Noor-Unified-v2.8.37-unsigned-for-Mozilla
-          path: Noor-Unified-v2.8.37-unsigned.xpi
+          name: Noor-Unified-v2.8.38-unsigned-for-Mozilla
+          path: Noor-Unified-v2.8.38-unsigned.xpi
           retention-days: 30
