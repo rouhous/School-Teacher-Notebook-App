@@ -5293,7 +5293,9 @@ async function syncManaged(){
     if(!tally.size)continue;
     const primary=[...tally.entries()].sort((a,b)=>b[1]-a[1])[0][0];
     const current=schoolAssessmentSubject(cls.subject||'');
-    if(!current||!bandsForSubject(current).length)cls.subject=primary;
+    // Approved school timetable is authoritative. A previously cached subject can
+    // be valid in the catalog but wrong for this teacher's current class.
+    if(current!==primary)cls.subject=primary;
   }
   // Give every approved lesson a stable assessment subject even when the
   // published subject label differs from the catalog's canonical name.
