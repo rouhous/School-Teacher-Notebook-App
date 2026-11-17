@@ -39,7 +39,8 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:3
 <section class="card" aria-label="تنزيل إضافة نور">
 <h2>أدوات نور للمعلم</h2>
 <p class="summary">تحضير الدروس تلقائيًا، إدخال الدرجات، إدراج الاختبارات والأنشطة، وإضافة الدروس التفاعلية.</p>
-<a class="button" id="install-xpi" href="./files/Noor-Unified-v2.8.35-signed.xpi">تنزيل إضافة Firefox</a>
+<a class="button" id="install-xpi" href="./files/Noor-Unified-v2.8.35-signed.xpi?v=2.8.35">تنزيل إضافة Firefox — 2.8.35</a>
+<p class="status" id="release-status">الإصدار الحالي: 2.8.35</p>
 <p class="status" id="browser-note" role="status" aria-live="polite"></p>
 </section>
 <h2 class="section">طريقة التثبيت</h2>
@@ -73,10 +74,30 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:3
  document.getElementById(android?'android-guide':'desktop-guide').open=true;
  if(android)link.setAttribute('download','Noor-Unified-v2.8.35-signed.xpi');
  if(!firefox){
-  note.textContent='يرجى فتح هذه الصفحة باستخدام Firefox لتثبيت الإضافة.';
+  note.textContent='أنت تستخدم متصفحًا غير Firefox أو متصفحًا داخليًا. افتح رابط المكتبة في Firefox نفسه؛ تنزيل XPI وحده لا يثبّت الإضافة.';
  }else if(version<min){
   note.textContent='يرجى تحديث متصفح Firefox قبل التثبيت.';
  }
+ // Always ask for the most recent published release rather than relying on a cached install page.
+ // The verified path is restricted to the same GitHub Pages origin.
+ (async()=>{
+  const status=document.getElementById('release-status');
+  try{
+   const response=await fetch('./latest.json?refresh='+Date.now(),{cache:'no-store',credentials:'omit'});
+   if(!response.ok)throw new Error('HTTP '+response.status);
+   const latest=await response.json();
+   if(latest.id!=='noor-prep-filler-private-2026@rouhous.github.io'||!/^\d+\.\d+\.\d+$/.test(latest.version))throw new Error('bad release metadata');
+   const filename='Noor-Unified-v'+latest.version+'-signed.xpi';
+   const address=new URL(latest.download_url,location.href);
+   if(address.origin!==location.origin||!address.pathname.endsWith('/addons/files/'+filename))throw new Error('unexpected release address');
+   link.href='./files/'+filename+'?v='+encodeURIComponent(latest.version);
+   link.textContent='تنزيل إضافة Firefox — '+latest.version;
+   status.textContent='الإصدار الحالي: '+latest.version;
+   if(android)link.setAttribute('download',filename);
+  }catch(_){
+   status.textContent='الإصدار المعلن: 2.8.35 — إذا ظهر رابط قديم، افتح المكتبة مجددًا في Firefox.';
+  }
+ })();
  // Show an installed state only if the running extension explicitly confirms it.
  window.addEventListener('message',function(event){
   if(event.source!==window||event.origin!==location.origin||!event.data||typeof event.data!=='object')return;
