@@ -4,14 +4,14 @@ on:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.29-ClassDropdown-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.30-Stability-Drag-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.29"
+        description: "Tested unified source version, e.g. 2.8.30"
         type: string
         required: true
-        default: "2.8.29"
+        default: "2.8.30"
 permissions:
   contents: write
   pages: write
@@ -32,7 +32,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.29' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.30' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -51,6 +51,9 @@ jobs:
           test ! -e extension/META-INF/mozilla.rsa
           node -e 'const m=require("./extension/manifest.json");if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io"||m.browser_specific_settings?.gecko?.update_url!=="https://rouhous.github.io/School-Teacher-Notebook-App/addons/updates.json")process.exit(1)'
           node --check .github/scripts/publish-noor-release.mjs
+          grep -Fq 'stnCourseCatalog:v3:' extension/noor-course-catalog.js
+          grep -Fq 'stnHubDragHandle' extension/noor-hub.js
+          grep -Fq 'verifiedAddPage' extension/noor-pipeline.js
           find extension -type f -name '*.js' \
              ! -name 'pdf.min.js' ! -name 'pdf.worker.min.js' ! -name 'mammoth.browser.min.js' \
              -print0 | xargs -0 -r -n1 node --check
@@ -63,7 +66,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.29' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.30' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -132,7 +135,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.30' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
