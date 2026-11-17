@@ -1,18 +1,18 @@
-# QA approved: 2.8.36 independent workflows, verified subject guardrails.
+# QA approved: 2.8.37 independent workflows, verified subject guardrails.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.36-NumberBasedSelectors-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.37-Membership-SaveModes-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.36"
+        description: "Tested unified source version, e.g. 2.8.37"
         type: string
         required: true
-        default: "2.8.36"
+        default: "2.8.37"
 permissions:
   contents: write
   pages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.36' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.37' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -52,12 +52,16 @@ jobs:
           test ! -e extension/META-INF/mozilla.rsa
           node -e 'const m=require("./extension/manifest.json");if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io"||m.browser_specific_settings?.gecko?.update_url!=="https://rouhous.github.io/School-Teacher-Notebook-App/addons/updates.json")process.exit(1)'
           node --check .github/scripts/publish-noor-release.mjs
+          test -f extension/noor-license.js
+          test -f extension/noor-license-ui.js
+          grep -Fq 'STN_NOOR_LICENSE.authorized()' extension/gemini-background.js
+          grep -Fq 'saveReviewedPreparation({automatic:true})' extension/noor-hub.js
           test -f extension/noor-lesson-numbers.js
           grep -Fq 'resolveVerifiedLesson' extension/noor-hub.js
           test -f extension/noor-gemini-models.js
           grep -Fq 'gemini-3.5-flash-lite' extension/noor-gemini-models.js
           grep -Fq 'NoorGeminiModels.generate' extension/smart-background.js
-          node -e "const m=require('./extension/manifest.json');if(m.background.scripts[0]!=='noor-gemini-models.js')process.exit(1)"
+          node -e "const m=require('./extension/manifest.json');if(m.background.scripts[0]!=='noor-license.js'||m.background.scripts[1]!=='noor-gemini-models.js')process.exit(1)"
           grep -Fq 'stnCourseCatalog:v4:' extension/noor-course-catalog.js
           grep -Fq 'stnHubDragHandle' extension/noor-hub.js
           test ! -e extension/noor-pipeline.js
@@ -79,7 +83,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.36' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.37' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -149,7 +153,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.36' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.37' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
