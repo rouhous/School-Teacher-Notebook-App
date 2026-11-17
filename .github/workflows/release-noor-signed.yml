@@ -139,7 +139,8 @@ jobs:
           unzip -t "$dest" | tail -n 1
           unzip -Z1 "$dest" | grep -Eq '^META-INF/[^/]+\.rsa$'
           unzip -p "$dest" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const m=JSON.parse(s);if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io")process.exit(1)})'
-          for f in noor-course-catalog.js noor-pipeline.js noor-pipeline-background.js noor-grade-csv.js; do unzip -Z1 "$dest" | grep -Fxq "$f"; done
+          for f in noor-hub.js noor-course-catalog.js noor-scorm.js noor-grade-csv.js smart/src/noor-panel.js; do unzip -Z1 "$dest" | grep -Fxq "$f"; done
+          ! unzip -Z1 "$dest" | grep -Exq 'noor-pipeline.js|noor-pipeline-background.js'
           ! unzip -Z1 "$dest" | grep -Fxq lessons.js
           sha256sum "$dest"
           echo "SIGNED_XPI=$dest" >> "$GITHUB_ENV"
