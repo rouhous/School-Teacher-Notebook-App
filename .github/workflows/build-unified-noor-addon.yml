@@ -1,9 +1,9 @@
-name: Validate Noor 2.8.35 independent services (unsigned)
+name: Validate Noor 2.8.36 independent services (unsigned)
 on:
   workflow_dispatch:
   push:
     paths:
-      - "addons/unified/Noor-Unified-v2.8.35-IndependentServices-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.36-NumberBasedSelectors-source.zip"
       - ".github/workflows/build-unified-noor-addon.yml"
 permissions:
   contents: read
@@ -19,16 +19,19 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p extension
-          unzip -q addons/unified/Noor-Unified-v2.8.35-IndependentServices-source.zip -d extension
+          unzip -q addons/unified/Noor-Unified-v2.8.36-NumberBasedSelectors-source.zip -d extension
           test -f extension/manifest.json
           test -f extension/noor-hub.js
+          test -f extension/noor-lesson-numbers.js
+          grep -Fq 'stnNoorSelectedService:v2' extension/noor-hub.js
+          grep -Fq 'resolveVerifiedLesson' extension/noor-hub.js
           test -f extension/noor-scorm.js
           test -f extension/smart-background.js
           test -f extension/smart/src/noor-automator.js
           test -f extension/smart/src/noor-panel.js
           test ! -e extension/lessons.js
           test ! -e extension/META-INF/mozilla.rsa
-          node -e "const fs=require('fs'),m=require('./extension/manifest.json');if(m.version!=='2.8.35'||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io'||!m.browser_specific_settings.gecko.update_url)process.exit(1);for(const s of [...m.background.scripts,...m.content_scripts.flatMap(c=>[...c.js,...(c.css||[])])])if(!fs.existsSync('extension/'+s))process.exit(1)"
+          node -e "const fs=require('fs'),m=require('./extension/manifest.json');if(m.version!=='2.8.36'||m.browser_specific_settings.gecko.id!=='noor-prep-filler-private-2026@rouhous.github.io'||!m.browser_specific_settings.gecko.update_url)process.exit(1);for(const s of [...m.background.scripts,...m.content_scripts.flatMap(c=>[...c.js,...(c.css||[])])])if(!fs.existsSync('extension/'+s))process.exit(1)"
           find extension -name '*.js' -not -name 'pdf.min.js' -not -name 'pdf.worker.min.js' -not -name 'mammoth.browser.min.js' -print0 | xargs -0 -n1 node --check
           grep -Fq 'stnGeminiKey:' extension/smart-background.js
           grep -Fq 'NOOR_ACTIVITY_GEMINI_GENERATE' extension/smart-background.js
@@ -54,17 +57,37 @@ jobs:
           grep -Fq 'NoorGeminiModels.generate' extension/gemini-background.js
           node -e "const m=require('./extension/manifest.json');if(m.background.scripts[0]!=='noor-gemini-models.js')process.exit(1)"
           if grep -Fq "value='gemini-2.5-flash-lite'" extension/smart/src/noor-panel.js; then exit 1; fi
+      - name: Test verified numeric unit and lesson resolution
+        run: |
+          node - <<'NODE'
+          require('./extension/noor-lesson-numbers.js');
+          const a=globalThis.NoorLessonNumbers;
+          if (!a) throw Error('Noor numeric resolver missing');
+          const units=[{term:'الفصل الأول',termId:'t1',unitId:'u4',unit:'Unit4: Civilisation',
+             lessons:[{id:'l4',title:'Unit4: Civilisation: Lesson4'}]},
+             {term:'الفصل الثاني',termId:'t2',unitId:'u4b',unit:'Unit4: Civilisation',
+             lessons:[{id:'l4b',title:'Unit4: Civilisation: Lesson4'}]}];
+          const r=a.resolve(units,{semester:'1',unit:'4',lesson:'4'});
+          if(!r.ok||r.lessonId!=='l4')throw Error('Unit4 Lesson4 should resolve uniquely in semester 1');
+          if(a.resolve(units,{semester:'',unit:'4',lesson:'4'}).reason!=='ambiguous')throw Error('Must reject ambiguous semester');
+          const theme=a.resolve([{term:'First',termId:'t',unitId:'u',unit:'Theme4: Travel and Transport',
+            lessons:[{id:'l',title:'Unit 4: Jobs in Airports and Aviation'}]}],
+            {semester:'1',unit:'4',lesson:'4'});
+          if(!theme.ok||theme.lessonId!=='l')throw Error('Theme4 child Unit4 must resolve as numbered lesson');
+          if(a.resolve(units,{semester:'1',unit:'4',lesson:'9'}).ok)throw Error('Missing lesson must not match');
+          console.log('Numeric unit and lesson mapping safeguards passed');
+          NODE
       - name: Package unsigned XPI for Mozilla signing
         run: |
           set -euo pipefail
           cd extension
-          zip -q -r ../Noor-Unified-v2.8.35-unsigned.xpi . -x 'README.md' '*.DS_Store'
+          zip -q -r ../Noor-Unified-v2.8.36-unsigned.xpi . -x 'README.md' '*.DS_Store'
           cd ..
-          unzip -t Noor-Unified-v2.8.35-unsigned.xpi | tail -1
-          if unzip -Z1 Noor-Unified-v2.8.35-unsigned.xpi | grep -q 'lessons.js'; then exit 1; fi
-          sha256sum Noor-Unified-v2.8.35-unsigned.xpi
+          unzip -t Noor-Unified-v2.8.36-unsigned.xpi | tail -1
+          if unzip -Z1 Noor-Unified-v2.8.36-unsigned.xpi | grep -q 'lessons.js'; then exit 1; fi
+          sha256sum Noor-Unified-v2.8.36-unsigned.xpi
       - uses: actions/upload-artifact@v4
         with:
-          name: Noor-Unified-v2.8.35-unsigned-for-Mozilla
-          path: Noor-Unified-v2.8.35-unsigned.xpi
+          name: Noor-Unified-v2.8.36-unsigned-for-Mozilla
+          path: Noor-Unified-v2.8.36-unsigned.xpi
           retention-days: 30
