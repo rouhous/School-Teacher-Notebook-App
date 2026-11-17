@@ -4880,9 +4880,9 @@ window.schoolWidgetSnapshot=function(){
  return {
   revision:window.schoolPublishedTiming.revision,
   schoolId:window.schoolManagedSchoolId||'',
-  slots:managedSchedule.map(x=>({weekday:Number(x.weekday),period:Number(x.period),classId:String(x.classId||''),dutyPriority:String(x.dutyPriority||'')})),
+  slots:managedSchedule.map(x=>({weekday:Number(x.weekday),period:Number(x.period),classId:String(x.classId||''),subject:String(x.subject||''),dutyPriority:String(x.dutyPriority||'')})),
   timing:window.schoolPublishedTiming.periods.map(x=>({start:String(x.start||''),end:String(x.end||''),kind:String(x.kind||'lesson')})),
-  cover:managedCover.filter(x=>x.status==='confirmed').map(x=>({date:String(x.date||''),period:Number(x.period),classId:String(x.classId||''),status:'confirmed'}))
+  cover:managedCover.filter(x=>x.status==='confirmed').map(x=>({date:String(x.date||''),period:Number(x.period),classId:String(x.classId||''),subject:String(x.subject||''),status:'confirmed'}))
  };
 };
 // Android Share Sheet handoff: user explicitly chooses the installed widget app.
