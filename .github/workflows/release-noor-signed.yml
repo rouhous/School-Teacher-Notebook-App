@@ -1,18 +1,18 @@
-# QA passed 2.8.45 teacher-membership and before-generation save-mode tests.
+# QA passed 2.8.46 teacher-membership and before-generation save-mode tests.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.45-Arabic-Axis-Lessons-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.46-UnitBatch-MobileTabs-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.45"
+        description: "Tested unified source version, e.g. 2.8.46"
         type: string
         required: true
-        default: "2.8.45"
+        default: "2.8.46"
 permissions:
   contents: write
   pages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.45' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.46' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -62,6 +62,15 @@ jobs:
           grep -Fq 'stnNoorPrepSubmitReceipt:v1' extension/page-helper.js
           grep -Fq 'scheduled:true' extension/page-helper.js
           test -f extension/noor-scorm-publisher.js
+          grep -Fq 'stnNoorUnitBatch:v1' extension/noor-hub.js
+          grep -Fq 'confirmedUnitLessons' extension/noor-hub.js
+          grep -Fq 'stnHubActivityScope' extension/noor-hub.js
+          grep -Fq 'stnHubScormScope' extension/noor-hub.js
+          grep -Fq 'stnHubMinimize' extension/noor-hub.js
+          grep -Fq 'stnHubTabContent' extension/noor-hub.js
+          grep -Fq 'stnHubBatchCancel' extension/noor-hub.js
+          grep -Fq 'confirmedSaved' extension/noor-scorm-publisher.js
+          grep -Fq 'stnHubMinimized' extension/noor-hub.css
           grep -Fq 'id="stnHubLessonMode"' extension/noor-hub.js
           grep -Fq 'value="auto">اكتشاف تلقائي' extension/noor-hub.js
           grep -Fq 'value="manual">اختيار المعلم' extension/noor-hub.js
@@ -126,7 +135,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.45' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.46' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -196,7 +205,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.45' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.46' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
