@@ -58,7 +58,7 @@ jobs:
           test -f extension/noor-scorm-publisher.js
           grep -Fq 'id="stnHubLessonMode"' extension/noor-hub.js
           grep -Fq 'value="auto">اكتشاف تلقائي' extension/noor-hub.js
-          grep -Fq 'value="manual">اختيار يدوي' extension/noor-hub.js
+          grep -Fq 'value="manual">اختيار المعلم' extension/noor-hub.js
           grep -Fq 'manualSelection' extension/noor-hub.js
           grep -Fq 'Science Noor tree' extension/noor-lesson-numbers.js
           node - <<'NODE'
