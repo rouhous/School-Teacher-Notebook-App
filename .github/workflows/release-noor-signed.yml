@@ -202,6 +202,7 @@ jobs:
           node .github/scripts/import-noor-amo-signed.mjs
           test -s "$dest"
           python3 - "$ARCHIVE" "$dest" <<'PY'
+          import json
           import sys
           from zipfile import ZipFile
 
@@ -213,7 +214,17 @@ jobs:
               actual.discard('README.md')
               if expected != actual:
                   sys.exit('Signed XPI file list differs: ' + ', '.join(sorted(expected ^ actual)))
-              changed = sorted(name for name in expected if source.read(name) != signed.read(name))
+              changed = sorted(name for name in expected - {'manifest.json'}
+                               if source.read(name) != signed.read(name))
+              source_manifest = json.loads(source.read('manifest.json'))
+              signed_manifest = json.loads(signed.read('manifest.json'))
+              # Description is store metadata; require all runtime settings to match.
+              source_manifest.pop('description', None)
+              signed_manifest.pop('description', None)
+              if source_manifest != signed_manifest:
+                  fields = sorted(key for key in source_manifest.keys() | signed_manifest.keys()
+                                  if source_manifest.get(key) != signed_manifest.get(key))
+                  sys.exit('Signed manifest settings differ: ' + ', '.join(fields))
               if changed:
                   sys.exit('Signed XPI content differs: ' + ', '.join(changed))
           print('Signed XPI runtime contents match the validated archive.')
