@@ -178,26 +178,46 @@ jobs:
         timeout-minutes: 35
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/noor-sign-cli/node_modules/.bin/web-ext" sign \
+          SIGN_LOG="$(mktemp)"
+          if "$RUNNER_TEMP/noor-sign-cli/node_modules/.bin/web-ext" sign \
             --source-dir extension \
             --artifacts-dir signed \
             --channel unlisted \
-            --approval-timeout 1500000
+            --approval-timeout 1500000 >"$SIGN_LOG" 2>&1; then
+            cat "$SIGN_LOG"
+          elif grep -Fq "Version ${RELEASE_VERSION} already exists." "$SIGN_LOG"; then
+            echo "This version already exists at Mozilla. The next step will import and verify the approved XPI."
+          else
+            cat "$SIGN_LOG"
+            exit 1
+          fi
+          rm -f "$SIGN_LOG"
       - name: Verify the returned signed XPI
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          files=(signed/*.xpi)
-          if [[ ${#files[@]} -ne 1 ]]; then
-            echo "::error::Mozilla must return exactly one signed XPI"
-            exit 1
-          fi
           dest="addons/files/Noor-Unified-v${RELEASE_VERSION}-signed.xpi"
           mkdir -p addons/files
           # Re-import the approved XPI from Mozilla using the developer API; verify its hash against AMO.
           node .github/scripts/import-noor-amo-signed.mjs
           test -s "$dest"
+          python3 - "$ARCHIVE" "$dest" <<'PY'
+          import sys
+          from zipfile import ZipFile
+
+          with ZipFile(sys.argv[1]) as source, ZipFile(sys.argv[2]) as signed:
+              expected = {item.filename for item in source.infolist() if not item.is_dir()}
+              actual = {item.filename for item in signed.infolist()
+                        if not item.is_dir() and not item.filename.startswith('META-INF/')}
+              expected.discard('README.md')
+              actual.discard('README.md')
+              if expected != actual:
+                  sys.exit('Signed XPI file list differs: ' + ', '.join(sorted(expected ^ actual)))
+              changed = sorted(name for name in expected if source.read(name) != signed.read(name))
+              if changed:
+                  sys.exit('Signed XPI content differs: ' + ', '.join(changed))
+          print('Signed XPI runtime contents match the validated archive.')
+          PY
           unzip -t "$dest" | tail -n 1
           unzip -Z1 "$dest" | grep -Eq '^META-INF/[^/]+\.rsa$'
           unzip -p "$dest" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const m=JSON.parse(s);if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io")process.exit(1)})'
