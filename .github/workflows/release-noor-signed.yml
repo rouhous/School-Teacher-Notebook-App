@@ -1,18 +1,18 @@
-# QA passed 2.8.40 teacher-membership and before-generation save-mode tests.
+# QA passed 2.8.41 teacher-membership and before-generation save-mode tests.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.40-SCORM-Firefox-Fix-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.41-Digital-Repository-3D-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.40"
+        description: "Tested unified source version, e.g. 2.8.41"
         type: string
         required: true
-        default: "2.8.40"
+        default: "2.8.41"
 permissions:
   contents: write
   pages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.40' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.41' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -56,6 +56,11 @@ jobs:
           test -f extension/noor-license-ui.js
           test -f extension/noor-scorm.js
           test -f extension/noor-scorm-publisher.js
+          test -f extension/noor-scorm-evidence.js
+          grep -Fq 'NOOR_GEMINI_SCORM_IMAGE' extension/gemini-background.js
+          grep -Fq 'generateScormImage' extension/noor-hub.js
+          grep -Fq 'مكتبة الدروس التفاعلية' extension/noor-scorm-publisher.js
+          grep -Fq 'omani-lesson-scene.' extension/noor-scorm.js
           grep -Fq 'function encode(bytes)' extension/noor-scorm-publisher.js
           if grep -Fq 'bytes.subarray(' extension/noor-scorm-publisher.js; then echo 'Firefox Xray unsafe subarray detected'; exit 1; fi
           grep -Fq 'NOOR_GEMINI_SCORM_GENERATE' extension/gemini-background.js
@@ -90,7 +95,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.40' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.41' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -160,7 +165,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.40' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.41' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
