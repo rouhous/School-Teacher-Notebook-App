@@ -1,18 +1,18 @@
-# QA passed 2.8.41 teacher-membership and before-generation save-mode tests.
+# QA passed 2.8.42 teacher-membership and before-generation save-mode tests.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.41-Digital-Repository-3D-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.42-Science-Dual-Selection-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.41"
+        description: "Tested unified source version, e.g. 2.8.42"
         type: string
         required: true
-        default: "2.8.41"
+        default: "2.8.42"
 permissions:
   contents: write
   pages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.41' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.42' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -56,6 +56,22 @@ jobs:
           test -f extension/noor-license-ui.js
           test -f extension/noor-scorm.js
           test -f extension/noor-scorm-publisher.js
+          grep -Fq 'id="stnHubLessonMode"' extension/noor-hub.js
+          grep -Fq 'value="auto">اكتشاف تلقائي' extension/noor-hub.js
+          grep -Fq 'value="manual">اختيار يدوي' extension/noor-hub.js
+          grep -Fq 'manualSelection' extension/noor-hub.js
+          grep -Fq 'Science Noor tree' extension/noor-lesson-numbers.js
+          node - <<'NODE'
+          require('./extension/noor-lesson-numbers.js');
+          const r=globalThis.NoorLessonNumbers;
+          const units=[{term:'الفصل الأول',termId:'s1',unitId:'u4',unit:'4 الخلايا والكائنات الحية',
+            lessons:[{id:'l41',title:'4-1 خصائص الكائنات الحية'},{id:'l42',title:'4-2 الكائنات الحية الدقيقة'}]}];
+          if(r.resolve(units,{semester:'1',unit:'4',lesson:'1'}).lessonId!=='l41')throw Error('Science auto lesson 4-1');
+          if(r.resolve(units,{semester:'1',unit:'الوحدة الرابعة',lesson:'الدرس الثاني'}).lessonId!=='l42')throw Error('Science ordinal 4-2');
+          if(r.resolve(units,{semester:'1',unit:'4',lesson:'1',manualSelection:{termId:'s1',unitId:'u4',lessonId:'l42'}}).lessonId!=='l42')throw Error('Teacher manual node choice');
+          if(r.resolve(units,{semester:'1',unit:'4',lesson:'5-1'}).ok)throw Error('Cross unit false positive');
+          console.log('Science auto + manual regression passed');
+          NODE
           test -f extension/noor-scorm-evidence.js
           grep -Fq 'NOOR_GEMINI_SCORM_IMAGE' extension/gemini-background.js
           grep -Fq 'generateScormImage' extension/noor-hub.js
@@ -95,7 +111,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.41' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.42' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -165,7 +181,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.41' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.42' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
