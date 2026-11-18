@@ -39,7 +39,7 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:3
 <section class="card" aria-label="تنزيل إضافة نور">
 <h2>أدوات نور للمعلم</h2>
 <p class="summary">تحضير الدروس تلقائيًا، إدخال الدرجات، إدراج الاختبارات والأنشطة، وإضافة الدروس التفاعلية.</p>
-<a class="button" id="install-xpi" href="./files/Noor-Unified-v2.8.44-signed.xpi">تنزيل إضافة Firefox — 2.8.35</a>
+<a class="button" id="install-xpi" href="./files/Noor-Unified-v2.8.45-signed.xpi">تنزيل إضافة Firefox — 2.8.35</a>
 <p class="status" id="release-status">الإصدار الحالي: 2.8.35</p>
 <p class="status" id="browser-note" role="status" aria-live="polite"></p>
 </section>
@@ -72,7 +72,7 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:3
  const link=document.getElementById('install-xpi');
  const note=document.getElementById('browser-note');
  document.getElementById(android?'android-guide':'desktop-guide').open=true;
- if(android)link.setAttribute('download','Noor-Unified-v2.8.44-signed.xpi');
+ if(android)link.setAttribute('download','Noor-Unified-v2.8.45-signed.xpi');
  if(!firefox){
   note.textContent='أنت تستخدم متصفحًا غير Firefox أو متصفحًا داخليًا. افتح رابط المكتبة في Firefox نفسه؛ تنزيل XPI وحده لا يثبّت الإضافة.';
  }else if(version<min){
