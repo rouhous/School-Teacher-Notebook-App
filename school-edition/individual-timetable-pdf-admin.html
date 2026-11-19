@@ -1,0 +1,116 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#075b47"><title>طباعة الجداول المفردة | بوابة المدير</title>
+<link rel="stylesheet" href="./school-theme.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#eaf6ee,#fff8e7);color:#163f36;font:15px/1.7 system-ui,Tahoma,Arial}
+main{max-width:1100px;margin:auto;padding:16px}header,.panel{background:#fff;border:1px solid #e3dac7;border-radius:17px;box-shadow:0 5px 23px #075b4714;padding:20px;margin:12px 0}
+header{border-top:6px solid #b69143}h1,h2{margin:7px 0;color:#075b47}p{margin:8px 0}.back{display:inline-block;padding:9px 16px;background:#075b47;color:white;text-decoration:none;border-radius:11px;font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(315px,1fr));gap:16px}
+input[type=file]{width:100%;max-width:100%;padding:12px;border:2px dashed #b0cfc0;border-radius:13px;background:#f5faf7;margin:10px 0;font:inherit}
+button{padding:10px 14px;border:0;border-radius:11px;background:#075b47;color:white;font:700 14px Tahoma,system-ui;cursor:pointer}
+button.secondary{background:#b08b41}button:disabled{opacity:.55;cursor:wait}
+.note{background:#fff7e6;border:1px solid #ddc58c;border-radius:10px;padding:11px}
+.preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:5px;max-height:300px;overflow:auto;background:#f7fbf8;padding:9px;border:1px solid #dbe9de;border-radius:11px}
+.preview span{font-size:12px;padding:5px;border-bottom:1px solid #dce8de}
+.status{min-height:28px;white-space:pre-wrap;overflow-wrap:anywhere;font-weight:700;font-size:13px}
+.progress{height:9px;background:#e7eee8;border-radius:20px;overflow:hidden;margin:12px 0}
+.progress>div{height:100%;width:0;background:#0d7757;transition:width .2s}
+small{color:#637d70}label.verify{display:block;padding:9px;background:#f0f8f3;border-radius:10px;margin:11px 0;font-size:13px}
+</style></head><body><main>
+<header><a class="back" href="./founder-dashboard.html">↩ العودة إلى بوابة المدير</a><h1>📄 الجداول المفردة الأصلية للطباعة</h1>
+<p>تعتمد ملفات aSc Timetables الأصلية. يطبع كل معلم أو معلمة صفحته فقط، بناءً على حسابه المعتمد، مع بقاء الجدول التفاعلي دون أي تغيير.</p>
+<p class="note">البيانات المستوردة قديمًا تحفظ الحصص، لا صفحات PDF الأصلية. لذلك يُدرج ملف PDF المفرد مرة واحدة فقط لكل قسم؛ يتولى التطبيق تقسيمه إلى صفحات خاصة ويضع كل صفحة في التخزين المحمي.</p></header>
+<div class="grid">
+<section class="panel" data-school="boys"><h2>👨‍🏫 معلمو البنين</h2><p>23 صفحة، وكل صفحة مرتبطة برقم المعلم المقابل لها.</p>
+<input type="file" accept="application/pdf,.pdf" data-input="boys" aria-label="PDF الجداول المفردة للبنين">
+<div class="preview" data-preview="boys"></div>
+<label class="verify"><input type="checkbox" data-confirm="boys"> أؤكد أن الملف هو جدول «ذكور انتداب مفرد» وأن ترتيب الصفحات مطابق للأسماء المعروضة.</label>
+<button type="button" data-publish="boys">اعتماد جداول البنين الفردية</button>
+<button type="button" class="secondary" data-check="boys">التحقق من النسخ المنشورة</button>
+<div class="progress"><div data-progress="boys"></div></div><p class="status" data-status="boys" role="status"></p>
+</section>
+<section class="panel" data-school="girls"><h2>👩‍🏫 معلمات البنات</h2><p>31 صفحة، وكل صفحة مرتبطة بحساب صاحبتها.</p>
+<input type="file" accept="application/pdf,.pdf" data-input="girls" aria-label="PDF الجداول المفردة للبنات">
+<p class="note"><strong>تثبيت الاسم:</strong> الصفحة 17 المكتوب عليها «س» تخص <strong>حنان السنانية (G17)</strong>.</p>
+<div class="preview" data-preview="girls"></div>
+<label class="verify"><input type="checkbox" data-confirm="girls"> أؤكد أن الملف هو جدول «معلمات س مفرد» وأن ترتيب الصفحات مطابق للأسماء المعروضة، مع اعتماد حنان السنانية للصفحة 17.</label>
+<button type="button" data-publish="girls">اعتماد جداول البنات الفردية</button>
+<button type="button" class="secondary" data-check="girls">التحقق من النسخ المنشورة</button>
+<div class="progress"><div data-progress="girls"></div></div><p class="status" data-status="girls" role="status"></p>
+</section>
+</div>
+<section class="panel"><h2>طريقة العمل بعد الاعتماد</h2><p>عندما يضغط المعلم على «🖨️ طباعة جدولي»، يحدد الخادم معرّفه ومدرسته من جلسة تسجيل الدخول، ويعيد له ملف PDF من صفحة واحدة فقط. لا يُرسل ملف المدرسة كاملًا إلى حساب المعلم. الطباعة تفتح تنسيق aSc الأصلي، ولا تمس أوقات الحصص أو تنبيهات الاحتياط.</p></section>
+</main><script src="./session-auth.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script><script>
+const API='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-individual-timetable-pdf';
+const names={
+boys:['عبدالله الحوسني','وليد الخنبشي','هلال الحوسني','سالم الخوالدي','مسلم المخمري','سالم السديري','حسام الرواتبي','محمود صلاح الدين','جمعة سعد','حسين جمعة','عبد الباسط بوبكر','ياسر حسن','راشد الربيعي','ناصر الجهوري','معاذ الربيعي','أحمد البريكي','عبد الرحمان المعمري','سلطان القطيطي','علي المعمري','جابر السعيدي','حسن آل سنان','محمود المعمري','حبيب البحراني'],
+girls:['سميحه العميريه','ساميه القطيطيه','شيخه السعيديه','سامية السعيدية','أميمة السعيدي','فاخرة السعيدية','مها المعمري','طيف السعيدية','أصيلة القرينية','ايمان القريني','زهرة السنانية','نادية الحوسنية','بثينة الضبارية','عطيه الحيديه','أحلام الحومانية','ايمان العجميه','حنان السنانية','خلود القطيطية','الاء المعولية','ليلى العجمية','زهور العجمية','زمزم العجمية','شروق السعيدية','بدرية القطيطي','صفاء السعيدية','هيفاء','وضحى الحوسنية','فايزه الحوسنيه','رقية السعيدية','ميزون المعمرية','حبيب البحراني']
+};
+const prefix=s=>s==='boys'?'B':'G';
+const teacherId=(s,i)=>prefix(s)+String(i+1).padStart(2,'0');
+const el=(type,s)=>document.querySelector('[data-'+type+'="'+s+'"]');
+for(const school of ['boys','girls']){
+ const panel=el('preview',school);
+ names[school].forEach((name,i)=>{const node=document.createElement('span');node.textContent='ص '+(i+1)+' ← '+teacherId(school,i)+' — '+name;panel.append(node)});
+}
+const prettyError={ACCESS_DENIED:'ليس لديك صلاحية المدير المعتمد.',MANAGER_ONLY:'الاعتماد متاح للمدير فقط.',GOOGLE_SESSION_EXPIRED:'انتهت جلسة Google. افتح بوابة المدير وسجّل الدخول مجددًا.',INVALID_PDF_DATA:'تعذر تجهيز صفحات PDF.',INVALID_SINGLE_PAGE_PDF:'إحدى الصفحات كبيرة جدًا أو ليست PDF.',TEACHER_SCHOOL_MISMATCH:'الاسم أو رقم المعلم غير مطابق لمدرسته.',UPLOAD_TOO_LARGE:'حجم الدفعة أكبر من المسموح.'};
+async function call(action,school,files){
+ const auth=await schoolSupervisorSession();
+ if(!auth)throw Error('انتهت جلسة المدير. عد إلى البوابة لتسجيل الدخول.');
+ const request={...auth,action,school};
+ if(files)request.files=files;
+ const r=await fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(request),cache:'no-store'});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok||!j.ok)throw Error(prettyError[j.error]||j.error||'تعذر الاتصال بالخادم');
+ return j.data;
+}
+function encode(bytes){let binary='';for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(binary)}
+async function makePage(original,index){
+ const one=await PDFLib.PDFDocument.create();
+ const [page]=await one.copyPages(original,[index]);
+ one.addPage(page);
+ return await one.save({useObjectStreams:true});
+}
+for(const school of ['boys','girls']){
+ el('check',school).addEventListener('click',async()=>{
+  const status=el('status',school);
+  status.textContent='جارٍ التحقق من النسخ المنشورة...';
+  try{const info=await call('status',school);status.textContent='✓ ملفات PDF المنشورة: '+info.count+' من '+names[school].length+' صفحة.'}
+  catch(e){status.textContent='تعذر التحقق: '+e.message}
+ });
+ el('publish',school).addEventListener('click',async event=>{
+  const button=event.currentTarget,file=el('input',school).files[0],status=el('status',school),progress=el('progress',school);
+  if(!file){status.textContent='اختر ملف PDF المفرد أولًا.';return}
+  if(!el('confirm',school).checked){status.textContent='يرجى مراجعة ترتيب الصفحات ثم تأكيد المطابقة.';return}
+  if(!window.PDFLib){status.textContent='تعذر تحميل مكتبة PDF اللازمة للتقسيم. افتح الصفحة مع اتصال بالإنترنت.';return}
+  if(file.size>20*1024*1024){status.textContent='الملف كبير جدًا، الحد الأقصى 20 ميجابايت.';return}
+  button.disabled=true;progress.style.width='0%';
+  try{
+   status.textContent='جارٍ تحليل PDF الأصلي...';
+   const pdf=await PDFLib.PDFDocument.load(await file.arrayBuffer(),{ignoreEncryption:false});
+   const count=names[school].length;
+   if(pdf.getPageCount()!==count)throw Error('عدد الصفحات '+pdf.getPageCount()+'، بينما المتوقع '+count+'. لم يُنشر أي ملف.');
+   if(!confirm('سيتم تقسيم '+count+' صفحة لمدرسة '+(school==='boys'?'البنين':'البنات')+' وربط كل صفحة بصاحبها ثم اعتمادها. متابعة؟'))return;
+   let completed=0;
+   for(let i=0;i<count;i+=4){
+    const batch=[];
+    for(let j=i;j<Math.min(i+4,count);j++){
+     const pdfBytes=await makePage(pdf,j);
+     batch.push({teacherId:teacherId(school,j),pdfBase64:encode(pdfBytes)});
+    }
+    status.textContent='جارٍ نشر الصفحات '+(i+1)+' إلى '+Math.min(i+4,count)+' من '+count+'...';
+    try{await call('upload_batch',school,batch)}
+    catch(e){throw Error('توقف النشر بعد '+completed+' صفحة: '+e.message+'. يمكن إعادة المحاولة لاستكمال الاعتماد.')}
+    completed+=batch.length;
+    progress.style.width=(100*completed/count).toFixed(1)+'%';
+   }
+   const verification=await call('status',school);
+   status.textContent='✓ تم نشر '+completed+' جدول PDF أصلي. العدد المحفوظ الآن: '+verification.count+' من '+count+'.';
+   el('input',school).value='';
+  }catch(e){status.textContent='تعذر الإكمال: '+e.message}
+  finally{button.disabled=false}
+ });
+}
+const wanted=new URLSearchParams(location.search).get('school');
+if(wanted==='boys'||wanted==='girls')document.querySelector('[data-school="'+wanted+'"]')?.scrollIntoView({block:'center'});
+</script></body></html>
