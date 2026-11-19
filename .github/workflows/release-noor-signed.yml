@@ -1,18 +1,18 @@
-# Release Noor 2.8.54 with positional lesson selection.
+# Release Noor 2.8.55 with dashboard-first routing.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.54-LessonPositions-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.55-DashboardRouting-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.54"
+        description: "Tested unified source version, e.g. 2.8.55"
         type: string
         required: true
-        default: "2.8.54"
+        default: "2.8.55"
 permissions:
   contents: write
   pages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.54' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.55' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -115,6 +115,7 @@ jobs:
           grep -Fq 'unit_mismatch' extension/noor-lesson-evidence.js
           grep -Fq 'formProof' extension/noor-scorm-publisher.js
           grep -Fq 'resolveVerifiedLesson' extension/noor-hub.js
+          grep -Fq 'async function startFromDashboard' extension/noor-hub.js
           grep -Fq 'stnNoorTeacherSelection:v1:' extension/noor-hub.js
           grep -Fq 'async orderedUnit' extension/page-helper.js
           test -f extension/noor-curriculum-discovery.js
@@ -150,7 +151,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.54' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.55' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -251,7 +252,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.54' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.55' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
