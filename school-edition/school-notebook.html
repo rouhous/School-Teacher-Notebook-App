@@ -4907,7 +4907,7 @@ function schoolPrintFrame(){
  overlay.append(bar,frame);document.body.append(overlay);
  return frame.contentWindow;
 }
-function printApprovedTeacherSchedule(){
+function printApprovedTeacherScheduleFallback(){
  if(!loaded||!managedSchedule.length){alert('الجدول المعتمد غير متاح');return;}
  const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
  const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
@@ -4974,7 +4974,46 @@ function printApprovedTeacherSchedule(){
  <\/script></body></html>`);
  w.document.close();
 }
-window.printApprovedTeacherSchedule=printApprovedTeacherSchedule;
+window.printApprovedTeacherSchedule=async function(){
+ document.getElementById('schoolIndividualPrintOverlay')?.remove();
+ const overlay=document.createElement('div');overlay.id='schoolIndividualPrintOverlay';
+ overlay.style.cssText='position:fixed;inset:0;z-index:2147483645;background:white;display:flex;flex-direction:column;direction:rtl';
+ const toolbar=document.createElement('div');
+ toolbar.style.cssText='display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:9px;background:#075b47;color:white;flex-shrink:0';
+ const title=document.createElement('strong');title.textContent='🖨️ طباعة الجدول الفردي الأصلي';
+ const controls=document.createElement('div');controls.style.cssText='display:flex;align-items:center;gap:7px;flex-wrap:wrap';
+ const printLink=document.createElement('a');printLink.textContent='📄 فتح صفحة PDF للطباعة';printLink.target='_blank';printLink.rel='noopener noreferrer';printLink.style.cssText='display:none;padding:10px 12px;border-radius:9px;text-decoration:none;font-weight:800;background:#b28b39;color:white';
+ const close=document.createElement('button');close.type='button';close.textContent='✕ إغلاق';close.style.cssText='padding:10px 12px;border:0;border-radius:9px;background:white;color:#075b47;font-weight:800';close.onclick=()=>overlay.remove();
+ controls.append(printLink,close);toolbar.append(title,controls);
+ const message=document.createElement('p');message.textContent='جارٍ تحميل صفحة الجدول الرسمية الخاصة بحسابك...';
+ message.style.cssText='margin:auto;text-align:center;padding:20px;line-height:1.8;color:#075b47;font-weight:700';
+ overlay.append(toolbar,message);document.body.append(overlay);
+ try{
+  const credential=schoolNotebookCredential||null;
+  const auth=credential?{credential}:{access_token:await schoolNotebookPasskeyToken()};
+  if(!auth.credential&&!auth.access_token)throw Error('يجب تسجيل الدخول بحساب معتمد قبل طباعة الجدول.');
+  const response=await fetch(schoolApi+'school-individual-timetable-pdf',{
+   method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...auth,action:'print'}),cache:'no-store'
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||data.ok!==true){
+   if(data.error==='PRINT_PDF_NOT_PUBLISHED'){
+    overlay.remove();
+    if(typeof toast==='function')toast('لم يُعتمد PDF الفردي بعد؛ يُعرض مؤقتًا نموذج الطباعة الحالي.');
+    return printApprovedTeacherScheduleFallback();
+   }
+   if(data.error==='ACCESS_DENIED'||data.error==='TEACHER_NOT_LINKED')throw Error('تعذر تحديد المعلم من الحساب المعتمد. راجع الربط لدى المدير.');
+   throw Error('تعذر تحميل صفحة PDF الخاصة بك. تحقق من الاتصال.');
+  }
+  const {url,teacherId}=data.data||{};
+  if(typeof url!=='string'||!url.startsWith('https://'))throw Error('رابط PDF غير صالح.');
+  const frame=document.createElement('iframe');frame.title='الجدول الأصلي الخاص بالمعلم '+teacherId;
+  frame.style.cssText='width:100%;flex:1;min-height:0;border:0;background:white';
+  title.textContent='🖨️ جدولي الرسمي ('+teacherId+')';
+  printLink.href=url;printLink.style.display='inline-flex';
+  frame.src=url;message.replaceWith(frame);
+ }catch(error){message.style.color='#b91c1c';message.textContent='تعذر طباعة الجدول: '+String(error.message||error)}
+};
 
 window.openSchoolGeneralTimetable=async function(){
  document.getElementById('schoolGeneralPdfOverlay')?.remove();
