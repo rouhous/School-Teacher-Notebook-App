@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#075b47"><title>اعتماد الجدول العام PDF | المدير</title>
+<link rel="stylesheet" href="./school-theme.css">
+<style>
+*{box-sizing:border-box}body{margin:0;font:16px system-ui,Tahoma,Arial;background:linear-gradient(130deg,#eaf4ed,#fff8e6);color:#164a3d}
+main{max-width:920px;margin:auto;padding:18px}header,.card{background:#fff;border:1px solid #dfdfcf;border-radius:19px;padding:20px;margin:13px 0;box-shadow:0 7px 25px #064c3020}
+header{border-top:6px solid #b99b51}h1,h2{color:#075b47;margin:9px 0}p{line-height:1.8}.back{display:inline-flex;background:#075b47;color:#fff;padding:10px 15px;border-radius:12px;text-decoration:none;font-weight:700}
+.schools{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+small{color:#63796b}label{display:block;font-weight:700}input[type=file]{width:100%;padding:12px;margin:12px 0;background:#f5f8f6;border:1px dashed #a2bdae;border-radius:10px;direction:rtl}
+.actions{display:flex;flex-wrap:wrap;gap:9px}.actions button{flex:1}
+button{border:0;background:#075b47;color:white;padding:11px 14px;border-radius:11px;font:700 14px system-ui,Tahoma;cursor:pointer;min-height:44px}
+button.secondary{background:#b18b42}button:disabled{opacity:.6;cursor:wait}.status{min-height:40px;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.notice{border:1px solid #e2d1a4;background:#fff8e5;border-radius:12px;padding:12px;font-size:14px}
+#pdfLayer[hidden]{display:none}#pdfLayer{position:fixed;inset:0;background:#0a241ddd;z-index:10000;padding:12px}
+#pdfViewer{height:100%;display:flex;flex-direction:column;background:#fff;border-radius:14px;overflow:hidden}
+#pdfToolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;padding:10px;background:#075b47;color:#fff}
+#pdfToolbar .buttons{display:flex;flex-wrap:wrap;gap:8px}#pdfToolbar a,#pdfToolbar button{background:#fff;color:#075b47;padding:9px 12px;border:0;border-radius:9px;font:700 13px system-ui,Tahoma;text-decoration:none}
+#pdfFrame{border:0;width:100%;flex:1;min-height:0;background:#fff}
+@media(max-width:600px){main{padding:9px}header,.card{padding:15px}#pdfLayer{padding:3px}#pdfViewer{border-radius:7px}}
+</style></head><body><main>
+<header><a class="back" href="./founder-dashboard.html">↩ العودة إلى بوابة المدير</a>
+<h1>📄 اعتماد الجدول العام للمعلمين والمعلمات</h1>
+<p>إدراج ملفات PDF الأصلية للعرض والطباعة دون تحويلها إلى جداول أو تعديل توزيع الحصص. لكل مدرسة ملف مستقل، ويحل الملف الجديد محل السابق بعد الاعتماد.</p></header>
+<div class="schools">
+<section class="card" data-school="boys"><h2>👨‍🏫 جدول البنين</h2>
+<p><small>النسخة الحالية: الجدول العام لمعلمي البنين.</small></p>
+<label for="pdfFileBoys">اختر ملف PDF للبنين</label><input id="pdfFileBoys" type="file" accept=".pdf,application/pdf" data-file="boys">
+<div class="actions"><button type="button" data-upload="boys">📥 إدراج / استبدال</button><button type="button" class="secondary" data-view="boys">👁️ عرض وطباعة</button></div>
+<p class="status" data-status="boys" role="status"></p></section>
+<section class="card" data-school="girls"><h2>👩‍🏫 جدول البنات</h2>
+<p><small>النسخة الحالية: الجدول العام لمعلمات البنات.</small></p>
+<label for="pdfFileGirls">اختر ملف PDF للبنات</label><input id="pdfFileGirls" type="file" accept=".pdf,application/pdf" data-file="girls">
+<div class="actions"><button type="button" data-upload="girls">📥 إدراج / استبدال</button><button type="button" class="secondary" data-view="girls">👁️ عرض وطباعة</button></div>
+<p class="status" data-status="girls" role="status"></p></section></div>
+<p class="notice">تنبيه: هذه الملفات مخصصة للعرض والطباعة ولا تغيّر حصص المعلمين المعتمدة أو حسابات الغياب والاحتياط. لا يُسمح بالرفع إلا لحساب المدير المعتمد، ويُعرض لكل معلم جدول مدرسته فقط.</p>
+</main>
+<div id="pdfLayer" hidden role="dialog" aria-modal="true" aria-label="معاينة الجدول العام PDF"><div id="pdfViewer">
+<div id="pdfToolbar"><strong id="pdfHeading">الجدول العام PDF</strong><div class="buttons"><a id="pdfPrint" href="#" target="_blank" rel="noopener noreferrer">🖨️ فتح PDF للطباعة</a><button type="button" id="pdfClose">✕ إغلاق</button></div></div>
+<iframe id="pdfFrame" title="معاينة ملف الجدول العام"></iframe></div></div>
+<script src="./session-auth.js"></script>
+<script>
+const PDF_API='https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-general-timetable-pdf';
+const schoolName=s=>s==='boys'?'البنين':'البنات';
+const statusEl=s=>document.querySelector('[data-status="'+s+'"]');
+async function serverCall(action,school,pdfBase64){
+ const auth=await schoolSupervisorSession();
+ if(!auth)throw new Error('انتهت جلسة المدير. افتح الصفحة من بوابة المدير بعد تسجيل الدخول.');
+ const payload={...auth,action,school};
+ if(pdfBase64)payload.pdfBase64=pdfBase64;
+ const response=await fetch(PDF_API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});
+ const info=await response.json().catch(()=>({}));
+ if(!response.ok||info.ok!==true){
+  const errors={PDF_NOT_UPLOADED:'لم يُرفع ملف PDF لهذه المدرسة بعد.',SCHOOL_ACCESS_DENIED:'لا تملك صلاحية إدارة جدول هذه المدرسة.',SUPERVISOR_ONLY:'إدراج الجدول العام من صلاحيات المدير فقط.',GOOGLE_SESSION_EXPIRED:'انتهت جلسة Google. سجّل الدخول مجددًا.',PDF_TOO_LARGE:'حجم PDF أكبر من 5 ميجابايت.',INVALID_PDF:'ملف غير صالح. اختر PDF الأصلي.'};
+  throw new Error(errors[info.error]||info.error||'تعذر الاتصال بالخادم.');
+ }
+ return info.data;
+}
+function previewPdf(school,url){
+ document.getElementById('pdfHeading').textContent='الجدول العام '+(school==='boys'?'للمعلمين — البنين':'للمعلمات — البنات');
+ document.getElementById('pdfFrame').src=url;
+ document.getElementById('pdfPrint').href=url;
+ document.getElementById('pdfLayer').hidden=false;
+}
+document.getElementById('pdfClose').onclick=()=>{document.getElementById('pdfLayer').hidden=true;document.getElementById('pdfFrame').src='about:blank'};
+document.getElementById('pdfLayer').addEventListener('click',e=>{if(e.target.id==='pdfLayer')document.getElementById('pdfClose').click()});
+document.querySelectorAll('[data-upload]').forEach(button=>button.onclick=async()=>{
+ const school=button.dataset.upload,field=document.querySelector('[data-file="'+school+'"]'),file=field.files?.[0],status=statusEl(school);
+ if(!file){status.textContent='اختر ملف PDF أولًا.';return}
+ if(file.size<100||file.size>5*1024*1024||!(/\.pdf$/i.test(file.name)||file.type==='application/pdf')){status.textContent='يجب اختيار PDF أصلي بحجم لا يتجاوز 5 ميجابايت.';return}
+ if(!confirm('اعتماد ملف '+file.name+' بوصفه الجدول العام الرسمي لمدرسة '+schoolName(school)+'؟'))return;
+ button.disabled=true;status.textContent='جارٍ رفع الملف وحفظ النسخة الرسمية...';
+ try{
+  const bytes=new Uint8Array(await file.arrayBuffer());let binary='';
+  for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));
+  await serverCall('upload',school,btoa(binary));
+  status.textContent='✓ تم اعتماد PDF رسمي لمدرسة '+schoolName(school)+' مع الحفاظ على التنسيق الأصلي.';
+  field.value='';
+ }catch(e){status.textContent='تعذّر الاعتماد: '+e.message}finally{button.disabled=false}
+});
+document.querySelectorAll('[data-view]').forEach(button=>button.onclick=async()=>{
+ const school=button.dataset.view,status=statusEl(school);button.disabled=true;status.textContent='جارٍ جلب ملف PDF المعتمد...';
+ try{const data=await serverCall('read',school);previewPdf(school,data.url);status.textContent='✓ النسخة الرسمية متاحة للعرض والطباعة.'}
+ catch(e){status.textContent=e.message}finally{button.disabled=false}
+});
+const preselect=new URLSearchParams(location.search).get('school');
+if(['boys','girls'].includes(preselect))document.querySelector('[data-school="'+preselect+'"]')?.scrollIntoView({block:'start'});
+</script></body></html>
