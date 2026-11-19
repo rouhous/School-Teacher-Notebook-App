@@ -1,18 +1,18 @@
-# Release Noor 2.8.55 with dashboard-first routing.
+# Release Noor 2.8.56 with the task-first panel and optional activity lesson linkage.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.55-DashboardRouting-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.56-TaskFirst-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.55"
+        description: "Tested unified source version, e.g. 2.8.56"
         type: string
         required: true
-        default: "2.8.55"
+        default: "2.8.56"
 permissions:
   contents: write
   pages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.55' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.56' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -67,7 +67,6 @@ jobs:
           grep -Fq 'stnHubActivityScope' extension/noor-hub.js
           grep -Fq 'stnHubScormScope' extension/noor-hub.js
           grep -Fq 'stnHubMinimize' extension/noor-hub.js
-          grep -Fq 'stnHubTabContent' extension/noor-hub.js
           grep -Fq 'stnHubBatchCancel' extension/noor-hub.js
           grep -Fq 'confirmedSaved' extension/noor-scorm-publisher.js
           grep -Fq 'stnHubMinimized' extension/noor-hub.css
@@ -116,6 +115,10 @@ jobs:
           grep -Fq 'formProof' extension/noor-scorm-publisher.js
           grep -Fq 'resolveVerifiedLesson' extension/noor-hub.js
           grep -Fq 'async function startFromDashboard' extension/noor-hub.js
+          grep -Fq 'id="stnHubDetails" hidden' extension/noor-hub.js
+          grep -Fq 'value="grades" hidden disabled' extension/noor-hub.js
+          grep -Fq 'allowUnlinkedLesson' extension/smart/src/noor-automator.js
+          grep -Fq "const scormSaveMode=()=>'auto'" extension/noor-hub.js
           grep -Fq 'stnNoorTeacherSelection:v1:' extension/noor-hub.js
           grep -Fq 'async orderedUnit' extension/page-helper.js
           test -f extension/noor-curriculum-discovery.js
@@ -135,7 +138,6 @@ jobs:
           test ! -e extension/noor-pipeline.js
           test ! -e extension/noor-pipeline-background.js
           grep -Fq 'stnHubSubject' extension/noor-hub.js
-          grep -Fq 'stnHubPrepScope' extension/noor-hub.js
           grep -Fq 'stnHubActivityQuantity' extension/noor-hub.js
           grep -Fq 'stnHubScormQuantity' extension/noor-hub.js
           grep -Fq 'publishSelection' extension/smart/src/noor-panel.js
@@ -151,7 +153,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.55' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.56' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -252,7 +254,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.55' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.56' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
