@@ -1,18 +1,18 @@
-# Release Noor 2.8.53 with automatic curriculum discovery.
+# Release Noor 2.8.54 with positional lesson selection.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.53-CurriculumDiscovery-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.54-LessonPositions-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.53"
+        description: "Tested unified source version, e.g. 2.8.54"
         type: string
         required: true
-        default: "2.8.53"
+        default: "2.8.54"
 permissions:
   contents: write
   pages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.53' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.54' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -71,9 +71,6 @@ jobs:
           grep -Fq 'stnHubBatchCancel' extension/noor-hub.js
           grep -Fq 'confirmedSaved' extension/noor-scorm-publisher.js
           grep -Fq 'stnHubMinimized' extension/noor-hub.css
-          grep -Fq 'id="stnHubLessonMode"' extension/noor-hub.js
-          grep -Fq 'value="auto">اكتشاف تلقائي' extension/noor-hub.js
-          grep -Fq 'value="manual">اختيار المعلم' extension/noor-hub.js
           grep -Fq 'manualSelection' extension/noor-hub.js
           grep -Fq 'Science Noor tree' extension/noor-lesson-numbers.js
           node - <<'NODE'
@@ -112,14 +109,22 @@ jobs:
           test -f extension/noor-lesson-numbers.js
           grep -Fq 'async activeTreeLesson()' extension/content.js
           grep -Fq 'lessonNodeId:chain[0].nodeId' extension/page-helper.js
-          grep -Fq 'selected_noor_node' extension/noor-hub.js
           grep -Fq 'المحور' extension/noor-lesson-numbers.js
           test -f extension/noor-lesson-evidence.js
           grep -Fq 'resolveFromList' extension/noor-lesson-evidence.js
-          grep -Fq 'formFirst' extension/noor-hub.js
           grep -Fq 'unit_mismatch' extension/noor-lesson-evidence.js
           grep -Fq 'formProof' extension/noor-scorm-publisher.js
           grep -Fq 'resolveVerifiedLesson' extension/noor-hub.js
+          grep -Fq 'stnNoorTeacherSelection:v1:' extension/noor-hub.js
+          grep -Fq 'async orderedUnit' extension/page-helper.js
+          test -f extension/noor-curriculum-discovery.js
+          node - <<'NODE'
+          require('./extension/noor-curriculum-discovery.js');
+          const d=globalThis.NoorCurriculumDiscovery;
+          const branch={termId:'term',unitId:'id',lessons:[{id:'90',title:'Lesson 8'},{id:'20',title:'A new topic'}]};
+          if(d.position('٣')!==3||d.lessonAt(branch,'٢')?.id!=='20'||d.lessonAt(branch,3)!==null)throw Error('Position lookup does not preserve tree order');
+          if(!d.matchIds(branch,d.lessonAt(branch,2),{termId:'term',unitId:'id',lessonId:'20'}))throw Error('Tree node IDs must match');
+          NODE
           test -f extension/noor-gemini-models.js
           grep -Fq 'gemini-3.5-flash-lite' extension/noor-gemini-models.js
           grep -Fq 'NoorGeminiModels.generate' extension/smart-background.js
@@ -145,7 +150,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.53' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.54' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -246,7 +251,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.53' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.54' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
