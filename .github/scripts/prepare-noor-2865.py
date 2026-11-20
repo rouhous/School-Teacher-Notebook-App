@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.69 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.70 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.69-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.70-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.69"
-manifest["description"] = "Noor Unified 2.8.69: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.70"
+manifest["description"] = "Noor Unified 2.8.70: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -84,6 +84,30 @@ s = replace_exact(s," async function generate(resumeId){",helper+" async functio
 s = replace_exact(s,"   checkContext(opts,false);checkQuestionCount(opts);",
     "   checkContext(opts,false);checkQuestionCount(opts);\n   if(opts.service==='scorm')await resolveScormCard(opts,epoch);",path)
 s = replace_exact(s,'<option value="exam">اختبار</option>','',path)
+files[path]=s.encode()
+
+
+# SCORM can use teacher-provided lesson content without a previously cached
+# preparation tree; this does not change the card navigator or publisher.
+# Bulk publishing still requires verified tree coordinates.
+path = "noor-hub.js"
+s = files[path].decode()
+s = replace_exact(s,
+    "   if(opts.service==='scorm'){\n    if(!opts.unitNo||(!bulk&&!opts.lessonNo))throw Error('حدد موضع الوحدة والدرس في شجرة نور.');",
+    "   if(opts.service==='scorm'){\n    if(!opts.unitNo||(!bulk&&!opts.lessonNo))throw Error('حدد رقم الوحدة والدرس المراد إنشاء SCORM له.');",
+    path)
+s = replace_exact(s,
+    "    if(!branch||(!bulk&&!lesson)||!hasPreparationCourseProof(opts.course)&&(bulk||!hasReference&&!$('stnHubScormReference').value.trim())){",
+    "    const teacherReference=$('stnHubScormReference').value.trim();\n    if(!bulk&&!lesson){\n     if(teacherReference.length<20)throw Error('لا توجد شجرة درس محفوظة لهذا الصف. الصق نص الدرس أو أهدافه في خانة مرجع SCORM (20 حرفًا على الأقل) لتوليد درس دون فتح التحضير.');\n    }else if(!branch||(!bulk&&!lesson)||!hasPreparationCourseProof(opts.course)&&(bulk||!hasReference&&!teacherReference)){",
+    path)
+s = replace_exact(s,
+    "  const lesson=lookup.lessonAt(branch,opts.lessonNo);\n  if(!lesson)throw Error('تعذر تثبيت عنوان الدرس من شجرة نور.');\n  const target={...lessonProof(branch,lesson),unit:branch.unit,title:lesson.title};\n  const reference=await scormReference(opts,target,$('stnHubScormReference').value.trim());\n  ensureOperation(epoch);\n  opts.proof=lessonProof(branch,lesson);opts.unit=target.unit;opts.lesson=target.title;",
+    "  const lesson=lookup.lessonAt(branch,opts.lessonNo);\n  const teacherText=$('stnHubScormReference').value.trim();\n  if(!lesson&&teacherText.length<20)throw Error('أضف مرجع الدرس قبل إنشاء SCORM؛ شجرة التحضير ليست مطلوبة.');\n  const target=lesson?{...lessonProof(branch,lesson),unit:branch.unit,title:lesson.title}:\n   {lessonId:null,unit:'الوحدة '+opts.unitNo,title:opts.topic||'الدرس '+opts.lessonNo};\n  const reference=lesson?await scormReference(opts,target,teacherText):\n   {outcomes:[],objectives:'',concepts:'',practice:'',teacherText};\n  ensureOperation(epoch);\n  opts.proof=lesson?lessonProof(branch,lesson):null;opts.unit=target.unit;opts.lesson=target.title;",
+    path)
+s = replace_exact(s,
+    "await globalThis.NoorScormPublisher.start(file,{...opts,positionProof:opts.proof,mode:scormSaveMode(),fromDashboard:true,teacherId:classTeacherId,publishDate:$('stnHubScormPublishDate').value});",
+    "await globalThis.NoorScormPublisher.start(file,{...opts,positionProof:lesson?opts.proof:null,allowUnlinkedLesson:!lesson,mode:scormSaveMode(),fromDashboard:true,teacherId:classTeacherId,publishDate:$('stnHubScormPublishDate').value});",
+    path)
 files[path]=s.encode()
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
