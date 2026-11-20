@@ -1,18 +1,18 @@
-# Release Noor 2.8.58 with independently routed task workflows.
+# Release Noor 2.8.59 with Noor activity menu fixes and lesson-grounded SCORM.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.58-IndependentTasks-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.59-ActivityScorm-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.58"
+        description: "Tested unified source version, e.g. 2.8.59"
         type: string
         required: true
-        default: "2.8.58"
+        default: "2.8.59"
 permissions:
   contents: write
   pages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.58' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.59' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -94,6 +94,10 @@ jobs:
           grep -Fq 'stnNoorTeacherSelection:v2:' extension/noor-hub.js
           node --check extension/noor-exam.js
           node --check extension/noor-class-card.js
+          node --check extension/smart/src/noor-automator.js
+          grep -Fq 'findQuestionChoice' extension/smart/src/noor-automator.js
+          grep -Fq 'stnHubActivityResumeQuestions' extension/noor-hub.js
+          grep -Fq 'outcomeIndex' extension/gemini-background.js
           grep -Fq 'stnHubLanguage' extension/noor-hub.js
           grep -Fq 'stnNoorUiLanguage' extension/noor-ui-language.js
           grep -Fq "gradeNames.set('nineth',9)" extension/smart/src/noor-context.js
@@ -156,7 +160,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.58' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.59' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -257,7 +261,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.58' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.59' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
