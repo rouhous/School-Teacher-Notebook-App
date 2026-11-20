@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.68 source ZIP from the tested 2.8.64 source archive.
-This keeps the grade recognition fix and isolates SCORM navigation from preparation."""
+"""Generate Noor 2.8.69 source ZIP from the tested 2.8.64 source archive.
+Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 import json, re, sys
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.68-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.69-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.68"
-manifest["description"] = "Noor Unified 2.8.68: SCORM follows page three and Digital Library, never preparation."
+manifest["version"] = "2.8.69"
+manifest["description"] = "Noor Unified 2.8.69: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -32,58 +32,6 @@ s = files[path].decode()
 s = replace_exact(s,
     "const cards=(root.NoorCourseCatalog?.cards?.()||[]).filter(c=>normalize(c.label)===normalize(course.label));",
     "const cards=(root.NoorCourseCatalog?.cards?.()||[]).filter(c=>normalize(c.label)===normalize(course.label));\n  // Use the verified course card, not the carousel page indicator, as grade evidence.",
-    path)
-files[path] = s.encode()
-
-# Never reuse the preparation entry point as a fallback for SCORM card navigation.
-# Only a proven popover/dropdown opener may open a course menu.
-s = files["noor-class-card.js"].decode()
-s = replace_exact(s,
-    "return {element:card.querySelector('[data-toggle=\"popover\"],[data-bs-toggle=\"popover\"],[data-toggle=\"dropdown\"],[data-bs-toggle=\"dropdown\"],[aria-haspopup],button[type=\"button\"],[role=\"button\"]')||card,step:'open'};",
-    "const opener=card.querySelector('[data-toggle=\"popover\"],[data-bs-toggle=\"popover\"],[data-toggle=\"dropdown\"],[data-bs-toggle=\"dropdown\"],[aria-haspopup=\"true\"]');\n  // A generic course-card button may lead to lesson preparation; never click it for SCORM.\n  return opener?{element:opener,step:'open'}:null;",
-    "noor-class-card.js")
-files["noor-class-card.js"] = s.encode()
-
-path = "noor-scorm-publisher.js"
-s = files[path].decode()
-s = replace_exact(s,
-    "if(!action||!visible(action))return false;",
-    "if(!action||!visible(action))return false;\n  // The SCORM route is page 3 -> Digital Library, not lesson preparation.\n  if(/\\/teacher\\/courses\\/(?:preparations_index|add_preparation)/i.test(action.getAttribute('href')||action.closest('a')?.getAttribute('href')||''))return false;\n  if(/^(?:تحضير(?: الدروس)?|lesson preparation|preparations?)$/i.test(tidy(action.textContent||'')))return false;",
-    path)
-s = replace_exact(s,
-    "if(!onUploadPage()&&pickNav(j))return;",
-    "if(/\\/teacher\\/courses\\/(?:preparations_index|add_preparation)/i.test(location.pathname))throw Error('SCORM must use the third card page and Digital Library; preparation navigation is blocked.');\n    if(!onUploadPage()&&pickNav(j))return;",
-    path)
-files[path] = s.encode()
-
-# Never fall back from an unresolved course carousel into a generic menu.
-# The SCORM dashboard route is exclusively card page 3 -> Digital Library.
-s = files["noor-scorm-publisher.js"].decode()
-s = replace_exact(s,
-    "  const headings=pageHeaders();\n  const lessonsTab=oneAction(LESSONS_ACTION);",
-    "  if(isCourseHome())return false; // Do not enter Preparation via dashboard fallback.\\n  const headings=pageHeaders();\n  const lessonsTab=oneAction(LESSONS_ACTION);",
-    "noor-scorm-publisher.js")
-files["noor-scorm-publisher.js"] = s.encode()
-
-# Remove the nonfunctional Exam task from the teacher-facing service menu.
-# Keep underlying QTI and exam modules untouched; only the selectable task is disabled.
-path = "noor-hub.js"
-s = files[path].decode()
-s = replace_exact(s,
-    '<option value="exam">اختبار</option>',
-    '',
-    path)
-s = replace_exact(s,
-    "'preparation|activities|exam|scorm|grades'",
-    "'preparation|activities|scorm|grades'",
-    path) if "'preparation|activities|exam|scorm|grades'" in s else s
-s = replace_exact(s,
-    "(preparation|activities|exam|scorm|grades)",
-    "(preparation|activities|scorm|grades)",
-    path)
-s = replace_exact(s,
-    "['preparation','activities','exam','scorm'].includes(service)",
-    "['preparation','activities','scorm'].includes(service)",
     path)
 files[path] = s.encode()
 
@@ -98,6 +46,45 @@ s = replace_exact(s,
     "const grades=[...new Set(gradeLines.map(gradeOf).filter(Number.isInteger))];",
     path)
 files[path] = s.encode()
+
+# Minimal task-side fix based on the 2.8.65 source; leave the card pager and SCORM publisher unchanged.
+path = "noor-hub.js"
+s = files[path].decode()
+s = replace_exact(s,
+    "const mayResolveCard=['preparation','activities','exam'].includes(opts.service)",
+    "const mayResolveCard=['preparation','activities','exam','scorm'].includes(opts.service)", path)
+s = replace_exact(s,
+    "     await persistSelection({course:opts.course,proof:opts.proof});\n     sessionStorage.setItem(serviceStorageKey(),'scorm');\n     await curriculum.start({...inputs(),cid:opts.course.cid,label:opts.course.label,purpose:'scorm'});\n     return 'navigating';",
+    "     throw Error('لم أجد بيانات الوحدة والدرس المؤكدة لهذا الصف. افتح بطاقة الصف لاكتشاف معرّفها، ثم حدّد الدرس من القائمة المعتمدة. لن تفتح SCORM شجرة التحضير تلقائيًا.');",
+    path)
+helper = """ async function resolveScormCard(opts,epoch){
+  if(opts.service!=='scorm'||opts.course?.verified&&/^\\d+$/.test(String(opts.course.cid||'')))return;
+  if(!/^\\/teacher\\/?$/i.test(location.pathname))
+   throw Error('افتح صفحة المعلم الرئيسية وبطاقة الصف أولًا ليتم التعرف على معرّفها دون الدخول إلى التحضير.');
+  const catalog=globalThis.NoorCourseCatalog;
+  await catalog?.init?.();catalog?.scan?.();
+  const matched=(catalog?.cards?.()||[]).filter(c=>norm(c.label)===norm(opts.course.label));
+  if(matched.length!==1)throw Error('تعذر التمييز بين بطاقات الصف. افتح بطاقة الصف المطلوبة في لوحة المعلم.');
+  let rec=catalog?.get?.(opts.course.label);
+  if(!/^\\d+$/.test(String(rec?.cidNumeric||''))){
+   const card=matched[0].element;
+   const openers=[...card.querySelectorAll('[data-toggle="popover"],[data-bs-toggle="popover"],[data-toggle="dropdown"],[data-bs-toggle="dropdown"],[aria-haspopup="true"]')]
+    .filter(el=>globalThis.NoorClassCard?.visible?.(el));
+   if(openers.length===1){openers[0].click();await new Promise(resolve=>setTimeout(resolve,350));catalog.scan();rec=catalog.get(opts.course.label);}
+  }
+  if(!/^\\d+$/.test(String(rec?.cidNumeric||'')))
+   throw Error('لم أتعرف على معرّف بطاقة الصف. افتح قائمة البطاقة بنفسك ثم اضغط توليد SCORM مجددًا؛ لن أفتح تحضير درس.');
+  const resolved={...opts.course,cid:String(rec.cidNumeric),grade:rec.grade,verified:true};
+  ensureOperation(epoch);
+  await persistSelection({course:resolved,proof:opts.proof});
+  opts.course=resolved;
+ }
+"""
+s = replace_exact(s," async function generate(resumeId){",helper+" async function generate(resumeId){",path)
+s = replace_exact(s,"   checkContext(opts,false);checkQuestionCount(opts);",
+    "   checkContext(opts,false);checkQuestionCount(opts);\n   if(opts.service==='scorm')await resolveScormCard(opts,epoch);",path)
+s = replace_exact(s,'<option value="exam">اختبار</option>','',path)
+files[path]=s.encode()
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
