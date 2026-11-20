@@ -48,11 +48,11 @@ path = "noor-scorm-publisher.js"
 s = files[path].decode()
 s = replace_exact(s,
     "if(!action||!visible(action))return false;",
-    "if(!action||!visible(action))return false;\n  // The SCORM route is page 3 -> Digital Library, not lesson preparation.\n  if(/\\\\/teacher\\\\/courses\\\\/(?:preparations_index|add_preparation)/i.test(action.getAttribute('href')||action.closest('a')?.getAttribute('href')||''))return false;\n  if(/^(?:تحضير(?: الدروس)?|lesson preparation|preparations?)$/i.test(tidy(action.textContent||'')))return false;",
+    "if(!action||!visible(action))return false;\n  // The SCORM route is page 3 -> Digital Library, not lesson preparation.\n  if(/\\/teacher\\/courses\\/(?:preparations_index|add_preparation)/i.test(action.getAttribute('href')||action.closest('a')?.getAttribute('href')||''))return false;\n  if(/^(?:تحضير(?: الدروس)?|lesson preparation|preparations?)$/i.test(tidy(action.textContent||'')))return false;",
     path)
 s = replace_exact(s,
     "if(!onUploadPage()&&pickNav(j))return;",
-    "if(/\\\\/teacher\\\\/courses\\\\/(?:preparations_index|add_preparation)/i.test(location.pathname))throw Error('SCORM must use the third card page and Digital Library; preparation navigation is blocked.');\n    if(!onUploadPage()&&pickNav(j))return;",
+    "if(/\\/teacher\\/courses\\/(?:preparations_index|add_preparation)/i.test(location.pathname))throw Error('SCORM must use the third card page and Digital Library; preparation navigation is blocked.');\n    if(!onUploadPage()&&pickNav(j))return;",
     path)
 files[path] = s.encode()
 
