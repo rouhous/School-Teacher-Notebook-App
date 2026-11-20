@@ -1,18 +1,18 @@
-# Release Noor 2.8.56 with the task-first panel and optional activity lesson linkage.
+# Release Noor 2.8.57 with independently routed task workflows.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
     paths:
       - ".github/workflows/release-noor-signed.yml"
       - ".github/scripts/publish-noor-release.mjs"
-      - "addons/unified/Noor-Unified-v2.8.56-TaskFirst-source.zip"
+      - "addons/unified/Noor-Unified-v2.8.57-IndependentTasks-source.zip"
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.56"
+        description: "Tested unified source version, e.g. 2.8.57"
         type: string
         required: true
-        default: "2.8.56"
+        default: "2.8.57"
 permissions:
   contents: write
   pages: write
@@ -33,7 +33,7 @@ jobs:
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.56' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.57' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -90,7 +90,10 @@ jobs:
           grep -Fq 'oneAction(CREATE_ACTION)' extension/noor-scorm-publisher.js
           grep -Fq 'id="stnHubCount" type="number"' extension/noor-hub.js
           grep -Fq 'retryActivityGeneration' extension/noor-hub.js
-          grep -Fq 'cancelAllOperations' extension/noor-hub.js
+          grep -Fq 'cancelCurrentTask' extension/noor-hub.js
+          grep -Fq 'stnNoorTeacherSelection:v2:' extension/noor-hub.js
+          node --check extension/noor-exam.js
+          node --check extension/noor-class-card.js
           grep -Fq 'stnHubLanguage' extension/noor-hub.js
           grep -Fq 'stnNoorUiLanguage' extension/noor-ui-language.js
           grep -Fq "gradeNames.set('nineth',9)" extension/smart/src/noor-context.js
@@ -112,7 +115,7 @@ jobs:
           test -f extension/noor-lesson-evidence.js
           grep -Fq 'resolveFromList' extension/noor-lesson-evidence.js
           grep -Fq 'unit_mismatch' extension/noor-lesson-evidence.js
-          grep -Fq 'formProof' extension/noor-scorm-publisher.js
+          grep -Fq 'ensureVisibleSection' extension/noor-scorm-publisher.js
           grep -Fq 'resolveVerifiedLesson' extension/noor-hub.js
           grep -Fq 'async function startFromDashboard' extension/noor-hub.js
           grep -Fq 'id="stnHubDetails" hidden' extension/noor-hub.js
@@ -153,7 +156,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.56' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.57' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -246,7 +249,7 @@ jobs:
           unzip -t "$dest" | tail -n 1
           unzip -Z1 "$dest" | grep -Eq '^META-INF/[^/]+\.rsa$'
           unzip -p "$dest" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const m=JSON.parse(s);if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io")process.exit(1)})'
-          for f in noor-hub.js noor-course-catalog.js noor-scorm.js noor-grade-csv.js smart/src/noor-panel.js; do unzip -Z1 "$dest" | grep -Fxq "$f"; done
+          for f in noor-hub.js noor-exam.js noor-class-card.js noor-course-catalog.js noor-scorm.js noor-grade-csv.js smart/src/noor-panel.js; do unzip -Z1 "$dest" | grep -Fxq "$f"; done
           ! unzip -Z1 "$dest" | grep -Exq 'noor-pipeline.js|noor-pipeline-background.js'
           ! unzip -Z1 "$dest" | grep -Fxq lessons.js
           sha256sum "$dest"
@@ -254,7 +257,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.56' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.57' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
