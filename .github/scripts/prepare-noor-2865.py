@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.70 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.71 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.70-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.71-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.70"
-manifest["description"] = "Noor Unified 2.8.70: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.71"
+manifest["description"] = "Noor Unified 2.8.71: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -87,28 +87,95 @@ s = replace_exact(s,'<option value="exam">اختبار</option>','',path)
 files[path]=s.encode()
 
 
-# SCORM can use teacher-provided lesson content without a previously cached
-# preparation tree; this does not change the card navigator or publisher.
-# Bulk publishing still requires verified tree coordinates.
+# SCORM needs its verified course and the already displayed unit/lesson names,
+# NOT a preparation tree or an uploaded reference. Preserve class-card paging,
+# digital library navigation, and the existing publisher verbatim.
 path = "noor-hub.js"
 s = files[path].decode()
 s = replace_exact(s,
-    "   if(opts.service==='scorm'){\n    if(!opts.unitNo||(!bulk&&!opts.lessonNo))throw Error('حدد موضع الوحدة والدرس في شجرة نور.');",
-    "   if(opts.service==='scorm'){\n    if(!opts.unitNo||(!bulk&&!opts.lessonNo))throw Error('حدد رقم الوحدة والدرس المراد إنشاء SCORM له.');",
+    '    <label for="stnHubScormReference">مرجع الدرس من التحضير أو دليل المعلم</label>\n    <textarea id="stnHubScormReference" rows="4" maxlength="12000" placeholder="ألصق أهداف الدرس أو صفحاته عند الحاجة"></textarea>\n    <label for="stnHubScormReferenceFile">استيراد صفحات الدرس (PDF أو DOCX أو TXT)</label>\n    <input type="file" id="stnHubScormReferenceFile" accept=".pdf,.docx,.txt">\n',
+    '',
     path)
 s = replace_exact(s,
-    "    if(!branch||(!bulk&&!lesson)||!hasPreparationCourseProof(opts.course)&&(bulk||!hasReference&&!$('stnHubScormReference').value.trim())){",
-    "    const teacherReference=$('stnHubScormReference').value.trim();\n    if(!bulk&&!lesson){\n     if(teacherReference.length<20)throw Error('لا توجد شجرة درس محفوظة لهذا الصف. الصق نص الدرس أو أهدافه في خانة مرجع SCORM (20 حرفًا على الأقل) لتوليد درس دون فتح التحضير.');\n    }else if(!branch||(!bulk&&!lesson)||!hasPreparationCourseProof(opts.course)&&(bulk||!hasReference&&!teacherReference)){",
-    path)
+    "'stnHubScormScope','stnHubScormImageMode','stnHubScormReference','stnHubItemMode'",
+    "'stnHubScormScope','stnHubScormImageMode','stnHubItemMode'",path)
 s = replace_exact(s,
-    "  const lesson=lookup.lessonAt(branch,opts.lessonNo);\n  if(!lesson)throw Error('تعذر تثبيت عنوان الدرس من شجرة نور.');\n  const target={...lessonProof(branch,lesson),unit:branch.unit,title:lesson.title};\n  const reference=await scormReference(opts,target,$('stnHubScormReference').value.trim());\n  ensureOperation(epoch);\n  opts.proof=lessonProof(branch,lesson);opts.unit=target.unit;opts.lesson=target.title;",
-    "  const lesson=lookup.lessonAt(branch,opts.lessonNo);\n  const teacherText=$('stnHubScormReference').value.trim();\n  if(!lesson&&teacherText.length<20)throw Error('أضف مرجع الدرس قبل إنشاء SCORM؛ شجرة التحضير ليست مطلوبة.');\n  const target=lesson?{...lessonProof(branch,lesson),unit:branch.unit,title:lesson.title}:\n   {lessonId:null,unit:'الوحدة '+opts.unitNo,title:opts.topic||'الدرس '+opts.lessonNo};\n  const reference=lesson?await scormReference(opts,target,teacherText):\n   {outcomes:[],objectives:'',concepts:'',practice:'',teacherText};\n  ensureOperation(epoch);\n  opts.proof=lesson?lessonProof(branch,lesson):null;opts.unit=target.unit;opts.lesson=target.title;",
-    path)
+    "   if(taskService()==='scorm')$('stnHubScormReference').value='';\n",
+    "",path)
+start_handler=s.index("  $('stnHubScormReferenceFile').addEventListener('change',async event=>{")
+end_handler=s.index("  $('stnHubActivityPause')?.addEventListener",start_handler)
+if start_handler<0 or end_handler<0:
+    sys.exit('Could not locate standalone SCORM reference file listener')
+s=s[:start_handler]+s[end_handler:]
+
+# No curriculum.start for an SCORM task. A single lesson needs only an
+# explicitly selected numeric position and the titles already shown in Noor.
+start_guard=s.index("   if(opts.service==='scorm'){",s.index(" async function generate(resumeId){"))
+end_guard=s.index("   if(opts.service==='preparation'",start_guard)
+if start_guard<0 or end_guard<0:
+    sys.exit('SCORM pre-generation guard not found')
+s=s[:start_guard]+"""   if(opts.service==='scorm'){
+    if(!opts.unitNo||(!bulk&&!opts.lessonNo))
+     throw Error('حدد ترتيب الوحدة والدرس أولًا.');
+    if(bulk&&(!opts.proof?.unitId||!await orderedBranch(opts)))
+     throw Error('لإنشاء جميع دروس الوحدة، تحقّق من دروس الوحدة أولًا.');
+   }
+"""+s[end_guard:]
+
+# Keep the already-displayed verified lesson titles when the cached
+# preparation tree is absent. No made-up title or preparation navigation.
+start_scorm=s.index(" async function scorm(opts){")
+end_scorm=s.index("  status('جارٍ إنشاء مغامرة SCORM عمانية",start_scorm)
+if start_scorm<0 or end_scorm<0:
+    sys.exit('SCORM generator not found')
+s=s[:start_scorm]+""" async function scorm(opts){
+  const epoch=operationEpoch;
+  const branch=await orderedBranch(opts);
+  const lesson=branch?lookup.lessonAt(branch,opts.lessonNo):null;
+  const unitTitle=String(branch?.unit||$('stnHubUnitTitle').textContent||'').trim();
+  const lessonTitle=String(lesson?.title||$('stnHubLessonTitle').textContent||'').trim();
+  if(!unitTitle||!lessonTitle)
+   throw Error('تعذّر قراءة عنوان الوحدة والدرس الظاهرين في الإضافة. أعد تحديد ترتيب الوحدة والدرس ولا تفتح شجرة التحضير.');
+  const target={lessonId:lesson?.id||opts.proof?.lessonId||'',unit:unitTitle,title:lessonTitle};
+  const reference={outcomes:[],objectives:'',concepts:'',practice:'',teacherText:''};
+  if(lesson){
+   const key=lessonReferenceKey(opts.course.cid,lesson.id);
+   const saved=(await browser.storage.local.get(key))[key];
+   reference.objectives=saved?.objectives||'';
+   reference.concepts=saved?.concepts||'';
+  }
+  ensureOperation(epoch);
+  opts.proof=lesson?lessonProof(branch,lesson):null;
+  opts.unit=target.unit;opts.lesson=target.title;
+"""+s[end_scorm:]
 s = replace_exact(s,
     "await globalThis.NoorScormPublisher.start(file,{...opts,positionProof:opts.proof,mode:scormSaveMode(),fromDashboard:true,teacherId:classTeacherId,publishDate:$('stnHubScormPublishDate').value});",
-    "await globalThis.NoorScormPublisher.start(file,{...opts,positionProof:lesson?opts.proof:null,allowUnlinkedLesson:!lesson,mode:scormSaveMode(),fromDashboard:true,teacherId:classTeacherId,publishDate:$('stnHubScormPublishDate').value});",
+    "await globalThis.NoorScormPublisher.start(file,{...opts,positionProof:opts.proof,allowUnlinkedLesson:!opts.proof?.lessonId,mode:scormSaveMode(),fromDashboard:true,teacherId:classTeacherId,publishDate:$('stnHubScormPublishDate').value});",
+    path)
+s = replace_exact(s,
+    "    entry.reference=await scormReference(opts,{...entry,title:entry.lesson});",
+    "    entry.reference={outcomes:[],objectives:'',concepts:'',practice:'',teacherText:''};",
     path)
 files[path]=s.encode()
+
+# Optional curriculum references should enrich generation, not prevent it.
+path = "gemini-background.js"
+s=files[path].decode()
+s=replace_exact(s,
+    "  if(!text(msg.lessonId,128)||!Object.values(reference).some(value=>value.length))\n   return {ok:false,error:'يتطلب توليد SCORM درسًا محددًا من شجرة نور ومرجعًا من أهدافه أو تحضيره أو دليل المعلم.'};\n",
+    "",path)
+s=replace_exact(s,
+    "Ground every scored question in the learning outcomes, examples, skills, structures, and vocabulary taught in THIS lesson. The teacher-provided guide has priority, followed by visible Noor outcomes, then the approved preparation. Choose 1–4 measurable objectives supported by those references. A unit title or topic by itself is too broad. Exclude prerequisites that are not reviewed in the reference, material from adjacent lessons, above-grade terminology, and outside recall. Use only the relevant lesson section when the reference includes surrounding text.",
+    "Use the verified subject, grade, unit and lesson titles. If optional reference content is present, prioritize its learning outcomes. If reference content is absent, create original self-contained practice based on the stated lesson topic and grade; supply any needed facts in the question itself, and NEVER claim to quote the textbook or invent hidden syllabus details. Choose 1–4 measurable objectives and avoid unrelated units, adjacent lessons and above-grade terminology.",
+    path)
+files[path]=s.encode()
+
+# Regression checks: retain the original digital-library publisher exactly.
+with ZipFile(sources[0]) as original:
+    assert files["noor-scorm-publisher.js"]==original.read("noor-scorm-publisher.js")
+assert "stnHubScormReference" not in files["noor-hub.js"].decode()
+assert "await curriculum.start({...inputs(),cid:opts.course.cid,label:opts.course.label,purpose:'scorm'})" not in files["noor-hub.js"].decode()
+assert "cards.next({label:j.label},3,REPOSITORY_ACTION)" in files["noor-scorm-publisher.js"].decode()
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
