@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#075b47">
+<title>جدول المناوبة الأسبوعية | دفتر المعلم المدرسي</title>
+<script src="./session-auth.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{--green:#075b47;--gold:#b28b39;--cream:#fffaf0;--line:#bfd8cb}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(130deg,#e9f4ed,#fff8e8);font:15px/1.8 system-ui,Tahoma,Arial;color:#174639}
+main{max-width:1050px;margin:auto;padding:clamp(8px,3vw,25px)}
+header,.card{background:white;border:1px solid #e3d8bd;border-radius:18px;padding:clamp(12px,3vw,22px);margin:12px 0;box-shadow:0 6px 23px #064d3512}
+h1,h2{color:var(--green);margin:5px 0 11px}
+h1{font-size:clamp(21px,5vw,30px)}
+h2{font-size:20px}
+.back{display:inline-block;color:var(--green);font-weight:800;text-decoration:none;border:1px solid var(--line);padding:7px 11px;border-radius:10px}
+button,select,input{font:inherit}
+button{padding:9px 15px;background:var(--green);border:0;border-radius:10px;color:white;cursor:pointer;font-weight:700;margin:4px 2px}
+button:disabled{opacity:.55;cursor:not-allowed}
+button.alt{background:#fff7e5;border:1px solid #ceb781;color:#75500b}
+select,input[type=file]{border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff;max-width:100%;width:100%}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;align-items:end}
+label{display:block;font-weight:700;margin:6px 0}
+.hint{font-size:13px;color:#567364}
+.notice{background:#eff9f3;padding:12px;border:1px solid #c2dac8;border-radius:12px}
+#status{font-weight:700;color:#19634c;min-height:24px;white-space:pre-wrap}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border:1px solid #c3dace;padding:11px 8px;text-align:right;vertical-align:top}
+thead th{background:#0b6652;color:#fff}
+tbody th{background:#e9f4eb;width:125px;color:#075b47}
+#dutyTable th:first-child{width:105px}
+tr:nth-child(even) td{background:#fafdfb}
+.selection{font-weight:750;line-height:1.7}
+.selection.empty{font-weight:500;color:#8d7860}
+details{margin-top:6px;border:1px dashed #91bbaa;border-radius:10px;padding:5px 9px}
+summary{cursor:pointer;font-weight:800;color:var(--green)}
+.teacher-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:4px;max-height:230px;overflow-y:auto;padding:8px 0}
+.teacher-option{display:flex;align-items:center;gap:7px;padding:7px;border-bottom:1px solid #eff5ef;font-size:13px;font-weight:600;cursor:pointer;margin:0}
+.teacher-option input{accent-color:var(--green);width:18px;height:18px;flex-shrink:0}
+#pdfPreview{white-space:pre-wrap;background:#f7faf7;border:1px solid #ddd;border-radius:10px;padding:12px;max-height:180px;overflow:auto;font-size:12px;direction:rtl}
+button.primary{background:var(--gold);color:#fff;font-size:16px}
+.warn{color:#91610d}
+@media(max-width:600px){#dutyTable th:first-child{width:74px}td,th{padding:7px 5px}.teacher-grid{grid-template-columns:1fr}.selection{font-size:13px}}
+@media print{.controls,button,details,.back,header p,#status,#importBox{display:none!important}body{background:white}header,.card{box-shadow:none;border:0}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<a class="back" href="founder-dashboard.html">↩ العودة إلى بوابة المدير</a>
+<h1>📣 جدول المناوبة الأسبوعية</h1>
+<p>اختر المدرسة، ثم حدد المناوبين لكل يوم. يمكنك استيراد الأسماء من ملف PDF نصّي ومراجعتها، أو اختيارها يدويًا. لا يتغير الجدول المعتمد إلا بعد الضغط على «اعتماد جدول المناوبة».</p>
+</header>
+
+<section class="card">
+<div class="controls">
+<label>المدرسة
+<select id="school"><option value="boys">مدرسة البنين</option><option value="girls">مدرسة البنات</option></select>
+</label>
+<div><button id="reload" type="button">↻ تحميل المناوبة المعتمدة</button></div>
+</div>
+<p class="notice">في مدرسة البنات تُعتمد المعلمات المناوبات في اقتراح الاحتياط حسب الشغور وعدد الحصص في اليوم. عند عدم توفر معلمة مناوبة متفرغة، تبقى الحصة غير مسندة حتى يراجعها المدير. مدرسة البنين تحتفظ بآلية A/B/C/D للاحتياط.</p>
+<p id="status" role="status" aria-live="polite">جارٍ التحقق من جلسة المدير…</p>
+</section>
+
+<section class="card" id="importBox">
+<h2>📄 استيراد جدول المناوبة من PDF</h2>
+<label for="pdfFile">اختر ملف المناوبة الأسبوعية (PDF)</label>
+<input id="pdfFile" type="file" accept=".pdf,application/pdf">
+<p class="hint">تُقرأ النصوص من PDF داخل جهازك، ثم تُطابق أسماء المعلمين مع القائمة الرسمية للمدرسة. راجع نتائج المطابقة قبل الاعتماد. إذا كان PDF صورة ممسوحة ولم تُستخرج أسماؤه، استخدم الاختيار اليدوي.</p>
+<p id="pdfStatus" role="status"></p>
+<details><summary>معاينة النص المستخرج من PDF</summary><pre id="pdfPreview">لم يتم اختيار ملف بعد.</pre></details>
+</section>
+
+<section class="card">
+<h2>📅 المناوبون من الأحد إلى الخميس</h2>
+<table id="dutyTable"><thead><tr><th scope="col">اليوم</th><th scope="col">أسماء المعلمين المناوبين</th></tr></thead><tbody id="dutyRows"></tbody></table>
+<p class="hint">يمكن اختيار أكثر من معلم أو معلمة في كل يوم. يظهر كل اسم مرة واحدة في اليوم، ويُحفظ الترتيب لموازنة توزيع الاحتياط.</p>
+<button class="primary" id="publish" type="button" disabled>✓ اعتماد جدول المناوبة للمدرسة</button>
+<button type="button" class="alt" id="refresh" disabled>إلغاء التعديلات والعودة إلى المعتمد</button>
+</section>
+</main>
+<script>
+(() => {
+"use strict";
+const API="https://czljzhwmtqmtmlsbwgyz.supabase.co/functions/v1/school-supervisor-timetables";
+const dayNames=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"];
+const $=id=>document.getElementById(id);
+let teachers=[],selected=new Map(dayNames.map((_,d)=>[d,new Set()])),busy=false;
+function status(msg){$("status").textContent=msg}
+function norm(s){return String(s||"").normalize("NFKC")
+ .replace(/[\u064B-\u065F\u0670\u0640]/g,"")
+ .replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")
+ .replace(/[^a-zA-Z\u0621-\u064A0-9]+/g," ").trim().replace(/\s+/g," ").toLowerCase()}
+async function call(action,rows){
+ const auth=await schoolSupervisorSession();
+ if(!auth)throw Error("انتهت جلسة المدير. ارجع إلى بوابة المدير ثم سجّل الدخول.");
+ const payload={...auth,action,school:$("school").value};
+ if(rows!==undefined)payload.rows=rows;
+ const response=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},
+  body:JSON.stringify(payload),cache:"no-store"});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok||!data.ok){
+  const messages={INVALID_DUTY_TEACHER:"تحتوي القائمة على معلم غير معتمد لهذه المدرسة.",
+    INVALID_DUTY_ROWS:"يرجى اختيار مناوب واحد على الأقل.",
+    DUPLICATE_DUTY_TEACHER:"اسم معلم مكرر في اليوم نفسه.",
+    SCHOOL_ACCESS_DENIED:"لا تملك صلاحية إدارة هذه المدرسة.",
+    SUPERVISOR_REQUIRED:"يجب الدخول بحساب المدير المعتمد."};
+  throw Error(messages[data.error]||data.error||"تعذر حفظ بيانات المناوبة");
+ }
+ return data.data;
+}
+function namesFor(day){const ids=selected.get(day)||new Set();
+ return teachers.filter(t=>ids.has(t.id)).map(t=>t.name)}
+function updateSelection(day){
+ const names=namesFor(day),out=$("names"+day);
+ if(out){out.textContent=names.length?names.join("، "):"لم تُحدَّد مناوبة لهذا اليوم";out.classList.toggle("empty",!names.length)}
+ const count=$("count"+day);if(count)count.textContent=String(names.length);
+}
+function render(){
+ const target=$("dutyRows");target.replaceChildren();
+ for(let day=0;day<5;day++){
+  const tr=document.createElement("tr"),th=document.createElement("th"),td=document.createElement("td");
+  th.scope="row";th.textContent=dayNames[day];
+  const names=document.createElement("div");names.id="names"+day;names.className="selection";
+  const details=document.createElement("details"),summary=document.createElement("summary");
+  summary.append(document.createTextNode("تحديد المناوبين · "),Object.assign(document.createElement("span"),{id:"count"+day}),document.createTextNode(" أسماء"));
+  details.append(summary);
+  const grid=document.createElement("div");grid.className="teacher-grid";
+  for(const teacher of teachers){
+   const lab=document.createElement("label");lab.className="teacher-option";
+   const box=document.createElement("input");box.type="checkbox";
+   box.checked=selected.get(day).has(teacher.id);
+   box.onchange=()=>{
+    if(box.checked)selected.get(day).add(teacher.id);
+    else selected.get(day).delete(teacher.id);
+    updateSelection(day);
+   };
+   lab.append(box,document.createTextNode(teacher.name));grid.append(lab);
+  }
+  details.append(grid);td.append(names,details);tr.append(th,td);target.append(tr);updateSelection(day);
+ }
+ $("publish").disabled=!teachers.length;
+ $("refresh").disabled=!teachers.length;
+}
+async function load(){
+ if(busy)return;
+ busy=true;$("reload").disabled=true;$("publish").disabled=true;
+ try{
+  status("جارٍ تحميل المناوبة الرسمية وأسماء المعلمين…");
+  const data=await call("duty-read");
+  teachers=Array.isArray(data.teachers)?data.teachers.filter(t=>t&&t.id&&t.name):[];
+  selected=new Map(dayNames.map((_,d)=>[d,new Set()]));
+  for(const row of data.rows||[]){
+   const day=Number(row.weekday);
+   if(selected.has(day)&&teachers.some(t=>t.id===row.teacherId))selected.get(day).add(row.teacherId);
+  }
+  render();
+  status(data.published?
+   "✓ تم تحميل جدول المناوبة المعتمد. يمكنك مراجعته أو تعديله.":
+   "لم يُعتمد جدول المناوبة لهذه المدرسة بعد. اختر الأسماء أو استورد PDF ثم اعتمد القائمة.");
+ }catch(e){status("تعذر تحميل المناوبة: "+e.message)}
+ finally{busy=false;$("reload").disabled=false}
+}
+async function readPdf(file){
+ if(!window.pdfjsLib)throw Error("تعذر تحميل قارئ PDF. تأكد من الاتصال بالإنترنت.");
+ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+ const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+ if(pdf.numPages>12)throw Error("الملف يحتوي على صفحات كثيرة؛ اختر جدول المناوبة فقط (12 صفحة كحد أقصى).");
+ const lines=[];
+ for(let page=1;page<=pdf.numPages;page++){
+  const p=await pdf.getPage(page),content=await p.getTextContent();
+  const positions=new Map();
+  for(const item of content.items){
+   if(typeof item.str!=="string"||!item.str.trim())continue;
+   const y=Math.round((item.transform?.[5]||0)/4)*4;
+   const arr=positions.get(y)||[];arr.push({text:item.str.trim(),x:item.transform?.[4]||0});positions.set(y,arr);
+  }
+  for(const y of [...positions.keys()].sort((a,b)=>b-a)){
+   // Arabic PDF table: far-right day column comes before the teachers' names.
+   const text=positions.get(y).sort((a,b)=>b.x-a.x).map(x=>x.text).join(" ").trim();
+   if(text)lines.push(text);
+  }
+ }
+ return lines.join("\n");
+}
+function segmentsByDay(raw){
+ const segments=new Map(dayNames.map((_,i)=>[i,[]]));
+ let day=null;
+ const token=/الأحد|الاحد|الإثنين|الاثنين|الإثنين|الثلاثاء|الأربعاء|الاربعاء|الخميس/g;
+ for(const line of raw.split(/\n/)){
+  const hits=[...line.matchAll(token)];
+  if(hits.length===1){
+   const d=norm(hits[0][0]);
+   const found=dayNames.findIndex(n=>norm(n)===d);
+   if(found>=0){day=found;segments.get(day).push(line.replace(token," ").trim());continue}
+  }
+  if(day!==null&&hits.length===0)segments.get(day).push(line);
+ }
+ return segments;
+}
+function importText(raw){
+ if(!teachers.length)throw Error("حمّل قائمة المعلمين أولًا.");
+ const segments=segmentsByDay(raw);
+ let found=0;
+ const preview=[];
+ const next=new Map(dayNames.map((_,d)=>[d,new Set()]));
+ for(let day=0;day<5;day++){
+  const text=norm(segments.get(day).join(" "));
+  for(const teacher of teachers){
+   const name=norm(teacher.name);
+   if(name.length>=5&&text.includes(name)){next.get(day).add(teacher.id);found++}
+  }
+  preview.push(dayNames[day]+": "+(teachers.filter(t=>next.get(day).has(t.id)).map(t=>t.name).join("، ")||"تحتاج مراجعة يدوية"));
+ }
+ if(found){
+  selected=next;render();
+  $("pdfStatus").textContent="تمت مطابقة "+found+" أسماء حسب أيام المناوبة. راجع الجدول أدناه قبل الضغط على اعتماد.";
+ }else{
+  $("pdfStatus").textContent="لم تُطابَق أسماء بصورة موثوقة. لم تتغير اختياراتك؛ حدد الأسماء يدويًا من الجدول أدناه.";
+ }
+ $("pdfPreview").textContent=preview.join("\n")+"\n\n--- النص الأصلي ---\n"+raw.slice(0,11000);
+}
+$("pdfFile").addEventListener("change",async()=>{
+ const file=$("pdfFile").files?.[0];if(!file)return;
+ if(!(/\.pdf$/i.test(file.name)||file.type==="application/pdf")||file.size>12*1024*1024){
+  $("pdfStatus").textContent="اختر ملف PDF بحجم لا يتجاوز 12 ميجابايت.";return}
+ $("pdfStatus").textContent="جارٍ قراءة نص PDF وتحليل أسماء المناوبين…";
+ try{
+  const raw=await readPdf(file);
+  if(!raw.trim())throw Error("الملف PDF مصوّر ولا يتضمن نصوصًا قابلة للاستخراج. اختر الأسماء يدويًا.");
+  importText(raw);
+ }catch(e){$("pdfStatus").textContent="تعذر استيراد الملف: "+e.message}
+});
+$("publish").onclick=async()=>{
+ if(busy)return;
+ const rows=[];for(let day=0;day<5;day++){
+  let order=0;
+  for(const teacher of teachers){
+   if(selected.get(day).has(teacher.id))rows.push({weekday:day,teacherId:teacher.id,order:order++});
+  }
+ }
+ if(!rows.length){status("اختر مناوبًا واحدًا على الأقل قبل الاعتماد.");return}
+ const summary=dayNames.map((day,i)=>day+" ("+selected.get(i).size+")").join(" · ");
+ if(!confirm("اعتماد جدول المناوبة الجديد لمدرسة "+($("school").value==="girls"?"البنات":"البنين")+"؟\n"+summary+
+   "\nسيحل محل جدول المناوبة السابق دون تعديل حصص الاحتياط المعتمدة سابقًا."))return;
+ busy=true;$("publish").disabled=true;
+ try{
+  const result=await call("duty-publish",rows);
+  status("✓ تم اعتماد "+result.rows.length+" تكليفات مناوبة للأسبوع. تظهر مناوبة اليوم في دفاتر المعلمين وستُرسل تنبيهات الهاتف للمشتركين.");
+  await loadAfterSave(result);
+ }catch(e){status("تعذر الاعتماد: "+e.message)}
+ finally{busy=false;$("publish").disabled=false}
+};
+async function loadAfterSave(result){
+ const valid=new Map(dayNames.map((_,d)=>[d,new Set()]));
+ for(const row of result.rows||[])if(valid.has(Number(row.weekday)))valid.get(Number(row.weekday)).add(row.teacherId);
+ selected=valid;render();
+}
+$("refresh").onclick=()=>{if(confirm("تجاهل التعديلات غير المعتمدة والعودة إلى جدول المناوبة المنشور؟"))load()};
+$("reload").onclick=()=>load();
+$("school").onchange=()=>{teachers=[];selected=new Map(dayNames.map((_,d)=>[d,new Set()]));render();load()};
+const fromUrl=new URLSearchParams(location.search).get("school");
+if(fromUrl==="boys"||fromUrl==="girls")$("school").value=fromUrl;
+load();
+})();
+</script>
+</body>
+</html>
