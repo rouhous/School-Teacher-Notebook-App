@@ -60,8 +60,8 @@ files[path] = s.encode()
 # The SCORM dashboard route is exclusively card page 3 -> Digital Library.
 s = files["noor-scorm-publisher.js"].decode()
 s = replace_exact(s,
-    "  const headings=pageHeaders();\\n  const lessonsTab=oneAction(LESSONS_ACTION);",
-    "  if(isCourseHome())return false; // Do not enter Preparation via dashboard fallback.\\n  const headings=pageHeaders();\\n  const lessonsTab=oneAction(LESSONS_ACTION);",
+    "  const headings=pageHeaders();\n  const lessonsTab=oneAction(LESSONS_ACTION);",
+    "  if(isCourseHome())return false; // Do not enter Preparation via dashboard fallback.\\n  const headings=pageHeaders();\n  const lessonsTab=oneAction(LESSONS_ACTION);",
     "noor-scorm-publisher.js")
 files["noor-scorm-publisher.js"] = s.encode()
 
