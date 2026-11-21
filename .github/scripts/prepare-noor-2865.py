@@ -1104,6 +1104,10 @@ assert "cardOpenAttempts" not in s
 assert "function contentCoursePath(j)" not in s
 assert "function pickNav(j)" in s
 
+p=files["noor-scorm-publisher.js"].decode()
+for marker in [" function advance(", " async function advance(", " function resume(", " async function resume(", "function isScormForm", " function onUploadPage", " function pickNav(j)", " function otherLibrariesPanel()", " function stage(j)"]:
+ i=p.find(marker)
+ if i>=0:print("DIAG",marker,p[i:i+7000])
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
     assert files["noor-scorm-publisher.js"]!=original.read("noor-scorm-publisher.js")
