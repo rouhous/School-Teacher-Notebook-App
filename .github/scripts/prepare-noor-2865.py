@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.84 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.85 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.84-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.85-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.84"
-manifest["description"] = "Noor Unified 2.8.84: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.85"
+manifest["description"] = "Noor Unified 2.8.85: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -516,7 +516,7 @@ assert "directScormUrl:direct||''" in files["noor-scorm-publisher.js"].decode()
 assert "location.assign(direct)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.84: keep the proven direct SCORM route, but separate Activity and SCORM
+# v2.8.85: keep the proven direct SCORM route, but separate Activity and SCORM
 # in the task picker again. Neither engine should change the other's UI.
 path="noor-hub.js"
 s=files[path].decode()
@@ -611,7 +611,7 @@ assert "submittedWithoutReceipt(active)" in files["noor-scorm-publisher.js"].dec
 assert "unverified:Boolean(j.unverified)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.84 - no more card fallback for SCORM: require a verified per-course
+# v2.8.85 - no more card fallback for SCORM: require a verified per-course
 # direct upload route. Hide the link field; request one-time setup ONLY if
 # this particular teacher/course has no validated saved route.
 path="noor-hub.js"
@@ -710,7 +710,7 @@ assert "هذا الإصدار يتطلب رابط" in files["noor-scorm-publishe
 assert "تم إنشاء '+quantity+' ملفات SCORM وتنزيلها. اختر ملفًا واحدًا" not in files["noor-hub.js"].decode()
 
 
-# 2.8.84: passively discover *official* Noor SCORM route identities.
+# 2.8.85: passively discover *official* Noor SCORM route identities.
 # No hardcoded IDs, invented CID translation, cross-teacher IDs or network interception.
 path="noor-course-catalog.js"
 s=files[path].decode()
@@ -789,7 +789,7 @@ assert "window.prompt(" not in files["noor-hub.js"].decode()
 assert "لم أجد رابط SCORM موثقًا" in files["noor-hub.js"].decode()
 
 
-# 2.8.84 - robust grade/subject matching, card-scoped URL discovery, and
+# 2.8.85 - robust grade/subject matching, card-scoped URL discovery, and
 # diagnostic breakdown. No guessing unknown CID/tid/tuid. Ignore links from
 # other course cards, teacher accounts, or unrelated global tables.
 path="noor-course-catalog.js"
@@ -877,7 +877,7 @@ assert "روابط داخل البطاقة" in files["noor-hub.js"].decode()
 assert "NoorCourseCatalog?.scormDiscovery?.(course)" in files["noor-hub.js"].decode()
 
 
-# 2.8.84: use the course CONTENT page shown in the teacher's video, not the
+# 2.8.85: use the course CONTENT page shown in the teacher's video, not the
 # failed flip-card route and not an opaque SCORM upload link.
 # Numeric CID is taken ONLY from an already verified selected teacher course.
 path="noor-hub.js"
@@ -991,7 +991,7 @@ assert "return location.origin+'/teacher/courses/browse_content/cid:'" in files[
 assert "window.prompt(" not in files["noor-hub.js"].decode()
 
 
-# v2.8.84 - Remove every previous SCORM card/popover / digital-library
+# v2.8.85 - Remove every previous SCORM card/popover / digital-library
 # navigation attempt, retain ONLY the verified course-content route.
 # The "Other Libraries" section is a self-contained panel: green arrow
 # toggles its icon strip, green PLAY is "Add interactive lessons".
@@ -1105,7 +1105,7 @@ assert "function contentCoursePath(j)" not in s
 assert "function pickNav(j)" in s
 
 
-# v2.8.84: Correct the genuine Noor in-page modal and link tooltip recognition.
+# v2.8.85: Correct the genuine Noor in-page modal and link tooltip recognition.
 # When teacher manually opens the modal, Resume MUST stage the file rather
 # than running navigation again. Never click Submit until all required fields
 # are filled. Keep all course and teacher identity checks.
@@ -1168,6 +1168,103 @@ files[path]=s.encode()
 assert "function openScormDialog()" in s
 assert "if(openScormDialog()){" in s
 assert "querySelectorAll('[title],[aria-label]" in s
+
+
+# v2.8.85 -- ISOLATED SCORM NAVIGATION PILOT. This button never generates,
+# attaches, clicks Save, or modifies the existing publishing job.
+path="noor-hub.js"
+s=files[path].decode()
+s=replace_exact(s,
+ '    <button id="stnHubScormDiagnose" type="button" class="stnBtn outline">فحص المسار التلقائي لـ SCORM</button>',
+ '    <button id="stnHubScormDiagnose" type="button" class="stnBtn outline">فحص المسار التلقائي لـ SCORM</button><button id="stnHubScormTestModal" type="button" class="stnBtn outline">اختبار فتح نافذة الدرس التفاعلي فقط</button>',path)
+s=replace_exact(s,
+ """  $('stnHubScormDiagnose').addEventListener('click',()=>{""",
+ """  $('stnHubScormTestModal').addEventListener('click',async()=>{
+   try{
+    const choice=selected(),course=choice.course;
+    if(!course?.verified||!/^[0-9]+$/.test(String(course.cid||'')))throw Error('اختر أولًا مساقًا موثّقًا من نور.');
+    if(!globalThis.NoorScormPublisher?.testModal)throw Error('اختبار الوصول غير محمّل.');
+    const result=await globalThis.NoorScormPublisher.testModal(course);
+    if(!result?.ok)throw Error('تعذر تشغيل اختبار الوصول.');
+    actionStatus('بدأ اختبار الوصول إلى نافذة إضافة درس تفاعلي دون توليد أو حفظ.');
+   }catch(e){actionStatus('تعذر اختبار الوصول: '+String(e.message||e));}
+  });
+  $('stnHubScormDiagnose').addEventListener('click',()=>{""",path)
+files[path]=s.encode()
+
+path="noor-scorm-publisher.js"
+s=files[path].decode()
+s=replace_exact(s,
+ """ root.NoorScormPublisher=Object.freeze({start,resume,cancel,onUploadPage,inspect:""",
+ """ const MODAL_TEST_KEY='stnScormModalTest:v1';
+ const testGet=()=>{try{
+  const j=JSON.parse(sessionStorage.getItem(MODAL_TEST_KEY)||'null');
+  if(j&&Date.now()-j.at<120000)return j;
+ }catch(_){}
+  sessionStorage.removeItem(MODAL_TEST_KEY);return null;
+ };
+ const testSet=j=>sessionStorage.setItem(MODAL_TEST_KEY,JSON.stringify(j));
+ const testDone=message=>{sessionStorage.removeItem(MODAL_TEST_KEY);notice(message);};
+ async function testModal(course){
+  const t=await teacher();
+  if(!t||!course?.verified||!/^[0-9]+$/.test(String(course.cid||''))||!course.label)
+   throw Error('الصف أو حساب المعلم غير موثّق.');
+  const active=get();
+  if(active&&active.phase!=='done'&&active.phase!=='paused')
+   throw Error('توجد عملية نشر SCORM نشطة. أوقفها أو انتظر اكتمالها قبل الاختبار.');
+  const j={cid:String(course.cid),label:course.label,teacherId:t,at:Date.now(),
+   tries:0,expandTries:0,addTries:0,step:'فتح محتوى المساق'};
+  testSet(j);
+  const url=location.origin+'/teacher/courses/browse_content/cid:'+encodeURIComponent(j.cid);
+  if(location.href!==url){notice('اختبار فقط: فتح صفحة محتوى المساق…');location.assign(url);}
+  else setTimeout(testAdvance,450);
+  return {ok:true};
+ }
+ let testTimer=null;
+ async function testAdvance(){
+  const j=testGet();if(!j)return;
+  clearTimeout(testTimer);
+  try{
+   if(await teacher()!==j.teacherId)throw Error('تغير حساب المعلم أثناء الاختبار.');
+   if(openScormDialog()){testDone('✓ نجح اختبار الوصول: نافذة رفع درس تفاعلي جديد مفتوحة. لم يتم توليد أو رفع أو حفظ أي ملف.');return;}
+   const match=location.pathname.match(/^\/teacher\/courses\/browse_content\/cid:([0-9]+)\/?$/i);
+   if(!match||match[1]!==j.cid)throw Error('لم نصل إلى صفحة محتوى المساق المحدد.');
+   const panel=otherLibrariesPanel();
+   if(!panel){
+    if(++j.tries<7){testSet(j);testTimer=setTimeout(testAdvance,900);return;}
+    throw Error('لم أتعرف على قسم «المكتبات الأخرى» في صفحة المساق بعد التحميل.');
+   }
+   const add=otherLibrariesAdd(panel);
+   if(add){
+    if(j.addTries>0){
+     if(++j.tries<8){testSet(j);testTimer=setTimeout(testAdvance,950);return;}
+     throw Error('ضغطت أيقونة الدروس التفاعلية ولم تظهر نافذة الرفع.');
+    }
+    j.addTries++;j.step='الضغط على أيقونة الدروس التفاعلية';testSet(j);
+    notice('اختبار فقط: الضغط على أيقونة الدروس التفاعلية…');
+    add.click();testTimer=setTimeout(testAdvance,1250);return;
+   }
+   if(!j.expandTries){
+    const expand=otherLibrariesExpand(panel);
+    if(!expand)throw Error('وجدت «المكتبات الأخرى» ولكن لم أتعرف على سهم توسيعها الأخضر.');
+    j.expandTries++;j.step='توسيع المكتبات الأخرى';testSet(j);
+    notice('اختبار فقط: فتح أيقونات «المكتبات الأخرى»…');
+    expand.click();testTimer=setTimeout(testAdvance,1000);return;
+   }
+   if(++j.tries<6){testSet(j);testTimer=setTimeout(testAdvance,950);return;}
+   throw Error('ضغطت سهم «المكتبات الأخرى» لكن لم أتعرف على أيقونة الدروس التفاعلية.');
+  }catch(e){testDone('توقف اختبار فتح النافذة: '+String(e.message||e)+' — لا يوجد توليد أو حفظ.');}
+ }
+ root.NoorScormPublisher=Object.freeze({start,resume,cancel,testModal,onUploadPage,inspect:""",path)
+s=replace_exact(s,
+ """ setTimeout(()=>{const j=get();if(j&&!activityInUse()){""",
+ """ setTimeout(()=>{if(testGet()){testAdvance();return;}
+  const j=get();if(j&&!activityInUse()){""",path)
+files[path]=s.encode()
+assert "stnHubScormTestModal" in files["noor-hub.js"].decode()
+assert "async function testModal(course)" in files["noor-scorm-publisher.js"].decode()
+assert "function pickNav(j)" in files["noor-scorm-publisher.js"].decode()
+assert "testAdvance()" in files["noor-scorm-publisher.js"].decode()
 
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
