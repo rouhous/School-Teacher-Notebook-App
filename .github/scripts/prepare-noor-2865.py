@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.82 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.83 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.82-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.83-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.82"
-manifest["description"] = "Noor Unified 2.8.82: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.83"
+manifest["description"] = "Noor Unified 2.8.83: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -247,7 +247,7 @@ files[path]=s.encode()
 # their card-opening control before attempting navigation to the third page.
 assert "function openControl(card)" in files["noor-class-card.js"].decode()
 assert "const opener=openControl(card)" in files["noor-class-card.js"].decode()
-assert "cards.next({label:j.label,grade:j.grade,cid:j.cid},3,REPOSITORY_ACTION)" in files["noor-scorm-publisher.js"].decode()
+assert "cards.next(" not in files["noor-scorm-publisher.js"].decode()
 assert "return location.origin+url+encodeURIComponent(opts.course.cid)" in files["noor-hub.js"].decode()
 assert "stnHubScormReference" not in files["noor-hub.js"].decode()
 
@@ -516,7 +516,7 @@ assert "directScormUrl:direct||''" in files["noor-scorm-publisher.js"].decode()
 assert "location.assign(direct)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.82: keep the proven direct SCORM route, but separate Activity and SCORM
+# v2.8.83: keep the proven direct SCORM route, but separate Activity and SCORM
 # in the task picker again. Neither engine should change the other's UI.
 path="noor-hub.js"
 s=files[path].decode()
@@ -611,7 +611,7 @@ assert "submittedWithoutReceipt(active)" in files["noor-scorm-publisher.js"].dec
 assert "unverified:Boolean(j.unverified)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.82 - no more card fallback for SCORM: require a verified per-course
+# v2.8.83 - no more card fallback for SCORM: require a verified per-course
 # direct upload route. Hide the link field; request one-time setup ONLY if
 # this particular teacher/course has no validated saved route.
 path="noor-hub.js"
@@ -710,7 +710,7 @@ assert "هذا الإصدار يتطلب رابط" in files["noor-scorm-publishe
 assert "تم إنشاء '+quantity+' ملفات SCORM وتنزيلها. اختر ملفًا واحدًا" not in files["noor-hub.js"].decode()
 
 
-# 2.8.82: passively discover *official* Noor SCORM route identities.
+# 2.8.83: passively discover *official* Noor SCORM route identities.
 # No hardcoded IDs, invented CID translation, cross-teacher IDs or network interception.
 path="noor-course-catalog.js"
 s=files[path].decode()
@@ -789,7 +789,7 @@ assert "window.prompt(" not in files["noor-hub.js"].decode()
 assert "لم أجد رابط SCORM موثقًا" in files["noor-hub.js"].decode()
 
 
-# 2.8.82 - robust grade/subject matching, card-scoped URL discovery, and
+# 2.8.83 - robust grade/subject matching, card-scoped URL discovery, and
 # diagnostic breakdown. No guessing unknown CID/tid/tuid. Ignore links from
 # other course cards, teacher accounts, or unrelated global tables.
 path="noor-course-catalog.js"
@@ -877,7 +877,7 @@ assert "روابط داخل البطاقة" in files["noor-hub.js"].decode()
 assert "NoorCourseCatalog?.scormDiscovery?.(course)" in files["noor-hub.js"].decode()
 
 
-# 2.8.82: use the course CONTENT page shown in the teacher's video, not the
+# 2.8.83: use the course CONTENT page shown in the teacher's video, not the
 # failed flip-card route and not an opaque SCORM upload link.
 # Numeric CID is taken ONLY from an already verified selected teacher course.
 path="noor-hub.js"
@@ -989,6 +989,120 @@ assert "browse_content\\/cid:([0-9]+)" in files["noor-scorm-publisher.js"].decod
 assert "getAttribute('data-original-title')" in files["noor-scorm-publisher.js"].decode()
 assert "return location.origin+'/teacher/courses/browse_content/cid:'" in files["noor-hub.js"].decode()
 assert "window.prompt(" not in files["noor-hub.js"].decode()
+
+
+# v2.8.83 - Remove every previous SCORM card/popover / digital-library
+# navigation attempt, retain ONLY the verified course-content route.
+# The "Other Libraries" section is a self-contained panel: green arrow
+# toggles its icon strip, green PLAY is "Add interactive lessons".
+path="noor-scorm-publisher.js"
+s=files[path].decode()
+a=s.index(" function contentCoursePath(j){")
+b=s.index(" function nearText(el){",a)
+if a<0 or b<=a:sys.exit("Cannot replace old SCORM navigation engine")
+s=s[:a]+r""" // Dedicated SCORM routing engine: no legacy class-card, popover or
+ // digital-repository fallbacks are reachable from pickNav.
+ function sameCourseContent(j){
+  const m=location.pathname.match(/^\/teacher\/courses\/browse_content\/cid:([0-9]+)\/?$/i);
+  return m?m[1]===String(j.cid):false;
+ }
+ function actionMeta(el){
+  if(!el)return '';
+  return norm([el.textContent,el.title,el.getAttribute('aria-label'),
+   el.getAttribute('data-original-title'),el.getAttribute('data-bs-original-title'),
+   el.getAttribute('data-tooltip'),el.getAttribute('data-title')]
+   .filter(Boolean).join(' '));
+ }
+ function actionTarget(el){return el?.closest?.('a,button,[role="button"],[onclick]')||el}
+ function otherLibrariesPanel(){
+  // Find the exact visible heading, not a parent containing all section names.
+  const nodes=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,strong,span,div,p,a')]
+   .filter(el=>visible(el)&&!inHub(el));
+  const headings=nodes.filter(el=>norm(el.textContent)==='المكتبات الاخرى'&&
+   ![...el.children].some(child=>norm(child.textContent)==='المكتبات الاخرى'));
+  if(headings.length!==1)return null;
+  const heading=headings[0];
+  for(let el=heading,depth=0;el&&depth<7;el=el.parentElement,depth++){
+   if(el===document.body)break;
+   const text=norm(el.textContent||'');
+   // The selected panel has one heading, its own total, and buttons/icons.
+   if(text.length>650||/(?:الاختبارات|المهام الالكترونيه|الفصول الذكيه).*(?:المكتبات الاخرى)/.test(text))continue;
+   const controls=[...el.querySelectorAll('a,button,[role="button"],[onclick]')].filter(x=>visible(x)&&!inHub(x));
+   if(controls.length&&el.querySelector('[class*="panel"],[class*="card"]'))return el;
+   if(controls.length>=2||controls.length===1&&/(?:المجموع|add interactive)/i.test(text))return el;
+  }
+  return heading.closest('.panel,.card,.box,.widget')||heading.parentElement;
+ }
+ function onlyUnique(list,description){
+  const uniq=[...new Set(list.map(actionTarget).filter(el=>el&&visible(el)&&!inHub(el)&&!el.disabled))];
+  const leaf=uniq.filter(el=>!uniq.some(other=>other!==el&&el.contains(other)));
+  if(leaf.length>1)throw Error('ظهر أكثر من زر محتمل لـ'+description+' داخل المكتبات الأخرى؛ لن أضغط عشوائيًا.');
+  return leaf[0]||null;
+ }
+ function otherLibrariesAdd(panel){
+  const controls=[...panel.querySelectorAll('a,button,[role="button"],[onclick]')].filter(el=>visible(el)&&!inHub(el));
+  // 1. Explicit tooltip/name is strongest evidence, including hidden titles.
+  let links=controls.filter(el=>/add interactive lessons?|upload interactive lesson|اضافه درس تفاعلي|رفع درس تفاعلي/.test(actionMeta(el)));
+  if(links.length)return onlyUnique(links,'إضافة الدرس التفاعلي');
+  // 2. On mobile Noor displays a green circular PLAY icon with no
+  // text until hover. Scope the icon to this one validated section.
+  links=controls.filter(el=>{
+   const graphic=el.querySelector('.fa-play-circle,.fa-play,.fa-play-circle-o,.glyphicon-play,[class*="icon-play"]');
+   if(!graphic)return false;
+   const meta=actionMeta(el);
+   if(/video|youtube|فيديو|preview|معاينه/.test(meta))return false;
+   const style=getComputedStyle(el),bg=style.backgroundColor||'',childStyle=getComputedStyle(graphic);
+   const color=childStyle.color||style.color||'';
+   const green=el.classList.contains('btn-success')||
+    /rgb\((?:\s*(?:0|[1-9]?\d|1[01]\d)\s*,\s*(?:1[2-9]\d|2[0-5]\d)\s*,)/.test(bg+' '+color)||
+    /(green|success)/i.test(el.className+' '+graphic.className);
+   return green;
+  });
+  return onlyUnique(links,'زر التشغيل الأخضر للدروس التفاعلية');
+ }
+ function otherLibrariesExpand(panel){
+  const heading=[...panel.querySelectorAll('h1,h2,h3,h4,h5,h6,span,div,strong')]
+   .find(el=>visible(el)&&norm(el.textContent)==='المكتبات الاخرى');
+  if(!heading)return null;
+  const controls=[...panel.querySelectorAll('a,button,[role="button"],[onclick]')].filter(el=>visible(el)&&!el.disabled);
+  const candidates=controls.filter(el=>{
+   const icon=el.querySelector('.fa-arrow-right,.fa-arrow-circle-right,.fa-long-arrow-right,.glyphicon-arrow-right,[class*="arrow-right"]');
+   const label=actionMeta(el);
+   return !!icon||(/^(?:expand|show other libraries|open libraries)$/.test(label)&&!/(?:lesson|interactive)/.test(label));
+  });
+  if(candidates.length)return onlyUnique(candidates,'السهم الأخضر الخاص بالمكتبات الأخرى');
+  // If Noor uses a CSS-drawn green arrow, choose only the one adjacent
+  // to the exact heading in the panel header, not a random card button.
+  const header=heading.closest('.panel-heading,.card-header,[class*="header"]')||heading.parentElement;
+  const adjacent=[...header.querySelectorAll('a,button,[role="button"],[onclick]')]
+   .filter(el=>visible(el)&&el!==heading&&(
+     el.classList.contains('btn-success')||/(green|success)/i.test(String(el.className))||
+     el.querySelector('svg use[href*="arrow"],svg[class*="arrow"]')));
+  return onlyUnique(adjacent,'زر توسيع المكتبات الأخرى');
+ }
+ function pickNav(j){
+  if(!/^\/teacher\/courses\/browse_content\/cid:/i.test(location.pathname)){
+   throw Error('مسار SCORM الجديد لا يعمل إلا من صفحة استعراض محتوى المساق الموثقة، وليس من بطاقة الصف.');
+  }
+  if(!sameCourseContent(j))throw Error('توقفت العملية لأن معرّف صفحة المحتوى لا يطابق المساق المختار.');
+  const panel=otherLibrariesPanel();
+  if(!panel)return false; // Wait for Noor to render the Other Libraries section.
+  const add=otherLibrariesAdd(panel);
+  if(add)return takeNavigation(j,add,'فتح نافذة إضافة درس تفاعلي');
+  if(j.step==='إظهار المكتبات الأخرى')return false; // Wait for expansion; never toggle it shut.
+  const expand=otherLibrariesExpand(panel);
+  return expand?takeNavigation(j,expand,'إظهار المكتبات الأخرى'):false;
+ }
+""" +s[b:]
+# Historical route assertions must now assert deletion, not preservation.
+files[path]=s.encode()
+assert "function otherLibrariesPanel()" in s
+assert "function otherLibrariesExpand(panel)" in s
+assert "function otherLibrariesAdd(panel)" in s
+assert "cards.next(" not in s
+assert "cardOpenAttempts" not in s
+assert "function contentCoursePath(j)" not in s
+assert "function pickNav(j)" in s
 
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
