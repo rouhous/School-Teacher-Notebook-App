@@ -599,6 +599,12 @@ s=replace_exact(s,
 # own original publish id and the submitted-unverified completion marker.
 files[path]=s.encode()
 assert '<option value="activities">نشاط</option><option value="scorm">SCORM</option>' in files["noor-hub.js"].decode()
+s=files["noor-hub.js"].decode()
+s=replace_exact(s,
+ "  window.addEventListener('stnNoorScormConfirmed',()=>checkUnitBatch().catch(()=>{}));",
+ "  window.addEventListener('stnNoorScormConfirmed',()=>checkUnitBatch().catch(()=>{}));\\n  window.addEventListener('stnNoorScormSubmittedUnverified',()=>checkUnitBatch().catch(()=>{}));",
+ "noor-hub.js")
+files["noor-hub.js"]=s.encode()
 assert "stnHubGenerateOther" not in files["noor-hub.js"].decode()
 assert "directScormUrl:j.directScormUrl||''" in files["noor-hub.js"].decode()
 assert "submittedWithoutReceipt(active)" in files["noor-scorm-publisher.js"].decode()
