@@ -207,7 +207,7 @@ s = replace_exact(s,
  }
  function next(course,page,match,createForScope){""",path)
 s = replace_exact(s,
-    "  const cards=(root.NoorCourseCatalog?.cards?.()||[]).filter(c=>normalize(c.label)===normalize(course.label));\n  // Reuse the same verified course-card detection as lesson/preparation; never use the '1' carousel indicator as a grade.\n  if(cards.length!==1)return null;\n  const card=cards[0].element;",
+    "  const cards=(root.NoorCourseCatalog?.cards?.()||[]).filter(c=>normalize(c.label)===normalize(course.label));\n  // Use the verified course card, not the carousel page indicator, as grade evidence.\n  if(cards.length!==1)return null;\n  const card=cards[0].element;",
     "  const matched=courseCard(course);\n  if(!matched)return null;\n  const card=matched.element;",path)
 s = replace_exact(s,
     "  let scopes=[card];\n  if(opened?.card===card){",
