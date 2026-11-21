@@ -876,6 +876,14 @@ assert "matchedCard:!!card" in files["noor-course-catalog.js"].decode()
 assert "روابط داخل البطاقة" in files["noor-hub.js"].decode()
 assert "NoorCourseCatalog?.scormDiscovery?.(course)" in files["noor-hub.js"].decode()
 
+# inspect current actual publisher routing and batch transitions; no runtime changes
+p=files["noor-scorm-publisher.js"].decode()
+print("DIAG PUBLISHER HEAD",p[:12500])
+print("DIAG PUBLISHER PICKNAV",p[p.index(" function pickNav(j){"):p.index(" function pickNav(j){")+16500])
+print("DIAG PUBLISHER START",p[p.index(" async function start("):p.index(" async function start(")+11000] if " async function start(" in p else p[-14000:])
+h=files["noor-hub.js"].decode()
+print("DIAG HUB DIRECT",h[h.index(" async function scormDirectLink(opts){"):h.index(" async function scormDirectLink(opts){")+2600])
+
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
     assert files["noor-scorm-publisher.js"]!=original.read("noor-scorm-publisher.js")
