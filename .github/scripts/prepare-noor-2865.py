@@ -322,9 +322,6 @@ s=replace_exact(s,
    if(record?.cidNumeric===j.cid&&norm(record.label)===norm(j.label)&&registered){
     let link;try{link=new URL(registered,location.href)}catch(_){}
     if(link?.origin===location.origin&&
-       /^\\/teacher\\/attachments\\/index\\/scorm(?:\\/|$)/i.test(link.pathname)&&
-       !/\\/cid:(\\d+)/i.test(link.pathname)||false){/* not a verified course-scoped path */}
-    else if(link?.origin===location.origin&&
       /^\\/teacher\\/attachments\\/index\\/scorm(?:\\/|$)/i.test(link.pathname)&&
       link.pathname.match(/\\/cid:(\\d+)/i)?.[1]===j.cid){
      set({...j,step:'الدروس التفاعلية',phase:'route'});
