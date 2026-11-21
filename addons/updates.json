@@ -433,6 +433,15 @@
               "strict_min_version": "140.0"
             }
           }
+        },
+        {
+          "version": "2.8.78",
+          "update_link": "https://rouhous.github.io/School-Teacher-Notebook-App/addons/files/Noor-Unified-v2.8.78-signed.xpi",
+          "applications": {
+            "gecko": {
+              "strict_min_version": "140.0"
+            }
+          }
         }
       ]
     }
