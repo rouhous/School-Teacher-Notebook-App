@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.73 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.74 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.73-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.74-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.73"
-manifest["description"] = "Noor Unified 2.8.73: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.74"
+manifest["description"] = "Noor Unified 2.8.74: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -250,6 +250,95 @@ assert "const opener=openControl(card)" in files["noor-class-card.js"].decode()
 assert "cards.next({label:j.label,grade:j.grade,cid:j.cid},3,REPOSITORY_ACTION)" in files["noor-scorm-publisher.js"].decode()
 assert "return location.origin+url+encodeURIComponent(opts.course.cid)" in files["noor-hub.js"].decode()
 assert "stnHubScormReference" not in files["noor-hub.js"].decode()
+
+
+# Combined activity / SCORM UI: two explicit actions, one selected course.
+# Internally preserve the separate job types and existing generation pipelines.
+path="noor-hub.js"
+s=files[path].decode()
+s=replace_exact(s,
+  '<option value="activities">نشاط</option><option value="scorm">SCORM</option>',
+  '<option value="activities">نشاط / SCORM</option><option value="scorm" hidden>نشاط / SCORM</option>',path)
+s=replace_exact(s,
+  '<button id="stnHubGenerate" type="button" class="stnBtn stnGenerateMini">✨ توليد باستخدام Gemini</button>',
+  '<button id="stnHubGenerate" type="button" class="stnBtn stnGenerateMini">✨ توليد باستخدام Gemini</button><button id="stnHubGenerateOther" type="button" class="stnBtn outline" hidden>توليد SCORM</button>',path)
+s=replace_exact(s,
+  "  $('stnHubScormOptions').hidden=s!=='scorm';",
+  """  $('stnHubScormOptions').hidden=s!=='scorm';
+  $('stnHubGenerateOther').hidden=!['activities','scorm'].includes(s);
+  if(s==='activities'){$('stnHubGenerate').textContent='✨ توليد نشاط';$('stnHubGenerateOther').textContent='✨ توليد SCORM';}
+  if(s==='scorm'){$('stnHubGenerate').textContent='✨ توليد SCORM';$('stnHubGenerateOther').textContent='✨ توليد نشاط';}""",path)
+# The generate label is overwritten later in showStatus, so update that late assignment.
+s=replace_exact(s,
+  "  if(s!=='grades')$('stnHubGenerate').textContent=s==='preparation'?(prepSaveMode()==='auto'?'✨ توليد التحضير وحفظه تلقائيًا':'✨ توليد التحضير للمراجعة'):'✨ توليد باستخدام Gemini';",
+  "  if(s!=='grades')$('stnHubGenerate').textContent=s==='preparation'?(prepSaveMode()==='auto'?'✨ توليد التحضير وحفظه تلقائيًا':'✨ توليد التحضير للمراجعة'):s==='activities'?'✨ توليد نشاط':s==='scorm'?'✨ توليد SCORM':'✨ توليد باستخدام Gemini';",path)
+s=replace_exact(s,
+  "  $('stnHubGenerate').addEventListener('click',()=>generate().catch(error=>actionStatus('تعذر بدء التوليد: '+String(error.message||error))));",
+  """  $('stnHubGenerate').addEventListener('click',()=>generate().catch(error=>actionStatus('تعذر بدء التوليد: '+String(error.message||error))));
+  $('stnHubGenerateOther').addEventListener('click',async()=>{
+   if(actionBlocked()||!['activities','scorm'].includes(taskService()))return;
+   const course=selected();
+   const target=taskService()==='activities'?'scorm':'activities';
+   try{
+    if(!course.course||!course.unitNo||!course.lessonNo)throw Error('حدد الصف والوحدة والدرس قبل التوليد.');
+    await persistSelection({course:course.course,proof:course.proof,task:target});
+    $('stnHubService').value=target;
+    sessionStorage.setItem(serviceStorageKey(),target);
+    await switchTask(target);
+    await generate();
+   }catch(e){actionStatus('تعذر بدء التوليد: '+String(e.message||e));}
+  });""",path)
+# Both services now share the activity's exact verified course-card opener.
+s=replace_exact(s,
+  """       const card=cards[0].element;
+       const control=card?.querySelector('[data-toggle="popover"],[data-bs-toggle="popover"],button[type="button"]')||card;
+       if(control){openedCard=true;control.click();}""",
+  """       const control=globalThis.NoorClassCard?.activityCourseOpener?.(p.course)||cards[0].element;
+       if(control){openedCard=true;control.click();}""",path)
+files[path]=s.encode()
+
+path="noor-class-card.js"
+s=files[path].decode()
+s=replace_exact(s,
+    "root.NoorClassCard=Object.freeze({action,next,openControl,safeClick,visible,normalize,isHome:",
+    """function activityCourseOpener(course){
+  const matched=courseCard(course);
+  return matched?openControl(matched.element):null;
+ }
+ root.NoorClassCard=Object.freeze({action,next,openControl,activityCourseOpener,safeClick,visible,normalize,isHome:""",path)
+files[path]=s.encode()
+
+# Prefer an official link discovered when a teacher previously opened the same
+# digital library. This is the activity/preparation CID-based routing principle;
+# NEVER guess a Noor URL or trust a link from a different course.
+path="noor-scorm-publisher.js"
+s=files[path].decode()
+s=replace_exact(s,
+  """  if(cards&&isCourseHome()&&j.step!=='المكتبة الرقمية'){
+   const action=cards.next({label:j.label,grade:j.grade,cid:j.cid},3,REPOSITORY_ACTION);""",
+  """  if(cards&&isCourseHome()&&j.step!=='المكتبة الرقمية'){
+   const record=root.NoorCourseCatalog?.get?.(j.cid);
+   const registered=record?.routes?.scorm;
+   if(record?.cidNumeric===j.cid&&norm(record.label)===norm(j.label)&&registered){
+    let link;try{link=new URL(registered,location.href)}catch(_){}
+    if(link?.origin===location.origin&&
+       /^\\/teacher\\/attachments\\/index\\/scorm(?:\\/|$)/i.test(link.pathname)&&
+       !/\\/cid:(\\d+)/i.test(link.pathname)||false){/* not a verified course-scoped path */}
+    else if(link?.origin===location.origin&&
+      /^\\/teacher\\/attachments\\/index\\/scorm(?:\\/|$)/i.test(link.pathname)&&
+      link.pathname.match(/\\/cid:(\\d+)/i)?.[1]===j.cid){
+     set({...j,step:'الدروس التفاعلية',phase:'route'});
+     notice('جارٍ فتح رابط الدروس التفاعلية الموثق لنفس الصف…');
+     location.assign(link.href);return true;
+    }
+   }
+   const action=cards.next({label:j.label,grade:j.grade,cid:j.cid},3,REPOSITORY_ACTION);""",path)
+files[path]=s.encode()
+
+assert "stnHubGenerateOther" in files["noor-hub.js"].decode()
+assert "activityCourseOpener?.(p.course)" in files["noor-hub.js"].decode()
+assert "activityCourseOpener" in files["noor-class-card.js"].decode()
+assert "record?.routes?.scorm" in files["noor-scorm-publisher.js"].decode()
 
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
