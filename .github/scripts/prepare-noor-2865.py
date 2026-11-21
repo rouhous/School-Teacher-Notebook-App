@@ -1464,8 +1464,8 @@ replacement=r"""  if(candidate&&!/اضافه|add\s/i.test(actionMeta(candidate))
     /arrow/i.test(String(el.className));
    return hasGreen&&whiteArrow;
   });
-  const targets=[...new Set(nearby.map(el=>actionTarget(el)))];
-  const leaf=targets.filter(el=>!targets.some(other=>other!==el&&el.contains(other)));
+  const fallbackTargets=[...new Set(nearby.map(el=>actionTarget(el)))];
+  const leaf=fallbackTargets.filter(el=>!fallbackTargets.some(other=>other!==el&&el.contains(other)));
   return leaf.length===1?leaf[0]:null;"""
 s=replace_exact(s,needle,replacement,path)
 files[path]=s.encode()
