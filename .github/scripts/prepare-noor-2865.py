@@ -502,7 +502,7 @@ s=replace_exact(s,
  "   filename:file.name,formPath:'',verifiedLesson:false,attached:false,allowUnlinkedLesson:",
  "   filename:file.name,directScormUrl:direct||'',formPath:'',verifiedLesson:false,attached:false,allowUnlinkedLesson:",path)
 s=replace_exact(s,
- "  if(opts.fromDashboard&&!isCourseHome())location.assign(location.origin+'/teacher');\\n  else scheduleAdvance(j,250);",
+ "  if(opts.fromDashboard&&!isCourseHome())location.assign(location.origin+'/teacher');\n  else scheduleAdvance(j,250);",
  """  if(direct){
    notice('جارٍ فتح صفحة إضافة الدرس التفاعلي مباشرة دون بطاقة الصف…');
    if(location.href!==direct)location.assign(direct);
