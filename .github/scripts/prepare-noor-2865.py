@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.78 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.79 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.78-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.79-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.78"
-manifest["description"] = "Noor Unified 2.8.78: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.79"
+manifest["description"] = "Noor Unified 2.8.79: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -516,7 +516,7 @@ assert "directScormUrl:direct||''" in files["noor-scorm-publisher.js"].decode()
 assert "location.assign(direct)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.78: keep the proven direct SCORM route, but separate Activity and SCORM
+# v2.8.79: keep the proven direct SCORM route, but separate Activity and SCORM
 # in the task picker again. Neither engine should change the other's UI.
 path="noor-hub.js"
 s=files[path].decode()
@@ -609,6 +609,105 @@ assert "stnHubGenerateOther" not in files["noor-hub.js"].decode()
 assert "directScormUrl:j.directScormUrl||''" in files["noor-hub.js"].decode()
 assert "submittedWithoutReceipt(active)" in files["noor-scorm-publisher.js"].decode()
 assert "unverified:Boolean(j.unverified)" in files["noor-scorm-publisher.js"].decode()
+
+
+# v2.8.79 - no more card fallback for SCORM: require a verified per-course
+# direct upload route. Hide the link field; request one-time setup ONLY if
+# this particular teacher/course has no validated saved route.
+path="noor-hub.js"
+s=files[path].decode()
+s=replace_exact(s,
+ """    <label for="stnHubScormDirectUrl">رابط «إضافة درس تفاعلي جديد» المباشر (اختبار للصف المحدد)</label>
+    <input type="url" id="stnHubScormDirectUrl" dir="ltr" autocomplete="off" placeholder="https://lms.moe.gov.om/teacher/attachments/upload/Scorm/cid:…/tid:…/tuid:…">
+    <p class="stnNote">ألصق الرابط الرسمي الذي فتحته من حسابك للصف المحدد. يُحفظ على جهاز المعلم لهذا المساق فقط، ولا يُستخدم لصف آخر. عند غياب الرابط يستمر مسار نور المعتاد.</p>""",
+ "",path)
+s=replace_exact(s,
+ "  const input=$('stnHubScormDirectUrl');\n  const course=opts.course;",
+ "  const course=opts.course;",path)
+s=replace_exact(s,
+ "  const raw=String(input.value||'').trim();\n  const selected=raw?validDirectScormUrl(raw):null;\n  if(raw&&!selected)throw Error('رابط SCORM غير مطابق لصفحة «إضافة درس تفاعلي جديد» الرسمية في نور.');",
+ """  // A direct upload URL is opaque: it cannot be derived from the numeric
+  // activity CID. On a new course, ask once rather than wrongly opening
+  // the course card, which has repeatedly failed in Noor.
+  if(stored?.teacherId===classTeacherId&&stored?.cidNumeric===String(course.cid)&&
+     stored?.label===course.label&&stored?.grade===course.grade){
+   const prior=validDirectScormUrl(stored.url);
+   if(prior?.opaqueCid===stored.opaqueCid)return prior.url;
+  }
+  const raw=String(window.prompt('لم يُحفظ رابط «إضافة درس تفاعلي جديد» لهذا الصف. افتح صفحة الدرس التفاعلي لهذا المساق من نور، ثم الصق رابطها الرسمي مرة واحدة. لن تعود الإضافة إلى محاولة فتح بطاقة الصف تلقائيًا.','')||'').trim();
+  if(!raw)throw Error('لم يُسجل رابط SCORM مباشر لهذا المساق. لا يمكن بدء التوليد دون عنوان رسمي خاص به.');
+  const selected=validDirectScormUrl(raw);
+  if(!selected)throw Error('الرابط غير مطابق لعنوان «إضافة درس تفاعلي جديد» الرسمي في نور. لم يبدأ النشر.');""",path)
+s=replace_exact(s,
+ """  if(stored?.teacherId===classTeacherId&&stored?.cidNumeric===String(course.cid)&&stored?.label===course.label&&stored?.grade===course.grade){
+   const validated=validDirectScormUrl(stored.url);
+   return validated?.opaqueCid===stored.opaqueCid?validated.url:'';
+  }
+  return '';""",
+ """  throw Error('لم أستطع الحصول على رابط SCORM الرسمي لهذا المساق.');""",path)
+# Single-lesson quantity > 1 must NOT generate download-only files. Create
+# a persistent per-file publication queue, reusing the same SCORM batch flow
+# that already supports generating after save and page navigation.
+s=replace_exact(s,
+ " async function beginUnitBatch(opts){",
+ " async function beginUnitBatch(opts,lessonCopies=null){",path)
+s=replace_exact(s,
+ "  if(!opts.proof?.unitId)throw Error('تحقّق من ترتيب الوحدة في شجرة الصف أولًا.');",
+ "  if(!lessonCopies&&!opts.proof?.unitId)throw Error('تحقّق من ترتيب الوحدة في شجرة الصف أولًا.');",path)
+s=replace_exact(s,
+ "  const auto=opts.service==='activities'?$('stnHubActivityUnitAuto').checked:$('stnHubScormUnitAuto').checked;",
+ "  const auto=lessonCopies?true:opts.service==='activities'?$('stnHubActivityUnitAuto').checked:$('stnHubScormUnitAuto').checked;",path)
+s=replace_exact(s,
+ "  const quantity=Number((opts.service==='activities'?$('stnHubActivityQuantity'):$('stnHubScormQuantity')).value);",
+ "  const quantity=lessonCopies?1:Number((opts.service==='activities'?$('stnHubActivityQuantity'):$('stnHubScormQuantity')).value);",path)
+s=replace_exact(s,
+ "  const entries=needsActivityPage?[]:await confirmedUnitLessons(opts);",
+ """  const entries=lessonCopies
+    ?Array.from({length:lessonCopies},(_,index)=>({
+       unit:opts.unit,lesson:opts.lesson,source:'single_lesson',
+       unitNo:opts.unitNo,lessonNo:opts.lessonNo,lessonId:opts.proof?.lessonId||'',
+       reference:{outcomes:[],objectives:'',concepts:'',practice:'',teacherText:''},
+       copyIndex:index+1}))
+    :needsActivityPage?[]:await confirmedUnitLessons(opts);""",path)
+s=replace_exact(s,
+ "  if(opts.service==='scorm'){\n   for(const entry of entries){",
+ "  if(opts.service==='scorm'&&!lessonCopies){\n   for(const entry of entries){",path)
+# Launch direct queue as soon as a multi-copy single lesson is requested.
+s=replace_exact(s,
+ "  let started=0;\n  for(let i=0;i<quantity;i++){",
+ """  if(quantity>1){
+   status('إنشاء ونشر '+quantity+' ملفات SCORM بالتتابع. لن أبدأ الملف التالي حتى يصل أمر حفظ الملف السابق إلى نور.');
+   await beginUnitBatch({...opts,unit:target.unit,lesson:target.title},quantity);
+   return;
+  }
+  let started=0;
+  for(let i=0;i<quantity;i++){""",path)
+s=replace_exact(s,
+ "  if(quantity>1)status('تم إنشاء '+quantity+' ملفات SCORM وتنزيلها. اختر ملفًا واحدًا عند نشر كل درس حتى لا يستبدل مساق سابقًا.');",
+ "  if(quantity>1)status('تتم معالجة جميع ملفات SCORM في طابور النشر التلقائي.');",path)
+# Guard every SCORM queue route before generating anything; never return to
+# the known broken flip-card fallback.
+s=replace_exact(s,
+ "  const directScormUrl=opts.service==='scorm'?await scormDirectLink(opts):'';\n  const entries=",
+ "  const directScormUrl=opts.service==='scorm'?await scormDirectLink(opts):'';\n  if(opts.service==='scorm'&&!directScormUrl)throw Error('لا يوجد رابط SCORM مباشر موثق لهذا الصف. لن أفتح البطاقة.');\n  const entries=",path)
+s=replace_exact(s,
+ "  const directScormUrl=await scormDirectLink(opts);\n  const branch=",
+ "  const directScormUrl=await scormDirectLink(opts);\n  if(!directScormUrl)throw Error('رابط SCORM المباشر مطلوب؛ لن تُفتح بطاقة الصف.');\n  const branch=",path)
+# The publisher must use only direct URL for both single and serial batches.
+path2="noor-scorm-publisher.js"
+p=files[path2].decode()
+p=replace_exact(p,
+ "  }else if(opts.fromDashboard&&!isCourseHome())location.assign(location.origin+'/teacher');\n  else scheduleAdvance(j,250);",
+ """  }else{
+   throw Error('هذا الإصدار يتطلب رابط «إضافة درس تفاعلي جديد» الرسمي للمساق؛ لن أعود إلى مسار بطاقة الصف.');
+  }""",path2)
+files[path2]=p.encode()
+files[path]=s.encode()
+assert "stnHubScormDirectUrl" not in files["noor-hub.js"].decode()
+assert "beginUnitBatch(opts,lessonCopies=null)" in files["noor-hub.js"].decode()
+assert "await beginUnitBatch({...opts,unit:target.unit,lesson:target.title},quantity)" in files["noor-hub.js"].decode()
+assert "هذا الإصدار يتطلب رابط" in files["noor-scorm-publisher.js"].decode()
+assert "تم إنشاء '+quantity+' ملفات SCORM وتنزيلها. اختر ملفًا واحدًا" not in files["noor-hub.js"].decode()
 
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
