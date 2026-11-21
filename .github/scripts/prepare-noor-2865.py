@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.74 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.75 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.74-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.75-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.74"
-manifest["description"] = "Noor Unified 2.8.74: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.75"
+manifest["description"] = "Noor Unified 2.8.75: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -336,6 +336,70 @@ assert "stnHubGenerateOther" in files["noor-hub.js"].decode()
 assert "activityCourseOpener?.(p.course)" in files["noor-hub.js"].decode()
 assert "activityCourseOpener" in files["noor-class-card.js"].decode()
 assert "record?.routes?.scorm" in files["noor-scorm-publisher.js"].decode()
+
+
+# Fix the ACTUAL SCORM entry point: do not let cards.next(page=3)
+# guess a feature or pager before the selected tile has been opened.
+# The selected tile (not its first arbitrary child button) gets clicked,
+# and we require visible menu/pager evidence before stepping forward.
+path="noor-scorm-publisher.js"
+s=files[path].decode()
+a=s.index("  const cards=root.NoorClassCard;",s.index(" function pickNav(j){"))
+b=s.index("  const headings=pageHeaders();",a)
+if a<0 or b<0:sys.exit("No SCORM card-navigation section found")
+s=s[:a]+"""  const cards=root.NoorClassCard;
+  if(cards&&isCourseHome()&&j.step!=='المكتبة الرقمية'){
+   const catalog=root.NoorCourseCatalog;
+   const record=catalog?.get?.(j.cid);
+   // Prefer an existing course-specific link recorded from the teacher's own
+   // prior navigation. No fabricated URLs and no cross-course shortcuts.
+   const registered=record?.routes?.scorm;
+   if(record?.cidNumeric===j.cid&&norm(record.label)===norm(j.label)&&registered){
+    let link;try{link=new URL(registered,location.href)}catch(_){}
+    if(link?.origin===location.origin&&
+       /^\\\\/teacher\\\\/attachments\\\\/index\\\\/scorm(?:\\\\/|$)/i.test(link.pathname)&&
+       link.pathname.match(/\\\\/cid:(\\\\d+)/i)?.[1]===j.cid){
+      j.phase='route';j.step='الدروس التفاعلية';set(j);
+      notice('جارٍ فتح رابط الدروس التفاعلية المعتمد للصف '+j.grade+'…');
+      location.assign(link.href);return true;
+    }
+   }
+   const found=(catalog?.cards?.()||[]).filter(c=>norm(c.label)===norm(j.label));
+   if(found.length!==1)throw Error('لم أعثر على بطاقة واحدة مطابقة للصف '+j.grade+' والمادة '+j.subject+' على لوحة المعلم.');
+   const tile=found[0].element;
+   const visibleMenu=[...document.querySelectorAll('.popover,.dropdown-menu,[role="menu"],[role="dialog"],[class*="course-actions"],[class*="material-actions"]')]
+    .filter(e=>visible(e)&&!inHub(e)&&/المكتبة|المستودع|دروس|ادارة المحتوى|إدارة المحتوى|digital|content/i.test(e.textContent||''));
+   const feature=cards.action(tile,REPOSITORY_ACTION)||
+    (visibleMenu.length===1?cards.action(visibleMenu[0],REPOSITORY_ACTION):null);
+   if(feature)return takeNavigation(j,feature,'المكتبة الرقمية');
+   const isOpened=visibleMenu.length===1;
+   const seen=(j.cardOpenAttempts||0);
+   if(!isOpened&&seen<3){
+    j.cardOpenAttempts=seen+1;
+    j.phase='route';j.step='فتح بطاقة الصف';set(j);
+    notice('فتح بطاقة الصف '+j.grade+' — المحاولة '+j.cardOpenAttempts+' من 3…');
+    // Click the entire selected tile, as a human does; activity uses this
+    // same course-catalog card and its verified CID. Never click other tiles.
+    tile.click();
+    waitingSince=0;
+    scheduleAdvance(j,950);
+    return true;
+   }
+   if(!isOpened&&seen>=3)throw Error('لم تستجب بطاقة الصف '+j.grade+' لثلاث محاولات فتح تلقائي. لم أضغط على بطاقة أخرى.');
+   // Once an actual course menu is visible, page-3 selection is safe.
+   const action=cards.next({label:j.label,grade:j.grade,cid:j.cid},3,REPOSITORY_ACTION);
+   if(!action)return false;
+   const tries=(j.cardAttempts||0)+1;
+   if(tries>9)throw Error('ظهرت بطاقة الصف، لكن تعذر الوصول إلى صفحة المكتبة الرقمية بعد تسع خطوات.');
+   j.cardAttempts=tries;
+   return takeNavigation(j,action.element,action.step==='feature'?'المكتبة الرقمية':'الصفحة الثالثة من بطاقة الصف '+j.grade+' - خطوة '+tries);
+  }
+""" +s[b:]
+# Eliminate duplicate original block if replacement includes existing later block? b is headings, safe.
+files[path]=s.encode()
+assert "tile.click();" in files["noor-scorm-publisher.js"].decode()
+assert "cardOpenAttempts" in files["noor-scorm-publisher.js"].decode()
+assert "if(!isOpened&&seen>=3)throw" in files["noor-scorm-publisher.js"].decode()
 
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
