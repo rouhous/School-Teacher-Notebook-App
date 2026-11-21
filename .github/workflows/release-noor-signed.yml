@@ -1,4 +1,4 @@
-# Release Noor 2.8.64 with native bulk questions and QTI import.
+# Release Noor 2.8.72: SCORM card recognition using shared catalog; preserve library tree selection.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
