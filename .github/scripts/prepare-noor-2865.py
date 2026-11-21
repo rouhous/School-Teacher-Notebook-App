@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.85 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.86 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.85-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.86-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.85"
-manifest["description"] = "Noor Unified 2.8.85: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.86"
+manifest["description"] = "Noor Unified 2.8.86: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -516,7 +516,7 @@ assert "directScormUrl:direct||''" in files["noor-scorm-publisher.js"].decode()
 assert "location.assign(direct)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.85: keep the proven direct SCORM route, but separate Activity and SCORM
+# v2.8.86: keep the proven direct SCORM route, but separate Activity and SCORM
 # in the task picker again. Neither engine should change the other's UI.
 path="noor-hub.js"
 s=files[path].decode()
@@ -611,7 +611,7 @@ assert "submittedWithoutReceipt(active)" in files["noor-scorm-publisher.js"].dec
 assert "unverified:Boolean(j.unverified)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.85 - no more card fallback for SCORM: require a verified per-course
+# v2.8.86 - no more card fallback for SCORM: require a verified per-course
 # direct upload route. Hide the link field; request one-time setup ONLY if
 # this particular teacher/course has no validated saved route.
 path="noor-hub.js"
@@ -710,7 +710,7 @@ assert "هذا الإصدار يتطلب رابط" in files["noor-scorm-publishe
 assert "تم إنشاء '+quantity+' ملفات SCORM وتنزيلها. اختر ملفًا واحدًا" not in files["noor-hub.js"].decode()
 
 
-# 2.8.85: passively discover *official* Noor SCORM route identities.
+# 2.8.86: passively discover *official* Noor SCORM route identities.
 # No hardcoded IDs, invented CID translation, cross-teacher IDs or network interception.
 path="noor-course-catalog.js"
 s=files[path].decode()
@@ -789,7 +789,7 @@ assert "window.prompt(" not in files["noor-hub.js"].decode()
 assert "لم أجد رابط SCORM موثقًا" in files["noor-hub.js"].decode()
 
 
-# 2.8.85 - robust grade/subject matching, card-scoped URL discovery, and
+# 2.8.86 - robust grade/subject matching, card-scoped URL discovery, and
 # diagnostic breakdown. No guessing unknown CID/tid/tuid. Ignore links from
 # other course cards, teacher accounts, or unrelated global tables.
 path="noor-course-catalog.js"
@@ -877,7 +877,7 @@ assert "روابط داخل البطاقة" in files["noor-hub.js"].decode()
 assert "NoorCourseCatalog?.scormDiscovery?.(course)" in files["noor-hub.js"].decode()
 
 
-# 2.8.85: use the course CONTENT page shown in the teacher's video, not the
+# 2.8.86: use the course CONTENT page shown in the teacher's video, not the
 # failed flip-card route and not an opaque SCORM upload link.
 # Numeric CID is taken ONLY from an already verified selected teacher course.
 path="noor-hub.js"
@@ -991,7 +991,7 @@ assert "return location.origin+'/teacher/courses/browse_content/cid:'" in files[
 assert "window.prompt(" not in files["noor-hub.js"].decode()
 
 
-# v2.8.85 - Remove every previous SCORM card/popover / digital-library
+# v2.8.86 - Remove every previous SCORM card/popover / digital-library
 # navigation attempt, retain ONLY the verified course-content route.
 # The "Other Libraries" section is a self-contained panel: green arrow
 # toggles its icon strip, green PLAY is "Add interactive lessons".
@@ -1105,7 +1105,7 @@ assert "function contentCoursePath(j)" not in s
 assert "function pickNav(j)" in s
 
 
-# v2.8.85: Correct the genuine Noor in-page modal and link tooltip recognition.
+# v2.8.86: Correct the genuine Noor in-page modal and link tooltip recognition.
 # When teacher manually opens the modal, Resume MUST stage the file rather
 # than running navigation again. Never click Submit until all required fields
 # are filled. Keep all course and teacher identity checks.
@@ -1170,7 +1170,7 @@ assert "if(openScormDialog()){" in s
 assert "querySelectorAll('[title],[aria-label]" in s
 
 
-# v2.8.85 -- ISOLATED SCORM NAVIGATION PILOT. This button never generates,
+# v2.8.86 -- ISOLATED SCORM NAVIGATION PILOT. This button never generates,
 # attaches, clicks Save, or modifies the existing publishing job.
 path="noor-hub.js"
 s=files[path].decode()
@@ -1265,6 +1265,63 @@ assert "stnHubScormTestModal" in files["noor-hub.js"].decode()
 assert "async function testModal(course)" in files["noor-scorm-publisher.js"].decode()
 assert "function pickNav(j)" in files["noor-scorm-publisher.js"].decode()
 assert "testAdvance()" in files["noor-scorm-publisher.js"].decode()
+
+
+# v2.8.86: Fix observed "Other Libraries section not found" on actual Noor
+# browse_content. The 2.8.85 exact normalized string equality rejected
+# real headings with Arabic hamza, whitespace, and nested icon labels.
+path="noor-scorm-publisher.js"
+s=files[path].decode()
+a=s.index(" function otherLibrariesPanel(){")
+b=s.index(" function onlyUnique(",a)
+if a<0 or b<0:sys.exit("Missing v2.8.85 section recognizer")
+s=s[:a]+r""" function otherLibraryArabic(text){
+  return String(text||'').normalize('NFKC').replace(/[\u064B-\u065F\u0670\u0640]/g,'')
+   .replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/\s+/g,' ').trim();
+ }
+ function isOtherLibraryHeading(text){
+  return /^المكتبات الاخري(?:\s*[:：])?$/.test(otherLibraryArabic(text))
+   ||/^المكتبات الاخرى(?:\s*[:：])?$/.test(otherLibraryArabic(text));
+ }
+ function otherLibrariesPanel(){
+  // Use the actual TEXT NODE of the section header; Noor may wrap the
+  // title in icons or formatted elements. Avoid matching the entire page.
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  const raw=[];
+  for(let node; (node=walker.nextNode());){
+   if(!isOtherLibraryHeading(node.nodeValue))continue;
+   const el=node.parentElement;
+   if(el&&visible(el)&&!inHub(el))raw.push(el);
+  }
+  const candidates=[...new Set(raw)];
+  if(candidates.length!==1)return null;
+  const heading=candidates[0];
+  for(let el=heading,depth=0;el&&depth<9;el=el.parentElement,depth++){
+   if(el===document.body)break;
+   const text=otherLibraryArabic(el.textContent);
+   // Isolated section = section header + total count, not adjacent panels.
+   if(text.length>1100||/(?:الاختبارات|المهام الالكترونيه|الفصول الذكيه).*(?:المكتبات الاخري)/.test(text))continue;
+   const count=/المجموع\s*[:：]/.test(text);
+   const actions=[...el.querySelectorAll('a,button,[role="button"],[onclick],.fa-arrow-circle-right,.fa-arrow-right')]
+     .filter(x=>visible(x)&&!inHub(x));
+   if(count&&actions.length)return el;
+  }
+  // A collapsed Noor panel might not display its counter yet; use the
+  // heading's nearest distinct content panel, not the entire document.
+  return heading.closest('.panel,.card,[class*="widget"],[class*="panel"]')||
+   heading.parentElement?.parentElement||null;
+ }
+""" +s[b:]
+# Expansion detection uses heading regex and chooses green circle; arrows
+# frequently are <i> children of a DIV with an onclick handler.
+s=s.replace("norm(el.textContent)==='المكتبات الاخرى'","isOtherLibraryHeading(el.textContent)")
+s=s.replace("const controls=[...panel.querySelectorAll('a,button,[role=\"button\"],[onclick]')].filter(el=>visible(el)&&!el.disabled);",
+"""const controls=[...panel.querySelectorAll('a,button,[role="button"],[onclick],.fa-arrow-circle-right,.fa-arrow-circle-o-right,.fa-arrow-right')]
+   .filter(el=>visible(el)&&!el.disabled);""")
+files[path]=s.encode()
+assert "function otherLibraryArabic(text)" in s
+assert "NodeFilter.SHOW_TEXT" in s
+assert "function otherLibrariesPanel()" in s
 
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
