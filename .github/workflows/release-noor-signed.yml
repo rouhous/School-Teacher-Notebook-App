@@ -1,4 +1,4 @@
-# Release Noor 2.8.88: SCORM card recognition using shared catalog; preserve library tree selection.
+# Release Noor 2.8.88 (green circle selector syntax fix): SCORM card recognition using shared catalog; preserve library tree selection.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
