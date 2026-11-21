@@ -13,7 +13,7 @@ output = directory / "Noor-Unified-v2.8.77-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
-        sys.exit(f"Could not find unique patch anchor in {path}")
+        sys.exit(f"Could not find unique patch anchor in {path}: {repr(old[:125])}; count={content.count(old)}")
     return content.replace(old, new, 1)
 
 with ZipFile(sources[0]) as original:
