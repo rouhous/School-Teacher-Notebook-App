@@ -602,7 +602,7 @@ assert '<option value="activities">نشاط</option><option value="scorm">SCORM<
 s=files["noor-hub.js"].decode()
 s=replace_exact(s,
  "  window.addEventListener('stnNoorScormConfirmed',()=>checkUnitBatch().catch(()=>{}));",
- "  window.addEventListener('stnNoorScormConfirmed',()=>checkUnitBatch().catch(()=>{}));\\n  window.addEventListener('stnNoorScormSubmittedUnverified',()=>checkUnitBatch().catch(()=>{}));",
+ "  window.addEventListener('stnNoorScormConfirmed',()=>checkUnitBatch().catch(()=>{}));\n  window.addEventListener('stnNoorScormSubmittedUnverified',()=>checkUnitBatch().catch(()=>{}));",
  "noor-hub.js")
 files["noor-hub.js"]=s.encode()
 assert "stnHubGenerateOther" not in files["noor-hub.js"].decode()
