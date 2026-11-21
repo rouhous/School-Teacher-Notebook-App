@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.72 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.73 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.72-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.73-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.72"
-manifest["description"] = "Noor Unified 2.8.72: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.73"
+manifest["description"] = "Noor Unified 2.8.73: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -175,9 +175,85 @@ s=replace_exact(s,
     path)
 files[path]=s.encode()
 
+
+# Reuse the exact card opener from the successful preparation/activity transfer.
+# On the first SCORM pass, OPEN the selected course card BEFORE page 3 discovery.
+# If a Noor UI animation ignores the opener click, retry once using the card
+# surface. Never press another course's tile or pick an ambiguous course.
+path = "noor-class-card.js"
+s = files[path].decode()
+s = replace_exact(s,
+    " function next(course,page,match,createForScope){",
+    """ function openControl(card){
+  if(!card)return null;
+  return card.querySelector('[data-toggle="popover"],[data-bs-toggle="popover"],button[type="button"]')||card;
+ }
+ function courseCard(course){
+  const catalog=root.NoorCourseCatalog;
+  const cards=catalog?.cards?.()||[];
+  const matchLabel=c=>normalize(c.label)===normalize(course.label);
+  const exact=cards.filter(matchLabel);
+  if(exact.length===1)return exact[0];
+  if(exact.length>1)return null;
+  const byCid=/^\\d+$/.test(String(course.cid||''))
+   ?cards.filter(c=>String(catalog?.get?.(c.label)?.cidNumeric||'')===String(course.cid)):[];
+  if(byCid.length===1)return byCid[0];
+  if(byCid.length>1)return null;
+  const grade=Number(course.grade);
+  const subject=catalog?.subjectOf?.(course.label);
+  const byClass=Number.isInteger(grade)&&grade>=1&&grade<=12&&subject
+   ?cards.filter(c=>catalog.gradeOf(c.label)===grade&&catalog.subjectOf(c.label)===subject):[];
+  return byClass.length===1?byClass[0]:null;
+ }
+ function next(course,page,match,createForScope){""",path)
+s = replace_exact(s,
+    "  const cards=(root.NoorCourseCatalog?.cards?.()||[]).filter(c=>normalize(c.label)===normalize(course.label));\n  // Reuse the same verified course-card detection as lesson/preparation; never use the '1' carousel indicator as a grade.\n  if(cards.length!==1)return null;\n  const card=cards[0].element;",
+    "  const matched=courseCard(course);\n  if(!matched)return null;\n  const card=matched.element;",path)
+s = replace_exact(s,
+    "  let scopes=[card];\n  if(opened?.card===card){",
+    """  // Course card must be explicitly opened before inspecting its page-3 pager.
+  if(opened?.card!==card){
+   opened={card,previous:new Map(popovers().map(el=>[el,normalize(el.textContent)])),retry:0};
+   const opener=openControl(card);
+   if(opener)return {element:opener,step:'open'};
+  }
+  let scopes=[card];
+  if(opened?.card===card){""",path)
+s = replace_exact(s,
+    "  if(opened?.card===card)return null;\n  opened={card,previous:new Map(popovers().map(el=>[el,normalize(el.textContent)]))};\n  return {element:card.querySelector('[data-toggle=\"popover\"],[data-bs-toggle=\"popover\"],[data-toggle=\"dropdown\"],[data-bs-toggle=\"dropdown\"],[aria-haspopup],button[type=\"button\"],[role=\"button\"]')||card,step:'open'};",
+    """  // The control used by preparation/activity may do nothing on some Noor
+  // layouts. Retry the same selected tile itself once before pausing.
+  if(opened?.card===card&&opened.retry===0&&openControl(card)!==card){
+   opened.retry=1;
+   return {element:card,step:'open'};
+  }
+  return null;""",path)
+s = replace_exact(s,
+    "root.NoorClassCard=Object.freeze({action,next,safeClick,visible,normalize,isHome:",
+    "root.NoorClassCard=Object.freeze({action,next,openControl,safeClick,visible,normalize,isHome:",path)
+files[path]=s.encode()
+
+path = "noor-scorm-publisher.js"
+s = files[path].decode()
+s = replace_exact(s,
+   "const action=cards.next({label:j.label},3,REPOSITORY_ACTION);",
+   "const action=cards.next({label:j.label,grade:j.grade,cid:j.cid},3,REPOSITORY_ACTION);",path)
+s = replace_exact(s,
+   "return takeNavigation(j,action.element,action.step==='feature'?'المكتبة الرقمية':'صفحة بطاقة الصف '+attempts);",
+   "return takeNavigation(j,action.element,action.step==='feature'?'المكتبة الرقمية':action.step==='open'?'فتح بطاقة الصف '+j.grade+' - محاولة '+attempts:'الانتقال للصفحة الثالثة - خطوة '+attempts);",path)
+files[path]=s.encode()
+
+# Regression checks: preparation and activity routes remain intact; SCORM uses
+# their card-opening control before attempting navigation to the third page.
+assert "function openControl(card)" in files["noor-class-card.js"].decode()
+assert "const opener=openControl(card)" in files["noor-class-card.js"].decode()
+assert "cards.next({label:j.label,grade:j.grade,cid:j.cid},3,REPOSITORY_ACTION)" in files["noor-scorm-publisher.js"].decode()
+assert "return location.origin+url+encodeURIComponent(opts.course.cid)" in files["noor-hub.js"].decode()
+assert "stnHubScormReference" not in files["noor-hub.js"].decode()
+
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
-    assert files["noor-scorm-publisher.js"]==original.read("noor-scorm-publisher.js")
+    assert files["noor-scorm-publisher.js"]!=original.read("noor-scorm-publisher.js")
 assert "stnHubScormReference" not in files["noor-hub.js"].decode()
 assert "await curriculum.start({...inputs(),cid:opts.course.cid,label:opts.course.label,purpose:'scorm'})" not in files["noor-hub.js"].decode()
 assert "cards.next({label:j.label},3,REPOSITORY_ACTION)" in files["noor-scorm-publisher.js"].decode()
