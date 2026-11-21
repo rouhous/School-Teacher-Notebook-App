@@ -476,7 +476,7 @@ s=replace_exact(s,
  }
  async function scorm(opts){""",path)
 s=replace_exact(s,
- "  const epoch=operationEpoch;\\n  const branch=await orderedBranch(opts);",
+ "  const epoch=operationEpoch;\n  const branch=await orderedBranch(opts);",
  "  const epoch=operationEpoch;\\n  const directScormUrl=await scormDirectLink(opts);\\n  const branch=await orderedBranch(opts);",path)
 s=replace_exact(s,
  "await globalThis.NoorScormPublisher.start(file,{...opts,positionProof:opts.proof,allowUnlinkedLesson:!opts.proof?.lessonId,mode:scormSaveMode(),fromDashboard:true,teacherId:classTeacherId,publishDate:$('stnHubScormPublishDate').value});",
