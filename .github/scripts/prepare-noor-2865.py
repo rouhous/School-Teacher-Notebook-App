@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.83 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.84 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.83-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.84-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.83"
-manifest["description"] = "Noor Unified 2.8.83: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.84"
+manifest["description"] = "Noor Unified 2.8.84: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -516,7 +516,7 @@ assert "directScormUrl:direct||''" in files["noor-scorm-publisher.js"].decode()
 assert "location.assign(direct)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.83: keep the proven direct SCORM route, but separate Activity and SCORM
+# v2.8.84: keep the proven direct SCORM route, but separate Activity and SCORM
 # in the task picker again. Neither engine should change the other's UI.
 path="noor-hub.js"
 s=files[path].decode()
@@ -611,7 +611,7 @@ assert "submittedWithoutReceipt(active)" in files["noor-scorm-publisher.js"].dec
 assert "unverified:Boolean(j.unverified)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.83 - no more card fallback for SCORM: require a verified per-course
+# v2.8.84 - no more card fallback for SCORM: require a verified per-course
 # direct upload route. Hide the link field; request one-time setup ONLY if
 # this particular teacher/course has no validated saved route.
 path="noor-hub.js"
@@ -710,7 +710,7 @@ assert "هذا الإصدار يتطلب رابط" in files["noor-scorm-publishe
 assert "تم إنشاء '+quantity+' ملفات SCORM وتنزيلها. اختر ملفًا واحدًا" not in files["noor-hub.js"].decode()
 
 
-# 2.8.83: passively discover *official* Noor SCORM route identities.
+# 2.8.84: passively discover *official* Noor SCORM route identities.
 # No hardcoded IDs, invented CID translation, cross-teacher IDs or network interception.
 path="noor-course-catalog.js"
 s=files[path].decode()
@@ -789,7 +789,7 @@ assert "window.prompt(" not in files["noor-hub.js"].decode()
 assert "لم أجد رابط SCORM موثقًا" in files["noor-hub.js"].decode()
 
 
-# 2.8.83 - robust grade/subject matching, card-scoped URL discovery, and
+# 2.8.84 - robust grade/subject matching, card-scoped URL discovery, and
 # diagnostic breakdown. No guessing unknown CID/tid/tuid. Ignore links from
 # other course cards, teacher accounts, or unrelated global tables.
 path="noor-course-catalog.js"
@@ -877,7 +877,7 @@ assert "روابط داخل البطاقة" in files["noor-hub.js"].decode()
 assert "NoorCourseCatalog?.scormDiscovery?.(course)" in files["noor-hub.js"].decode()
 
 
-# 2.8.83: use the course CONTENT page shown in the teacher's video, not the
+# 2.8.84: use the course CONTENT page shown in the teacher's video, not the
 # failed flip-card route and not an opaque SCORM upload link.
 # Numeric CID is taken ONLY from an already verified selected teacher course.
 path="noor-hub.js"
@@ -991,7 +991,7 @@ assert "return location.origin+'/teacher/courses/browse_content/cid:'" in files[
 assert "window.prompt(" not in files["noor-hub.js"].decode()
 
 
-# v2.8.83 - Remove every previous SCORM card/popover / digital-library
+# v2.8.84 - Remove every previous SCORM card/popover / digital-library
 # navigation attempt, retain ONLY the verified course-content route.
 # The "Other Libraries" section is a self-contained panel: green arrow
 # toggles its icon strip, green PLAY is "Add interactive lessons".
@@ -1104,10 +1104,71 @@ assert "cardOpenAttempts" not in s
 assert "function contentCoursePath(j)" not in s
 assert "function pickNav(j)" in s
 
-p=files["noor-scorm-publisher.js"].decode()
-for marker in [" function advance(", " async function advance(", " function resume(", " async function resume(", "function isScormForm", " function onUploadPage", " function pickNav(j)", " function otherLibrariesPanel()", " function stage(j)"]:
- i=p.find(marker)
- if i>=0:print("DIAG",marker,p[i:i+7000])
+
+# v2.8.84: Correct the genuine Noor in-page modal and link tooltip recognition.
+# When teacher manually opens the modal, Resume MUST stage the file rather
+# than running navigation again. Never click Submit until all required fields
+# are filled. Keep all course and teacher identity checks.
+path="noor-scorm-publisher.js"
+s=files[path].decode()
+s=replace_exact(s,
+ """ const onUploadPage=()=>/\/teacher\/attachments\/upload\/scorm(?:\/|$)/i.test(location.pathname)
+   ||[...document.querySelectorAll('.modal,[role="dialog"],.swal2-popup')]
+      .some(el=>visible(el)&&UPLOAD_TITLE.test(norm(el.querySelector('h1,h2,h3,h4,h5,.modal-title,[role="heading"]')?.textContent||'')))
+   ||pageHeaders().some(h=>UPLOAD_TITLE.test(h));""",
+ """ const uploadDialogs=()=>[...document.querySelectorAll('.modal,[role="dialog"],.swal2-popup,[class*="modal-content"]')]
+   .filter(el=>visible(el)&&!inHub(el));
+ function openScormDialog(){
+  const matches=uploadDialogs().filter(el=>{
+   const header=el.querySelector('.modal-title,h1,h2,h3,h4,h5,[role="heading"],.modal-header');
+   const name=norm(header?.textContent||'');
+   const text=norm(el.textContent||'').slice(0,350);
+   const title=/رفع درس تفاعلي جديد|اضافه درس تفاعلي جديد|new interactive lesson|add interactive lesson/i;
+   // Noor may use a plain DIV title, not a semantic heading.
+   return title.test(name)||title.test(text);
+  });
+  if(matches.length===1)return matches[0];
+  const leaf=matches.filter(el=>!matches.some(other=>other!==el&&el.contains(other)));
+  return leaf.length===1?leaf[0]:null;
+ }
+ const onUploadPage=()=>/\/teacher\/attachments\/upload\/scorm(?:\/|$)/i.test(location.pathname)
+   ||Boolean(openScormDialog())||pageHeaders().some(h=>UPLOAD_TITLE.test(h));""",path)
+s=replace_exact(s,
+ " const isScormForm=()=>onUploadPage()&&Boolean(optionOfRadio('SCORM'));",
+ """ const isScormForm=()=>onUploadPage()&&Boolean(optionOfRadio('SCORM'));""",path)
+# Inside modal, the heading label may be on a nested icon and styled
+# by the popover library. Find exact tooltip across descendants.
+s=replace_exact(s,
+ """  let links=controls.filter(el=>/add interactive lessons?|upload interactive lesson|اضافه درس تفاعلي|رفع درس تفاعلي/.test(actionMeta(el)));""",
+ """  let links=controls.filter(el=>{
+   const tooltip=actionMeta(el)+' '+[...el.querySelectorAll('[title],[aria-label],[data-original-title],[data-bs-original-title]')]
+    .slice(0,12).map(x=>actionMeta(x)).join(' ');
+   return /add interactive lessons?|upload interactive lesson|اضافه درس تفاعلي|رفع درس تفاعلي/.test(tooltip);
+  });""",path)
+# The Other Libraries arrow may be an icon span instead of an anchor.
+s=replace_exact(s,
+ """  const candidates=controls.filter(el=>{
+   const icon=el.querySelector('.fa-arrow-right,.fa-arrow-circle-right,.fa-long-arrow-right,.glyphicon-arrow-right,[class*="arrow-right"]');
+   const label=actionMeta(el);""",
+ """  const candidates=controls.filter(el=>{
+   const icon=el.querySelector('.fa-arrow-right,.fa-arrow-circle-right,.fa-long-arrow-right,.glyphicon-arrow-right,[class*="arrow-right"],.fa-arrow-circle-o-right');
+   const label=actionMeta(el);""",path)
+# Most importantly: when the real modal is visible, never try to open any
+# other library widget again. A paused task can resume directly into staging.
+s=replace_exact(s,
+ """   if(!isScormForm()){
+    if(!onUploadPage()&&pickNav(j))return;""",
+ """   if(!isScormForm()){
+    if(openScormDialog()){
+     if(waitForPage(j))return;
+     throw Error('نافذة رفع الدرس التفاعلي مفتوحة، لكن خيار SCORM لم يُكتشف داخلها. تحقق من وجود خيار SCORM.');
+    }
+    if(!onUploadPage()&&pickNav(j))return;""",path)
+files[path]=s.encode()
+assert "function openScormDialog()" in s
+assert "if(openScormDialog()){" in s
+assert "querySelectorAll('[title],[aria-label]" in s
+
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
     assert files["noor-scorm-publisher.js"]!=original.read("noor-scorm-publisher.js")
