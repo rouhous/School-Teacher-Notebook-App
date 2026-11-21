@@ -356,9 +356,10 @@ s=s[:a]+"""  const cards=root.NoorClassCard;
    const registered=record?.routes?.scorm;
    if(record?.cidNumeric===j.cid&&norm(record.label)===norm(j.label)&&registered){
     let link;try{link=new URL(registered,location.href)}catch(_){}
+    const routeCid=link?.pathname?.split('/').find(part=>part.startsWith('cid:'))?.slice(4);
     if(link?.origin===location.origin&&
-       /^\\\\/teacher\\\\/attachments\\\\/index\\\\/scorm(?:\\\\/|$)/i.test(link.pathname)&&
-       link.pathname.match(/\\\\/cid:(\\\\d+)/i)?.[1]===j.cid){
+       link.pathname.toLowerCase().startsWith('/teacher/attachments/index/scorm')&&
+       routeCid===j.cid){
       j.phase='route';j.step='الدروس التفاعلية';set(j);
       notice('جارٍ فتح رابط الدروس التفاعلية المعتمد للصف '+j.grade+'…');
       location.assign(link.href);return true;
