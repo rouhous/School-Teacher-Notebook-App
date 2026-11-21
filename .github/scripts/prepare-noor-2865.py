@@ -714,6 +714,8 @@ assert "تم إنشاء '+quantity+' ملفات SCORM وتنزيلها. اختر
 # No hardcoded IDs, invented CID translation, cross-teacher IDs or network interception.
 path="noor-course-catalog.js"
 s=files[path].decode()
+print("DIAGNOSTIC catalog prolog:",s[:5200])
+print("DIAGNOSTIC catalog bottom:",s[-3100:])
 s=replace_exact(s,
  " function scan(){let changed=false;",
  r""" function scormDiscovery(course){
