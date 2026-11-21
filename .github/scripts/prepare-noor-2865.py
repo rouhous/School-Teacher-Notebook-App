@@ -247,7 +247,7 @@ files[path]=s.encode()
 # their card-opening control before attempting navigation to the third page.
 assert "function openControl(card)" in files["noor-class-card.js"].decode()
 assert "const opener=openControl(card)" in files["noor-class-card.js"].decode()
-assert "cards.next(" not in files["noor-scorm-publisher.js"].decode()
+assert "cards.next({label:j.label,grade:j.grade,cid:j.cid},3,REPOSITORY_ACTION)" in files["noor-scorm-publisher.js"].decode()
 assert "return location.origin+url+encodeURIComponent(opts.course.cid)" in files["noor-hub.js"].decode()
 assert "stnHubScormReference" not in files["noor-hub.js"].decode()
 
