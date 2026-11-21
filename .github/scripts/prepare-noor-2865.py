@@ -1449,12 +1449,20 @@ replacement=r"""  if(candidate&&!/اضافه|add\s/i.test(actionMeta(candidate))
    if(Math.abs((r.top+r.bottom)/2-(box.top+box.bottom)/2)>Math.max(32,box.height))return false;
    if(r.right>box.left+8)return false;
    if(/اضافه|add\s|play|درس|video/i.test(actionMeta(el)))return false;
-   const cs=getComputedStyle(el);
-   const colors=[cs.color,cs.backgroundColor,cs.borderColor].join(' ');
-   return /(?:success|green)/i.test(String(el.className))||
+   // Noor uses a WHITE ARROW on a GREEN CIRCLE. The icon itself
+   // can be white; inspect its enclosing circle's background as well.
+   const circle=el.closest('a,button,[role="button"],[onclick]')||el;
+   const paint=[el,circle,circle.parentElement].filter(x=>x&&header.contains(x)&&x!==header);
+   const colors=paint.map(x=>{const cs=getComputedStyle(x);return cs.backgroundColor+' '+cs.borderColor}).join(' ');
+   const hasGreen=paint.some(x=>/(?:success|green)/i.test(String(x.className)))||
     /#(?:28a745|4caf50|2eaf4a|3fae49|43a047|3bb54a)/i.test(colors)||
     [...colors.matchAll(/rgba?\(\s*(\d+)[,\s]+\s*(\d+)[,\s]+\s*(\d+)/g)]
       .some(m=>+m[2]>=95&&+m[2]>+m[1]*1.22&&+m[2]>+m[3]*1.08);
+   const cs=getComputedStyle(el);
+   const whiteArrow=/rgb\(\s*(?:2[34]\d|25[0-5])\s*,\s*(?:2[34]\d|25[0-5])\s*,\s*(?:2[34]\d|25[0-5])\s*\)/.test(cs.color)||
+    el.querySelector('svg, i,[class*="arrow"]')!==null||
+    /arrow/i.test(String(el.className));
+   return hasGreen&&whiteArrow;
   });
   const targets=[...new Set(nearby.map(el=>actionTarget(el)))];
   const leaf=targets.filter(el=>!targets.some(other=>other!==el&&el.contains(other)));
