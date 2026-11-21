@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.75 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.76 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.75-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.76-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.75"
-manifest["description"] = "Noor Unified 2.8.75: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.76"
+manifest["description"] = "Noor Unified 2.8.76: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -368,25 +368,48 @@ s=s[:a]+"""  const cards=root.NoorClassCard;
    const found=(catalog?.cards?.()||[]).filter(c=>norm(c.label)===norm(j.label));
    if(found.length!==1)throw Error('لم أعثر على بطاقة واحدة مطابقة للصف '+j.grade+' والمادة '+j.subject+' على لوحة المعلم.');
    const tile=found[0].element;
-   const visibleMenu=[...document.querySelectorAll('.popover,.dropdown-menu,[role="menu"],[role="dialog"],[class*="course-actions"],[class*="material-actions"]')]
-    .filter(e=>visible(e)&&!inHub(e)&&/المكتبة|المستودع|دروس|ادارة المحتوى|إدارة المحتوى|digital|content/i.test(e.textContent||''));
-   const feature=cards.action(tile,REPOSITORY_ACTION)||
-    (visibleMenu.length===1?cards.action(visibleMenu[0],REPOSITORY_ACTION):null);
-   if(feature)return takeNavigation(j,feature,'المكتبة الرقمية');
-   const isOpened=visibleMenu.length===1;
-   const seen=(j.cardOpenAttempts||0);
-   if(!isOpened&&seen<3){
-    j.cardOpenAttempts=seen+1;
+   // Noor course tiles are two-sided flip cards (confirmed from teacher video).
+   // The back face is *inside* the card, not an external popover.
+   const insideHit=el=>{
+    if(!el||!visible(el))return false;
+    const r=el.getBoundingClientRect();
+    if(!r.width||!r.height)return false;
+    const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+    return Boolean(hit&&(el===hit||el.contains(hit))&&!inHub(hit));
+   };
+   const pagerElements=[...tile.querySelectorAll('a,button,[role="button"],[role="tab"],[data-slide-to],[data-bs-slide-to],[data-page]')];
+   const numericPagers=pagerElements.filter(el=>/^[1-5١-٥]$/.test(String(el.innerText||el.textContent||'').trim())&&insideHit(el));
+   const backPanel=tile.querySelector('[class*="flip-card-back"],[class*="card-back"],[class*="back-side"],[class*="backface"]');
+   const flippedInner=tile.querySelector('[class*="flip-card-inner"],[class*="card-inner"]');
+   const transform=flippedInner?getComputedStyle(flippedInner).transform:'';
+   const rotated=/^matrix3d\(/.test(transform)&&Number(transform.slice(9).split(',')[0])<-.5||
+    /^matrix\(/.test(transform)&&Number(transform.slice(7).split(',')[0])<-.5;
+   const hitBack=Boolean(backPanel&&insideHit(backPanel));
+   const backOpen=(numericPagers.length>=2||hitBack||rotated);
+   // Don't hide a course's own page controls under the hub's detection logic.
+   const directFeature=cards.action(tile,REPOSITORY_ACTION);
+   if(backOpen&&directFeature)return takeNavigation(j,directFeature,'المكتبة الرقمية');
+   if(!backOpen){
+    const attempts=j.cardOpenAttempts||0;
+    if(attempts>=3)throw Error('لم تنفتح بطاقة الصف '+j.grade+' بعد 3 محاولات. تحققنا من الوجه الخلفي وأزرار 1-5، ولم نظهرها. لا تضغط استكمال إلا بعد فتح البطاقة يدويًا.');
+    const rect=tile.getBoundingClientRect();
+    // Click the visible FRONT face at the actual on-screen hit target.
+    // A parent tile.click() does not target Noor's nested flip handler.
+    const front=tile.querySelector('[class*="flip-card-front"],[class*="card-front"],[class*="front-side"]');
+    const box=(front?.getBoundingClientRect()?.width&&front.getBoundingClientRect().height)?front.getBoundingClientRect():rect;
+    const hit=document.elementFromPoint(box.left+box.width*.5,box.top+box.height*.48);
+    const target=hit&&tile.contains(hit)&&!inHub(hit)?hit:front||tile;
+    if(!target||!tile.contains(target))throw Error('تعذر تحديد وجه بطاقة الصف للنقر.');
+    j.cardOpenAttempts=attempts+1;
     j.phase='route';j.step='فتح بطاقة الصف';set(j);
-    notice('فتح بطاقة الصف '+j.grade+' — المحاولة '+j.cardOpenAttempts+' من 3…');
-    // Click the entire selected tile, as a human does; activity uses this
-    // same course-catalog card and its verified CID. Never click other tiles.
-    tile.click();
+    notice('فتح وجه بطاقة الصف '+j.grade+' — محاولة '+j.cardOpenAttempts+' من 3 (التحقق من انقلاب البطاقة)…');
+    target.click();
     waitingSince=0;
-    scheduleAdvance(j,950);
+    scheduleAdvance(j,1250);
     return true;
    }
-   if(!isOpened&&seen>=3)throw Error('لم تستجب بطاقة الصف '+j.grade+' لثلاث محاولات فتح تلقائي. لم أضغط على بطاقة أخرى.');
+   // A real flipped back face has appeared; never toggle this tile again.
+   if(j.cardOpenAttempts){j.cardOpenAttempts=0;set(j);}
    // Once an actual course menu is visible, page-3 selection is safe.
    const action=cards.next({label:j.label,grade:j.grade,cid:j.cid},3,REPOSITORY_ACTION);
    if(!action)return false;
@@ -398,10 +421,11 @@ s=s[:a]+"""  const cards=root.NoorClassCard;
 """ +s[b:]
 # Eliminate duplicate original block if replacement includes existing later block? b is headings, safe.
 files[path]=s.encode()
-assert "tile.click();" in files["noor-scorm-publisher.js"].decode()
+assert "target.click();" in files["noor-scorm-publisher.js"].decode()
 assert "cardOpenAttempts" in files["noor-scorm-publisher.js"].decode()
-assert "if(!isOpened&&seen>=3)throw" in files["noor-scorm-publisher.js"].decode()
+assert "const backOpen=" in files["noor-scorm-publisher.js"].decode()
 
+assert "numericPagers.length>=2||hitBack||rotated" in files["noor-scorm-publisher.js"].decode()
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
     assert files["noor-scorm-publisher.js"]!=original.read("noor-scorm-publisher.js")
