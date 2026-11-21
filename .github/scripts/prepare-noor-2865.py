@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.77 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.78 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.77-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.78-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.77"
-manifest["description"] = "Noor Unified 2.8.77: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.78"
+manifest["description"] = "Noor Unified 2.8.78: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -514,6 +514,95 @@ assert "stnHubScormDirectUrl" in files["noor-hub.js"].decode()
 assert "stnScormDirectLink:v1:" in files["noor-hub.js"].decode()
 assert "directScormUrl:direct||''" in files["noor-scorm-publisher.js"].decode()
 assert "location.assign(direct)" in files["noor-scorm-publisher.js"].decode()
+
+
+# v2.8.78: keep the proven direct SCORM route, but separate Activity and SCORM
+# in the task picker again. Neither engine should change the other's UI.
+path="noor-hub.js"
+s=files[path].decode()
+s=replace_exact(s,
+ '<option value="activities">نشاط / SCORM</option><option value="scorm" hidden>نشاط / SCORM</option>',
+ '<option value="activities">نشاط</option><option value="scorm">SCORM</option>',path)
+s=replace_exact(s,
+ '<button id="stnHubGenerateOther" type="button" class="stnBtn outline" hidden>توليد SCORM</button>',
+ '',path)
+s=replace_exact(s,
+ """  $('stnHubGenerateOther').hidden=!['activities','scorm'].includes(s);
+  if(s==='activities'){$('stnHubGenerate').textContent='✨ توليد نشاط';$('stnHubGenerateOther').textContent='✨ توليد SCORM';}
+  if(s==='scorm'){$('stnHubGenerate').textContent='✨ توليد SCORM';$('stnHubGenerateOther').textContent='✨ توليد نشاط';}
+""","",path)
+start=s.index("  $('stnHubGenerateOther').addEventListener('click',async()=>{")
+end=s.index("\n  });",start)+len("\n  });")
+if start<0 or end<0:sys.exit("Could not find combined button listener")
+s=s[:start]+s[end:]
+# For batch SCORM, reuse the same verified per-teacher/per-course direct upload
+# URL that worked for single SCORM. Never navigate back to the class card.
+s=replace_exact(s,
+ "  const entries=needsActivityPage?[]:await confirmedUnitLessons(opts);",
+ """  const directScormUrl=opts.service==='scorm'?await scormDirectLink(opts):'';
+  const entries=needsActivityPage?[]:await confirmedUnitLessons(opts);""",path)
+s=replace_exact(s,
+ "semester:opts.semester,unit:opts.unit,unitNo:opts.unitNo,proof:opts.proof,entries,index:0,count:opts.count,quantity,kinds,auto,publishDate,imageMode:scormImageMode(),",
+ "semester:opts.semester,unit:opts.unit,unitNo:opts.unitNo,proof:opts.proof,entries,index:0,count:opts.count,quantity,kinds,auto,publishDate,directScormUrl,imageMode:scormImageMode(),",path)
+s=replace_exact(s,
+ "    const started=await globalThis.NoorScormPublisher.start(file,{...opts,teacherId:j.teacherId,mode:'auto',fromDashboard:true,publishDate:j.publishDate,",
+ "    const started=await globalThis.NoorScormPublisher.start(file,{...opts,directScormUrl:j.directScormUrl||'',teacherId:j.teacherId,mode:'auto',fromDashboard:true,publishDate:j.publishDate,",path)
+# Keep unverified submits distinct from a confirmed Noor receipt.
+s=replace_exact(s,
+ "    j.completed.push({unit:j.entries[j.index].unit,lesson:j.entries[j.index].lesson,at:Date.now()});j.index++;j.generationIds=[];j.phase='ready';await setUnitJob(j);",
+ """    const unverified=j.service==='scorm'&&Boolean(globalThis.NoorScormPublisher?.inspect?.()?.unverified);
+    j.completed.push({unit:j.entries[j.index].unit,lesson:j.entries[j.index].lesson,at:Date.now(),unverified});
+    j.index++;j.generationIds=[];j.phase='ready';await setUnitJob(j);""",path)
+s=replace_exact(s,
+ "j.status=j.auto?'اكتمل حفظ جميع دروس الوحدة التي أكد نور حفظها':'اكتمل توليد جميع دروس الوحدة؛ احفظ الأنشطة يدويًا من المكتبة أو ارفع ملفات SCORM المنزلة';",
+ """j.status=j.auto?(j.service==='scorm'&&j.completed.some(x=>x.unverified)?
+    'اكتملت محاولة نشر جميع دروس الوحدة، وبعض عمليات الحفظ أُرسلت دون تأكيد من نور؛ راجع القائمة لاحقًا ولا تكرر رفعها':
+    'اكتمل حفظ جميع دروس الوحدة التي أكد نور حفظها'):'اكتمل توليد جميع دروس الوحدة؛ احفظ الأنشطة يدويًا من المكتبة أو ارفع ملفات SCORM المنزلة';""",path)
+files[path]=s.encode()
+
+# After ONE real click on Noor's save button, never click Save again for this
+# file. In an automatic batch only, allow the next file after a reasonable
+# verification interval and mark the previous one "submitted, unverified".
+# Keep the downloaded local backup and the precise batch status for audit.
+path="noor-scorm-publisher.js"
+s=files[path].decode()
+s=replace_exact(s,
+ " function notice(message){",
+ """ function submittedWithoutReceipt(j){
+  if(!j||j.phase!=='submitted_unknown'||!j.batchTag||j.mode!=='auto')return false;
+  if(!j.submittedAt||Date.now()-j.submittedAt<14000)return false;
+  const current=get();
+  if(current?.id!==j.id||current.phase!=='submitted_unknown')return false;
+  if(confirmedSaved(j))return true;
+  j.phase='done';j.unverified=true;j.assumedAt=Date.now();set(j);
+  // Explicitly NOT a confirmation event. The batch advances without retrying
+  // the previously submitted upload; the user can inspect Noor later.
+  root.dispatchEvent(new CustomEvent('stnNoorScormSubmittedUnverified',
+   {detail:{id:j.id,batchTag:j.batchTag,unverified:true}}));
+  notice('تم إرسال الحفظ مرة واحدة، ولم يظهر تأكيد نور؛ الانتقال للدرس التالي دون تكرار الحفظ. تحقّق من القائمة لاحقًا.');
+  return true;
+ }
+ function notice(message){""",path)
+s=replace_exact(s,
+ "  if(j.phase==='submitted_unknown'){if(confirmedSaved(j)){notice('✓ تأكد ظهور SCORM في القائمة.');return;}notice('سبق الضغط على حفظ. افتح قائمة الدروس للتحقق، دون تكرار الإرسال.');return}",
+ "  if(j.phase==='submitted_unknown'){if(confirmedSaved(j)){notice('✓ تأكد ظهور SCORM في القائمة.');return;}if(submittedWithoutReceipt(j))return;notice('سبق الضغط على حفظ. ننتظر التحقق دون تكرار الإرسال.');return}",path)
+s=replace_exact(s,
+ "    if(confirmedSaved(active)){notice('✓ تحقق ظهور الدرس التفاعلي في قائمة نور بعد الحفظ؛ يمكن الانتقال للدرس التالي.');return;}",
+ "    if(confirmedSaved(active)){notice('✓ تحقق ظهور الدرس التفاعلي في قائمة نور بعد الحفظ؛ يمكن الانتقال للدرس التالي.');return;}\n     if(submittedWithoutReceipt(active))return;",path)
+s=replace_exact(s,
+ "     else notice('حالة حفظ SCORM غير مؤكدة. افتح قائمة نور للتحقق؛ لن يُرسل الدرس التالي أو يتكرر الحفظ دون إثبات.');",
+ "     else notice('حالة حفظ SCORM غير مؤكدة. افتح قائمة نور للتحقق؛ لن يتكرر الحفظ دون إثبات.');",path)
+s=replace_exact(s,
+ "batchTag:j.batchTag}:null",
+ "batchTag:j.batchTag,unverified:Boolean(j.unverified)}:null",path)
+# On every navigation and reload, the batch listener in hub can detect its
+# own original publish id and the submitted-unverified completion marker.
+files[path]=s.encode()
+assert '<option value="activities">نشاط</option><option value="scorm">SCORM</option>' in files["noor-hub.js"].decode()
+assert "stnHubGenerateOther" not in files["noor-hub.js"].decode()
+assert "directScormUrl:j.directScormUrl||''" in files["noor-hub.js"].decode()
+assert "submittedWithoutReceipt(active)" in files["noor-scorm-publisher.js"].decode()
+assert "unverified:Boolean(j.unverified)" in files["noor-scorm-publisher.js"].decode()
 
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
