@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.76 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.77 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.76-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.77-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.76"
-manifest["description"] = "Noor Unified 2.8.76: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.77"
+manifest["description"] = "Noor Unified 2.8.77: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -426,6 +426,95 @@ assert "cardOpenAttempts" in files["noor-scorm-publisher.js"].decode()
 assert "const backOpen=" in files["noor-scorm-publisher.js"].decode()
 
 assert "numericPagers.length>=2||hitBack||rotated" in files["noor-scorm-publisher.js"].decode()
+
+# DIRECT SCORM route pilot. The teacher pastes the official full "Add new
+# interactive lesson" URL for the selected course. Do not hardcode any user's
+# CID/tid/tuid or fabricate an opaque ID from a numeric homework CID.
+# Saved links are teacher+course scoped and can be reused on subsequent runs.
+path="noor-hub.js"
+s=files[path].decode()
+s=replace_exact(s,
+ "  <div id=\"stnHubScormOptions\" hidden>",
+ """  <div id="stnHubScormOptions" hidden>
+    <label for="stnHubScormDirectUrl">رابط «إضافة درس تفاعلي جديد» المباشر (اختبار للصف المحدد)</label>
+    <input type="url" id="stnHubScormDirectUrl" dir="ltr" autocomplete="off" placeholder="https://lms.moe.gov.om/teacher/attachments/upload/Scorm/cid:…/tid:…/tuid:…">
+    <p class="stnNote">ألصق الرابط الرسمي الذي فتحته من حسابك للصف المحدد. يُحفظ على جهاز المعلم لهذا المساق فقط، ولا يُستخدم لصف آخر. عند غياب الرابط يستمر مسار نور المعتاد.</p>""",path)
+# The service UI reloads on task switches. Keep this field out of generic
+# task settings to avoid transferring it to another course.
+s=replace_exact(s,
+ " async function scorm(opts){",
+ """ function validDirectScormUrl(raw){
+  try{
+   const u=new URL(String(raw||'').trim(),location.href);
+   if(u.origin!==location.origin||u.search||u.hash)return null;
+   const m=u.pathname.match(/^\\/teacher\\/attachments\\/upload\\/Scorm\\/cid:([A-Za-z0-9_-]+)\\/tid:([A-Za-z0-9_-]+)\\/tuid:([A-Za-z0-9_-]+)\\/?$/i);
+   if(!m)return null;
+   return {url:u.href,opaqueCid:m[1],tid:m[2],tuid:m[3]};
+  }catch(_){return null}
+ }
+ async function scormDirectLink(opts){
+  const input=$('stnHubScormDirectUrl');
+  const course=opts.course;
+  const key='stnScormDirectLink:v1:'+classTeacherId+':'+course.cid;
+  const stored=(await browser.storage.local.get(key))[key];
+  const raw=String(input.value||'').trim();
+  const selected=raw?validDirectScormUrl(raw):null;
+  if(raw&&!selected)throw Error('رابط SCORM غير مطابق لصفحة «إضافة درس تفاعلي جديد» الرسمية في نور.');
+  if(selected){
+   if(stored?.teacherId===classTeacherId&&stored?.label===course.label&&stored?.cidNumeric===String(course.cid)&&stored?.opaqueCid!==selected.opaqueCid){
+    throw Error('رابط SCORM الجديد يختلف عن معرّف المساق المحفوظ لنفس الصف. تحقق منه قبل الاستبدال.');
+   }
+   await browser.storage.local.set({[key]:{url:selected.url,opaqueCid:selected.opaqueCid,
+    teacherId:classTeacherId,cidNumeric:String(course.cid),label:course.label,grade:course.grade,at:Date.now()}});
+   return selected.url;
+  }
+  if(stored?.teacherId===classTeacherId&&stored?.cidNumeric===String(course.cid)&&stored?.label===course.label&&stored?.grade===course.grade){
+   const validated=validDirectScormUrl(stored.url);
+   return validated?.opaqueCid===stored.opaqueCid?validated.url:'';
+  }
+  return '';
+ }
+ async function scorm(opts){""",path)
+s=replace_exact(s,
+ "  const epoch=operationEpoch;\\n  const branch=await orderedBranch(opts);",
+ "  const epoch=operationEpoch;\\n  const directScormUrl=await scormDirectLink(opts);\\n  const branch=await orderedBranch(opts);",path)
+s=replace_exact(s,
+ "await globalThis.NoorScormPublisher.start(file,{...opts,positionProof:opts.proof,allowUnlinkedLesson:!opts.proof?.lessonId,mode:scormSaveMode(),fromDashboard:true,teacherId:classTeacherId,publishDate:$('stnHubScormPublishDate').value});",
+ "await globalThis.NoorScormPublisher.start(file,{...opts,directScormUrl,positionProof:opts.proof,allowUnlinkedLesson:!opts.proof?.lessonId,mode:scormSaveMode(),fromDashboard:true,teacherId:classTeacherId,publishDate:$('stnHubScormPublishDate').value});",path)
+files[path]=s.encode()
+
+path="noor-scorm-publisher.js"
+s=files[path].decode()
+s=replace_exact(s,
+ "  if(!opts.unit||!opts.lesson)throw Error('تحديد الوحدة والدرس في شجرة نور مطلوب.');",
+ """  if(!opts.unit||!opts.lesson)throw Error('تحديد الوحدة والدرس في شجرة نور مطلوب.');
+  let direct=null;
+  if(opts.directScormUrl){
+   try{
+    const u=new URL(String(opts.directScormUrl),location.href);
+    const pattern=/^\\/teacher\\/attachments\\/upload\\/Scorm\\/cid:([A-Za-z0-9_-]+)\\/tid:([A-Za-z0-9_-]+)\\/tuid:([A-Za-z0-9_-]+)\\/?$/i;
+    if(u.origin!==location.origin||u.search||u.hash||!pattern.test(u.pathname))
+     throw Error('invalid');
+    direct=u.href;
+   }catch(_){throw Error('رابط الدرس التفاعلي المباشر غير صالح؛ لن أستخدم عنوانًا غير موثق.');}
+  }""",path)
+s=replace_exact(s,
+ "   filename:file.name,formPath:'',verifiedLesson:false,attached:false,allowUnlinkedLesson:",
+ "   filename:file.name,directScormUrl:direct||'',formPath:'',verifiedLesson:false,attached:false,allowUnlinkedLesson:",path)
+s=replace_exact(s,
+ "  if(opts.fromDashboard&&!isCourseHome())location.assign(location.origin+'/teacher');\\n  else scheduleAdvance(j,250);",
+ """  if(direct){
+   notice('جارٍ فتح صفحة إضافة الدرس التفاعلي مباشرة دون بطاقة الصف…');
+   if(location.href!==direct)location.assign(direct);
+   else scheduleAdvance(j,300);
+  }else if(opts.fromDashboard&&!isCourseHome())location.assign(location.origin+'/teacher');
+  else scheduleAdvance(j,250);""",path)
+files[path]=s.encode()
+assert "stnHubScormDirectUrl" in files["noor-hub.js"].decode()
+assert "stnScormDirectLink:v1:" in files["noor-hub.js"].decode()
+assert "directScormUrl:direct||''" in files["noor-scorm-publisher.js"].decode()
+assert "location.assign(direct)" in files["noor-scorm-publisher.js"].decode()
+
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
     assert files["noor-scorm-publisher.js"]!=original.read("noor-scorm-publisher.js")
