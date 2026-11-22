@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.89 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.90 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.89-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.90-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -23,8 +23,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.89"
-manifest["description"] = "Noor Unified 2.8.89: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.90"
+manifest["description"] = "Noor Unified 2.8.90: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -516,7 +516,7 @@ assert "directScormUrl:direct||''" in files["noor-scorm-publisher.js"].decode()
 assert "location.assign(direct)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.89: keep the proven direct SCORM route, but separate Activity and SCORM
+# v2.8.90: keep the proven direct SCORM route, but separate Activity and SCORM
 # in the task picker again. Neither engine should change the other's UI.
 path="noor-hub.js"
 s=files[path].decode()
@@ -611,7 +611,7 @@ assert "submittedWithoutReceipt(active)" in files["noor-scorm-publisher.js"].dec
 assert "unverified:Boolean(j.unverified)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.89 - no more card fallback for SCORM: require a verified per-course
+# v2.8.90 - no more card fallback for SCORM: require a verified per-course
 # direct upload route. Hide the link field; request one-time setup ONLY if
 # this particular teacher/course has no validated saved route.
 path="noor-hub.js"
@@ -710,7 +710,7 @@ assert "هذا الإصدار يتطلب رابط" in files["noor-scorm-publishe
 assert "تم إنشاء '+quantity+' ملفات SCORM وتنزيلها. اختر ملفًا واحدًا" not in files["noor-hub.js"].decode()
 
 
-# 2.8.89: passively discover *official* Noor SCORM route identities.
+# 2.8.90: passively discover *official* Noor SCORM route identities.
 # No hardcoded IDs, invented CID translation, cross-teacher IDs or network interception.
 path="noor-course-catalog.js"
 s=files[path].decode()
@@ -789,7 +789,7 @@ assert "window.prompt(" not in files["noor-hub.js"].decode()
 assert "لم أجد رابط SCORM موثقًا" in files["noor-hub.js"].decode()
 
 
-# 2.8.89 - robust grade/subject matching, card-scoped URL discovery, and
+# 2.8.90 - robust grade/subject matching, card-scoped URL discovery, and
 # diagnostic breakdown. No guessing unknown CID/tid/tuid. Ignore links from
 # other course cards, teacher accounts, or unrelated global tables.
 path="noor-course-catalog.js"
@@ -877,7 +877,7 @@ assert "روابط داخل البطاقة" in files["noor-hub.js"].decode()
 assert "NoorCourseCatalog?.scormDiscovery?.(course)" in files["noor-hub.js"].decode()
 
 
-# 2.8.89: use the course CONTENT page shown in the teacher's video, not the
+# 2.8.90: use the course CONTENT page shown in the teacher's video, not the
 # failed flip-card route and not an opaque SCORM upload link.
 # Numeric CID is taken ONLY from an already verified selected teacher course.
 path="noor-hub.js"
@@ -991,7 +991,7 @@ assert "return location.origin+'/teacher/courses/browse_content/cid:'" in files[
 assert "window.prompt(" not in files["noor-hub.js"].decode()
 
 
-# v2.8.89 - Remove every previous SCORM card/popover / digital-library
+# v2.8.90 - Remove every previous SCORM card/popover / digital-library
 # navigation attempt, retain ONLY the verified course-content route.
 # The "Other Libraries" section is a self-contained panel: green arrow
 # toggles its icon strip, green PLAY is "Add interactive lessons".
@@ -1116,7 +1116,7 @@ assert "function contentCoursePath(j)" not in s
 assert "function pickNav(j)" in s
 
 
-# v2.8.89: Correct the genuine Noor in-page modal and link tooltip recognition.
+# v2.8.90: Correct the genuine Noor in-page modal and link tooltip recognition.
 # When teacher manually opens the modal, Resume MUST stage the file rather
 # than running navigation again. Never click Submit until all required fields
 # are filled. Keep all course and teacher identity checks.
@@ -1173,7 +1173,7 @@ assert "if(openScormDialog()){" in s
 assert "querySelectorAll('[title],[aria-label]" in s
 
 
-# v2.8.89 -- ISOLATED SCORM NAVIGATION PILOT. This button never generates,
+# v2.8.90 -- ISOLATED SCORM NAVIGATION PILOT. This button never generates,
 # attaches, clicks Save, or modifies the existing publishing job.
 path="noor-hub.js"
 s=files[path].decode()
@@ -1270,7 +1270,7 @@ assert "function pickNav(j)" in files["noor-scorm-publisher.js"].decode()
 assert "testAdvance()" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.89: Fix observed "Other Libraries section not found" on actual Noor
+# v2.8.90: Fix observed "Other Libraries section not found" on actual Noor
 # browse_content. The 2.8.85 exact normalized string equality rejected
 # real headings with Arabic hamza, whitespace, and nested icon labels.
 path="noor-scorm-publisher.js"
@@ -1327,7 +1327,7 @@ assert "NodeFilter.SHOW_TEXT" in s
 assert "function otherLibrariesPanel()" in s
 
 
-# v2.8.89 - Noor Other Libraries navigation: click expand FIRST,
+# v2.8.90 - Noor Other Libraries navigation: click expand FIRST,
 # wait for revealed icons, then click green PLAY. Do not generate or save.
 path="noor-scorm-publisher.js"
 s=files[path].decode()
@@ -1462,7 +1462,7 @@ assert "if(!j.expandTries){" in s
 assert "المرحلة 1/3" in s
 
 
-# v2.8.89: interactive lessons icon is a TWO-CLICK Noor control.
+# v2.8.90: interactive lessons icon is a TWO-CLICK Noor control.
 # First click reveals "Add interactive lessons", second opens modal.
 path="noor-scorm-publisher.js"
 s=files[path].decode()
