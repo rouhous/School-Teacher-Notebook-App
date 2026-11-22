@@ -1642,115 +1642,107 @@ s += """
 """
 files[path] = s.encode()
 
-# 2.8.96: real compact form layout, not merely smaller typography.
-# Each label/control pair becomes one short horizontal row; the details area
-# becomes a two-column grid so numeric positions and dates no longer consume
-# full-width stacked rows on phones.
+# 2.8.97: restore a readable single-column task form and responsive panel sizing.
+# Keep compact controls without turning the entire details container into a grid.
 s = files[path].decode()
 s += """
-/* 2.8.96 inline fields and compact action controls */
+/* 2.8.97 responsive panel and readable task form */
+#stnNoorHub .stnHubPanel{
+ width:min(520px,calc(100vw - 24px))!important;
+ max-width:calc(100vw - 24px)!important;
+ max-height:82dvh!important;
+ padding:12px!important;
+}
 #stnNoorHub .stnHubPanel #stnHubDetails{
- display:grid!important;
- grid-template-columns:repeat(2,minmax(0,1fr))!important;
- align-content:start!important;
- gap:5px 7px!important;
-}
-#stnNoorHub #stnHubDetails div:has(>label + input),
-#stnNoorHub #stnHubDetails div:has(>label + select),
-#stnNoorHub #stnHubDetails div:has(>label + textarea){
- display:grid!important;
- grid-template-columns:minmax(0,1fr) minmax(48px,88px)!important;
- align-items:center!important;
- gap:3px!important;
+ display:block!important;
+ width:100%!important;
  min-width:0!important;
- margin:0!important;
- padding:0!important;
 }
-#stnNoorHub #stnHubDetails div:has(>label + textarea){
- grid-column:1/-1!important;
- grid-template-columns:1fr!important;
+#stnNoorHub #stnHubDetails > *{
+ box-sizing:border-box!important;
+ min-width:0!important;
+ max-width:100%!important;
+}
+#stnNoorHub #stnHubDetails > div,
+#stnNoorHub #stnHubClassFields,
+#stnNoorHub #stnHubLessonChoiceBox,
+#stnNoorHub #stnHubScormOptions,
+#stnNoorHub #stnHubActivityOptions,
+#stnNoorHub #stnHubExamOptions{
+ width:100%!important;
+ min-width:0!important;
 }
 #stnNoorHub #stnHubDetails label{
  display:block!important;
- min-width:0!important;
- max-width:none!important;
- margin:0!important;
- padding:0!important;
- font-size:10px!important;
- line-height:1.2!important;
+ max-width:100%!important;
+ margin:8px 0 4px!important;
+ font-size:12px!important;
+ line-height:1.45!important;
  white-space:normal!important;
+ overflow-wrap:anywhere!important;
 }
-#stnNoorHub #stnHubDetails div:has(>label + input) > input:not([type=hidden]),
-#stnNoorHub #stnHubDetails div:has(>label + select) > select{
+#stnNoorHub #stnHubDetails input:not([type=hidden]):not([type=checkbox]):not([type=radio]),
+#stnNoorHub #stnHubDetails select,
+#stnNoorHub #stnHubDetails textarea{
+ display:block!important;
  width:100%!important;
  min-width:0!important;
  max-width:100%!important;
- height:29px!important;
- min-height:29px!important;
- padding:3px 5px!important;
- font-size:11px!important;
- text-align:center!important;
+ min-height:38px!important;
+ height:auto!important;
+ padding:7px 9px!important;
+ font-size:13px!important;
 }
-#stnNoorHub #stnHubDetails input[type=date]{
- min-width:0!important;
- width:100%!important;
- font-size:10px!important;
-}
-#stnNoorHub #stnHubDetails div:has(>label + textarea) textarea{
- width:100%!important;
- min-height:48px!important;
- font-size:10px!important;
-}
-#stnNoorHub .stnActions{
+#stnNoorHub #stnHubDetails .stnRow{
  display:grid!important;
  grid-template-columns:repeat(2,minmax(0,1fr))!important;
- gap:5px!important;
+ gap:8px!important;
+ width:100%!important;
 }
-#stnNoorHub .stnActions .stnBtn,
-#stnNoorHub .stnBtn{
- box-sizing:border-box!important;
- min-height:29px!important;
- height:auto!important;
- max-height:38px!important;
- padding:4px 5px!important;
- font-size:10px!important;
- line-height:1.15!important;
- font-weight:600!important;
- white-space:normal!important;
- overflow:hidden!important;
- text-overflow:clip!important;
- border-radius:7px!important;
-}
-#stnNoorHub button{
- font-size:10px!important;
-}
-#stnNoorHub input[type=radio],
-#stnNoorHub input[type=checkbox]{
- width:15px!important;
- height:15px!important;
- min-height:15px!important;
- margin:0 3px!important;
-}
-#stnNoorHub .stnHubPanel :is(.stnSaveModes,.stnHubSaveMode,.stnRadioGroup){
+#stnNoorHub .stnActions{
  display:flex!important;
  flex-flow:row wrap!important;
- align-items:center!important;
- justify-content:space-around!important;
- gap:4px!important;
- padding:5px!important;
+ align-items:stretch!important;
+ gap:7px!important;
+}
+#stnNoorHub .stnActions > *,
+#stnNoorHub .stnActions .stnBtn{
+ flex:1 1 125px!important;
+ min-width:0!important;
+ max-width:100%!important;
+}
+#stnNoorHub .stnBtn{
+ box-sizing:border-box!important;
+ min-height:38px!important;
+ height:auto!important;
+ max-height:none!important;
+ padding:7px 9px!important;
+ font-size:12px!important;
+ line-height:1.35!important;
+ white-space:normal!important;
+ overflow:visible!important;
+ overflow-wrap:anywhere!important;
+}
+#stnNoorHub button{font-size:12px!important}
+#stnNoorHub input[type=checkbox],
+#stnNoorHub input[type=radio]{
+ width:17px!important;
+ height:17px!important;
+ min-height:17px!important;
+ flex:0 0 auto!important;
 }
 @media(max-width:520px){
- #stnNoorHub .stnHubPanel #stnHubDetails{
+ #stnNoorHub .stnHubPanel{
+  width:calc(100vw - 24px)!important;
+  max-width:calc(100vw - 24px)!important;
+  max-height:82dvh!important;
+  padding:10px!important;
+ }
+ #stnNoorHub #stnHubDetails .stnRow{
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
-  gap:4px 6px!important;
  }
- #stnNoorHub #stnHubDetails div:has(>label + input),
- #stnNoorHub #stnHubDetails div:has(>label + select){
-  grid-template-columns:minmax(0,1fr) 66px!important;
- }
- #stnNoorHub #stnHubDetails label{font-size:9px!important}
- #stnNoorHub .stnActions .stnBtn,
- #stnNoorHub .stnBtn{font-size:9px!important;padding:4px!important}
+ #stnNoorHub #stnHubDetails label{font-size:11px!important}
+ #stnNoorHub .stnBtn{font-size:11px!important}
 }
 """
 files[path] = s.encode()
