@@ -1156,14 +1156,6 @@ s=replace_exact(s,
     .slice(0,12).map(x=>actionMeta(x)).join(' ');
    return /add interactive lessons?|upload interactive lesson|اضافه درس تفاعلي|رفع درس تفاعلي/.test(tooltip);
   });""",path)
-# The Other Libraries arrow may be an icon span instead of an anchor.
-s=replace_exact(s,
- """  const candidates=controls.filter(el=>{
-   const icon=el.querySelector('.fa-arrow-right,.fa-arrow-circle-right,.fa-long-arrow-right,.glyphicon-arrow-right,[class*="arrow-right"]');
-   const label=actionMeta(el);""",
- """  const candidates=controls.filter(el=>{
-   const icon=el.querySelector('.fa-arrow-right,.fa-arrow-circle-right,.fa-long-arrow-right,.glyphicon-arrow-right,[class*="arrow-right"],.fa-arrow-circle-o-right');
-   const label=actionMeta(el);""",path)
 # Most importantly: when the real modal is visible, never try to open any
 # other library widget again. A paused task can resume directly into staging.
 s=replace_exact(s,
