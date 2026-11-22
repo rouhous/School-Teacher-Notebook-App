@@ -50,6 +50,13 @@ for _name in ("noor-hub.js","page-helper.js","smart-background.js","smart/src/no
         if _name=="noor-hub.js" and _start!=805:continue
         if _name!="noor-hub.js" and _start==805:continue
         print("EXACT_SOURCE",_name,_start,_end,"\\n".join(f"{i+1}: {_lines[i]}" for i in range(_start-1,min(len(_lines),_end)))[:16000])
+print("SMART_FILES",[n for n in files if "smart" in n.lower() or "activity" in n.lower() or "noor-hub" in n.lower()])
+for _name,_raw in files.items():
+ if _name.endswith(".js"):
+  _lines=_raw.decode("utf-8",errors="replace").splitlines()
+  for _i,_line in enumerate(_lines):
+   if "NoorSmartHub" in _line or "NOOR_ACTIVITY_GEMINI_GENERATE" in _line or "lessonReferenceKey" in _line:
+    print("SMART_HUB_IMPL",_name,_i+1,"\\n".join(f"{j+1}: {_lines[j]}" for j in range(max(0,_i-5),min(len(_lines),_i+18)))[:6000])
 base_scorm_publisher = files["noor-scorm-publisher.js"]
 if any(p.startswith("META-INF/") for p in files):
     sys.exit("Refusing to use already signed source")
