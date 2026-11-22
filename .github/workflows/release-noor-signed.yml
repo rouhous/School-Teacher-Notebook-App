@@ -1,4 +1,4 @@
-# Release Noor 2.8.91 (green circle selector syntax fix): SCORM card recognition using shared catalog; preserve library tree selection.
+# Release Noor 2.8.92 (green circle selector syntax fix): SCORM card recognition using shared catalog; preserve library tree selection.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.91"
+        description: "Tested unified source version, e.g. 2.8.92"
         type: string
         required: true
-        default: "2.8.91"
+        default: "2.8.92"
 permissions:
   contents: write
   pages: write
@@ -30,12 +30,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Generate 2.8.91 source from the existing approved 2.8.64 source
+      - name: Generate 2.8.92 source from the existing approved 2.8.64 source
         run: python3 .github/scripts/prepare-noor-2865.py
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.91' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.92' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -174,7 +174,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.91' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.92' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -188,7 +188,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Generate 2.8.91 source for Mozilla signing
+      - name: Generate 2.8.92 source for Mozilla signing
         run: python3 .github/scripts/prepare-noor-2865.py
       - name: Verify one-time signing credentials and release branch
         shell: bash
@@ -277,7 +277,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.91' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.92' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest
