@@ -1577,7 +1577,7 @@ s = s.replace("  $('stnHubScormImageMode').addEventListener('change',()=>{try{se
 s = s.replace("  try{const mode=sessionStorage.getItem('stnNoorScormImageMode:v1');if(['gemini_svg','gemini_none','svg','none'].includes(mode))$('stnHubScormImageMode').value=mode}catch(_){}", "")
 files[path]=s.encode()
 
-assert "files[\"noor-scorm-publisher.js\"] = base_scorm_publisher" in s
+assert "base_scorm_publisher = files[\"noor-scorm-publisher.js\"]" in s
 assert "return 'gemini_svg';" in s
 assert "gemini-3.1-flash-image')continue" in files["gemini-background.js"].decode()
 assert "cards.next({label:j.label},3,REPOSITORY_ACTION)" in files["noor-scorm-publisher.js"].decode()
