@@ -18,6 +18,14 @@ def replace_exact(content, old, new, path):
 
 with ZipFile(sources[0]) as original:
     files = {i.filename: original.read(i.filename) for i in original.infolist() if not i.is_dir()}
+# TEMP inspect activity-generation prompt sources in the base archive
+for _name,_raw in files.items():
+    if _name.endswith(".js") and ("gemini" in _name or "activity" in _name or "smart" in _name):
+        _lines=_raw.decode("utf-8",errors="replace").splitlines()
+        _hits=[i for i,line in enumerate(_lines) if any(k in line.lower() for k in ("prompt","lesson","generateactivity","activitygenerate","unit title","lesson title"))]
+        print("PROMPT_SOURCE",_name,"lines",len(_lines),"hits",len(_hits))
+        for _i in _hits[:24]:
+            print("PROMPT_CONTEXT",_name,_i+1,"\\n".join(_lines[max(0,_i-2):min(len(_lines),_i+3)])[:1200])
 base_scorm_publisher = files["noor-scorm-publisher.js"]
 if any(p.startswith("META-INF/") for p in files):
     sys.exit("Refusing to use already signed source")
