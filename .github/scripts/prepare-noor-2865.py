@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.90 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.91 source ZIP from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.90-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.91-ClassCard-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -18,13 +18,14 @@ def replace_exact(content, old, new, path):
 
 with ZipFile(sources[0]) as original:
     files = {i.filename: original.read(i.filename) for i in original.infolist() if not i.is_dir()}
+base_scorm_publisher = files["noor-scorm-publisher.js"]
 if any(p.startswith("META-INF/") for p in files):
     sys.exit("Refusing to use already signed source")
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.90"
-manifest["description"] = "Noor Unified 2.8.90: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.91"
+manifest["description"] = "Noor Unified 2.8.91: SCORM course card verification with original publisher and library navigation preserved."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -516,7 +517,7 @@ assert "directScormUrl:direct||''" in files["noor-scorm-publisher.js"].decode()
 assert "location.assign(direct)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.90: keep the proven direct SCORM route, but separate Activity and SCORM
+# v2.8.91: keep the proven direct SCORM route, but separate Activity and SCORM
 # in the task picker again. Neither engine should change the other's UI.
 path="noor-hub.js"
 s=files[path].decode()
@@ -611,7 +612,7 @@ assert "submittedWithoutReceipt(active)" in files["noor-scorm-publisher.js"].dec
 assert "unverified:Boolean(j.unverified)" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.90 - no more card fallback for SCORM: require a verified per-course
+# v2.8.91 - no more card fallback for SCORM: require a verified per-course
 # direct upload route. Hide the link field; request one-time setup ONLY if
 # this particular teacher/course has no validated saved route.
 path="noor-hub.js"
@@ -710,7 +711,7 @@ assert "هذا الإصدار يتطلب رابط" in files["noor-scorm-publishe
 assert "تم إنشاء '+quantity+' ملفات SCORM وتنزيلها. اختر ملفًا واحدًا" not in files["noor-hub.js"].decode()
 
 
-# 2.8.90: passively discover *official* Noor SCORM route identities.
+# 2.8.91: passively discover *official* Noor SCORM route identities.
 # No hardcoded IDs, invented CID translation, cross-teacher IDs or network interception.
 path="noor-course-catalog.js"
 s=files[path].decode()
@@ -789,7 +790,7 @@ assert "window.prompt(" not in files["noor-hub.js"].decode()
 assert "لم أجد رابط SCORM موثقًا" in files["noor-hub.js"].decode()
 
 
-# 2.8.90 - robust grade/subject matching, card-scoped URL discovery, and
+# 2.8.91 - robust grade/subject matching, card-scoped URL discovery, and
 # diagnostic breakdown. No guessing unknown CID/tid/tuid. Ignore links from
 # other course cards, teacher accounts, or unrelated global tables.
 path="noor-course-catalog.js"
@@ -877,7 +878,7 @@ assert "روابط داخل البطاقة" in files["noor-hub.js"].decode()
 assert "NoorCourseCatalog?.scormDiscovery?.(course)" in files["noor-hub.js"].decode()
 
 
-# 2.8.90: use the course CONTENT page shown in the teacher's video, not the
+# 2.8.91: use the course CONTENT page shown in the teacher's video, not the
 # failed flip-card route and not an opaque SCORM upload link.
 # Numeric CID is taken ONLY from an already verified selected teacher course.
 path="noor-hub.js"
@@ -991,7 +992,7 @@ assert "return location.origin+'/teacher/courses/browse_content/cid:'" in files[
 assert "window.prompt(" not in files["noor-hub.js"].decode()
 
 
-# v2.8.90 - Remove every previous SCORM card/popover / digital-library
+# v2.8.91 - Remove every previous SCORM card/popover / digital-library
 # navigation attempt, retain ONLY the verified course-content route.
 # The "Other Libraries" section is a self-contained panel: green arrow
 # toggles its icon strip, green PLAY is "Add interactive lessons".
@@ -1116,7 +1117,7 @@ assert "function contentCoursePath(j)" not in s
 assert "function pickNav(j)" in s
 
 
-# v2.8.90: Correct the genuine Noor in-page modal and link tooltip recognition.
+# v2.8.91: Correct the genuine Noor in-page modal and link tooltip recognition.
 # When teacher manually opens the modal, Resume MUST stage the file rather
 # than running navigation again. Never click Submit until all required fields
 # are filled. Keep all course and teacher identity checks.
@@ -1173,7 +1174,7 @@ assert "if(openScormDialog()){" in s
 assert "querySelectorAll('[title],[aria-label]" in s
 
 
-# v2.8.90 -- ISOLATED SCORM NAVIGATION PILOT. This button never generates,
+# v2.8.91 -- ISOLATED SCORM NAVIGATION PILOT. This button never generates,
 # attaches, clicks Save, or modifies the existing publishing job.
 path="noor-hub.js"
 s=files[path].decode()
@@ -1270,7 +1271,7 @@ assert "function pickNav(j)" in files["noor-scorm-publisher.js"].decode()
 assert "testAdvance()" in files["noor-scorm-publisher.js"].decode()
 
 
-# v2.8.90: Fix observed "Other Libraries section not found" on actual Noor
+# v2.8.91: Fix observed "Other Libraries section not found" on actual Noor
 # browse_content. The 2.8.85 exact normalized string equality rejected
 # real headings with Arabic hamza, whitespace, and nested icon labels.
 path="noor-scorm-publisher.js"
@@ -1327,7 +1328,7 @@ assert "NodeFilter.SHOW_TEXT" in s
 assert "function otherLibrariesPanel()" in s
 
 
-# v2.8.90 - Noor Other Libraries navigation: click expand FIRST,
+# v2.8.91 - Noor Other Libraries navigation: click expand FIRST,
 # wait for revealed icons, then click green PLAY. Do not generate or save.
 path="noor-scorm-publisher.js"
 s=files[path].decode()
@@ -1462,7 +1463,7 @@ assert "if(!j.expandTries){" in s
 assert "المرحلة 1/3" in s
 
 
-# v2.8.90: interactive lessons icon is a TWO-CLICK Noor control.
+# v2.8.91: interactive lessons icon is a TWO-CLICK Noor control.
 # First click reveals "Add interactive lessons", second opens modal.
 path="noor-scorm-publisher.js"
 s=files[path].decode()
@@ -1489,6 +1490,97 @@ s=replace_exact(s,needle,replacement,path)
 files[path]=s.encode()
 assert "if(j.addTries<2)" in s
 assert "الضغط مرة ثانية" in s
+
+# v2.8.91: restore the proven card -> page 3 -> Digital Library SCORM publisher.
+# The current task is generated first; the teacher opens the matching course card,
+# then presses Resume. Restore the publisher from the clean 2.8.64 base, whose
+# pickNav follows the card pager and original Digital Library path.
+files["noor-scorm-publisher.js"] = base_scorm_publisher
+
+# Remove all direct opaque-URL routing from the SCORM launch path.
+path = "noor-hub.js"
+s = files[path].decode()
+s = s.replace("  const directScormUrl=await scormDirectLink(opts);\\n", "")
+s = s.replace("  const directScormUrl=opts.service==='scorm'?await scormDirectLink(opts):'';\\n", "")
+s = s.replace("publishDate,directScormUrl,imageMode:scormImageMode(),", "publishDate,imageMode:scormImageMode(),")
+s = s.replace("...opts,directScormUrl:j.directScormUrl||'',teacherId:j.teacherId", "...opts,teacherId:j.teacherId")
+files[path] = s.encode()
+
+# Hide the image-mode selector. The add-on now tries the configured Gemini
+# image models in order automatically, then uses the existing SVG fallback.
+s = files[path].decode()
+old = """    <label for="stnHubScormImageMode">الصورة المصاحبة للنشاط</label>
+    <select id="stnHubScormImageMode">
+      <option value="gemini_svg">صورة Gemini ثلاثية الأبعاد؛ عند تعذرها استخدم SVG</option>
+      <option value="gemini_none">صورة Gemini ثلاثية الأبعاد؛ عند تعذرها بدون صورة</option>
+      <option value="svg">رسم SVG تعليمي دون استدعاء Gemini للصور</option>
+      <option value="none">بدون صورة (مباشرة)</option>
+    </select>
+    <p class="stnNote">عند نفاد رصيد صور Gemini أو رفض الخطة (مثل 429)، يستمر إنشاء SCORM بالخيار المحدد. SVG رسم متجهي محلي، وليس صورة ثلاثية الأبعاد من Gemini.</p>"""
+new = """    <input type="hidden" id="stnHubScormImageMode" value="gemini_svg">
+    <p class="stnNote">تُجرّب نماذج صور Gemini المتاحة تلقائيًا بالترتيب؛ وإذا تعذرت جميعها يُستخدم رسم SVG محلي حتى لا يتوقف إنشاء الدرس.</p>"""
+if old not in s: raise SystemExit("image selector HTML anchor missing")
+s = s.replace(old,new,1)
+# Force automatic Gemini -> SVG mode regardless of any older saved preference.
+oldmode = """ function scormImageMode(){
+  const mode=$('stnHubScormImageMode').value;
+  return ['gemini_svg','gemini_none','svg','none'].includes(mode)?mode:'gemini_svg';
+ }"""
+newmode = """ function scormImageMode(){
+  return 'gemini_svg';
+ }"""
+if oldmode not in s: raise SystemExit("image mode function anchor missing")
+s = s.replace(oldmode,newmode,1)
+files[path] = s.encode()
+
+# Try each supported image model in order. Model-specific unavailability,
+# overload, quota and transient server failures advance to the next model.
+path = "gemini-background.js"
+s = files[path].decode()
+old = """   }catch(e){return {ok:false,error:'تعذر الاتصال بخدمة صور Gemini: '+String(e?.message||e).slice(0,140)}}
+   if(!response.ok){
+    const status=response.status;
+    if(status===404||status===400){if(model==='gemini-2.5-flash-image')continue;}
+    const data=await response.json().catch(()=>({}));
+    const detail=String(data?.error?.message||'Google HTTP '+status).replaceAll(key,'[hidden]').slice(0,170);
+    return {ok:false,error:'تعذر توليد صورة Gemini ('+status+'): '+detail};
+   }"""
+new = """   }catch(e){
+    if(model!=='gemini-3.1-flash-image')continue;
+    return {ok:false,error:'تعذر الاتصال بنماذج صور Gemini المتاحة: '+String(e?.message||e).slice(0,140)};
+   }
+   if(!response.ok){
+    const status=response.status;
+    if([400,404,429,500,502,503,504].includes(status))continue;
+    const data=await response.json().catch(()=>({}));
+    const detail=String(data?.error?.message||'Google HTTP '+status).replaceAll(key,'[hidden]').slice(0,170);
+    return {ok:false,error:'تعذر توليد صورة Gemini ('+status+'): '+detail};
+   }"""
+if old not in s: raise SystemExit("Gemini image response handling anchor missing")
+s=s.replace(old,new,1)
+old2="""   return {ok:false,error:'لم يرجع نموذج Gemini صورة فعلية. لم أستخدم رسم SVG بديلًا.'};
+  }
+  return {ok:false,error:'لا يتوفر نموذج توليد صور Gemini لهذا المفتاح.'};"""
+new2="""   // A model may return text or an empty candidate instead of image bytes.
+   // Continue to the next configured image model before using the local fallback.
+   continue;
+  }
+  return {ok:false,error:'تعذرت نماذج صور Gemini المتاحة بالتتابع؛ سيُستخدم SVG المحلي كخيار احتياطي.'};"""
+if old2 not in s: raise SystemExit("Gemini no-image response anchor missing")
+s=s.replace(old2,new2,1)
+files[path]=s.encode()
+
+# The hidden mode field is fixed to automatic mode; remove legacy user preference restore.
+path = "noor-hub.js"
+s = files[path].decode()
+s = s.replace("  $('stnHubScormImageMode').addEventListener('change',()=>{try{sessionStorage.setItem('stnNoorScormImageMode:v1',scormImageMode())}catch(_){}});", "")
+s = s.replace("  try{const mode=sessionStorage.getItem('stnNoorScormImageMode:v1');if(['gemini_svg','gemini_none','svg','none'].includes(mode))$('stnHubScormImageMode').value=mode}catch(_){}", "")
+files[path]=s.encode()
+
+assert "files[\"noor-scorm-publisher.js\"] = base_scorm_publisher" in s
+assert "return 'gemini_svg';" in s
+assert "gemini-3.1-flash-image')continue" in files["gemini-background.js"].decode()
+assert "cards.next({label:j.label},3,REPOSITORY_ACTION)" in files["noor-scorm-publisher.js"].decode()
 
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
