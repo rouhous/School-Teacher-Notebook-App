@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.94 compact inline-field teacher panel from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.95 lesson-grounded activity generation and compact inline-field teacher panel.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.94-Compact-source.zip"
+output = directory / "Noor-Unified-v2.8.95-Compact-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,8 +24,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.94"
-manifest["description"] = "Noor Unified 2.8.94: compact inline fields and concise action buttons."
+manifest["version"] = "2.8.95"
+manifest["description"] = "Noor Unified 2.8.95: compact inline fields and concise action buttons."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -1642,13 +1642,13 @@ s += """
 """
 files[path] = s.encode()
 
-# 2.8.94: real compact form layout, not merely smaller typography.
+# 2.8.95: real compact form layout, not merely smaller typography.
 # Each label/control pair becomes one short horizontal row; the details area
 # becomes a two-column grid so numeric positions and dates no longer consume
 # full-width stacked rows on phones.
 s = files[path].decode()
 s += """
-/* 2.8.94 inline fields and compact action controls */
+/* 2.8.95 inline fields and compact action controls */
 #stnNoorHub .stnHubPanel #stnHubDetails{
  display:grid!important;
  grid-template-columns:repeat(2,minmax(0,1fr))!important;
