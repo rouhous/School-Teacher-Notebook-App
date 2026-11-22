@@ -35,6 +35,12 @@ for _name in ("noor-hub.js","page-helper.js","gemini-background.js","noor-lesson
     print("FLOW_SOURCE",_name,"lines",len(_lines),"hits",len(_hits))
     for _i in _hits[:100]:
         print("FLOW_CONTEXT",_name,_i+1,"\\n".join(_lines[max(0,_i-2):min(len(_lines),_i+4)])[:1800])
+# TEMP precise generation dispatch map
+for _name in ("noor-hub.js","page-helper.js","gemini-background.js"):
+    _lines=files[_name].decode("utf-8",errors="replace").splitlines()
+    for _i,_line in enumerate(_lines):
+        if any(k in _line for k in ("sendMessage(","NOOR_GEMINI_GENERATE","NOOR_GEMINI_ACTIVITY","lessonReferenceKey","function activity","async function activity","generateActivity","activityPrompt","lessonText:")):
+            print("DISPATCH",_name,_i+1,"\\n".join(_lines[max(0,_i-6):min(len(_lines),_i+12)])[:4000])
 base_scorm_publisher = files["noor-scorm-publisher.js"]
 if any(p.startswith("META-INF/") for p in files):
     sys.exit("Refusing to use already signed source")
