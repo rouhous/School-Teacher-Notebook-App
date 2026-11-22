@@ -1597,7 +1597,7 @@ for dp in ["noor-hub.js","noor-hub.css","noor-lesson-numbers.js","noor-course-ca
     print("\\n===== UI DIAG "+dp+" length="+str(len(data))+" =====")
     if dp.endswith(".js"):
         import re
-        print("IDS:", " | ".join(re.findall(r'id=["\\'](stnHub[^"\\']+)["\\']',data)))
+        print("IDS:", " | ".join(re.findall(r'id="(stnHub[^"]+)"',data)))
         for pat in ["فتح المهمة","تبويب مستقل","تحقق من الاختيار","مراجعة قبل","حفظ تلقائي","أنواع الأسئلة","الفصل الدراسي","الصف /","اللغة","manualSelection","function inputs","function prep","async function prepare","async function start","NoorCourseCatalog","selectedCourse","currentCourse"]:
             m=re.search(re.escape(pat),data,re.I)
             if m: print("\\n--- "+pat+" @"+str(m.start())+" ---\\n"+data[max(0,m.start()-500):m.start()+1100])
