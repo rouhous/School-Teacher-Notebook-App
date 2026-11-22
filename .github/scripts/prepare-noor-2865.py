@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Noor 2.8.92 source ZIP from the tested 2.8.64 source archive.
+"""Generate Noor 2.8.93 compact teacher panel from the tested 2.8.64 source archive.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.92-ClassCard-source.zip"
+output = directory / "Noor-Unified-v2.8.93-Compact-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,8 +24,8 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.92"
-manifest["description"] = "Noor Unified 2.8.92: SCORM course card verification with original publisher and library navigation preserved."
+manifest["version"] = "2.8.93"
+manifest["description"] = "Noor Unified 2.8.93: compact teacher panel and simplified task controls."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -1591,18 +1591,66 @@ assert "cards.next(" in files["noor-scorm-publisher.js"].decode()
 assert "function treeCandidate(j)" in files["noor-scorm-publisher.js"].decode()
 assert "const gradeMatches=Number.isInteger(selectedGrade)" in files["noor-hub.js"].decode()
 
-# TEMPORARY UI source inspection for requested compact panel redesign.
-for dp in ["noor-hub.js","noor-hub.css","noor-lesson-numbers.js","noor-course-catalog.js","noor-class-card.js"]:
-    data=files.get(dp,b"").decode("utf-8","replace")
-    print("\\n===== UI DIAG "+dp+" length="+str(len(data))+" =====")
-    if dp.endswith(".js"):
-        import re
-        print("IDS:", " | ".join(re.findall(r'id="(stnHub[^"]+)"',data)))
-        for pat in ["فتح المهمة","تبويب مستقل","تحقق من الاختيار","مراجعة قبل","حفظ تلقائي","أنواع الأسئلة","الفصل الدراسي","الصف /","اللغة","manualSelection","function inputs","function prep","async function prepare","async function start","NoorCourseCatalog","selectedCourse","currentCourse"]:
-            m=re.search(re.escape(pat),data,re.I)
-            if m: print("\\n--- "+pat+" @"+str(m.start())+" ---\\n"+data[max(0,m.start()-500):m.start()+1100])
-    else:
-        print(data[:7000])
+
+# 2.8.93 -- compact, low-obstruction teacher UI. Keep every workflow and
+# control functional; remove only redundant navigation/diagnostic buttons.
+path = "noor-hub.css"
+s = files[path].decode()
+s += """
+/* 2.8.93 compact teacher panel */
+#stnNoorHub .stnHubPanel{
+ width:min(318px,calc(100vw - 16px));
+ max-height:min(58dvh,520px);
+ padding:8px;
+ border-radius:12px;
+ box-shadow:0 5px 18px #061e1733;
+}
+#stnNoorHub .stnHead{font-size:13px;margin-bottom:5px;padding:3px 2px}
+#stnNoorHub .stnHeadButtons{gap:3px}
+#stnNoorHub .stnHeadButtons button{min-width:27px;min-height:27px;font-size:20px}
+#stnNoorHub .stnHubTaskPicker{gap:6px;margin:2px 0 5px}
+#stnNoorHub .stnHubTaskPicker label{margin:0;font-size:11px;white-space:nowrap}
+#stnNoorHub .stnHubTaskPicker select{min-height:31px;padding:4px 7px}
+#stnNoorHub #stnHubDetails{padding-top:2px}
+#stnNoorHub #stnHubOtherTab,
+#stnNoorHub #stnHubScormDiagnose,
+#stnNoorHub #stnHubScormTestModal{display:none!important}
+#stnNoorHub label{font-size:11px;margin:5px 0 2px}
+#stnNoorHub select,
+#stnNoorHub input:not([type=file]),
+#stnNoorHub textarea{min-height:31px;padding:5px 7px;border-radius:7px}
+#stnNoorHub .stnTeacherTree{padding:6px;margin:5px 0;border-radius:8px}
+#stnNoorHub .stnTeacherTree .stnBtn{margin-top:5px}
+#stnNoorHub .stnHubChecks{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 6px;margin:3px 0 6px;padding:5px 7px;border-radius:8px}
+#stnNoorHub .stnHubChecks label{font-size:10px;line-height:1.45;margin:0;gap:4px}
+#stnNoorHub .stnActions{gap:5px;margin-top:6px}
+#stnNoorHub .stnBtn{padding:7px 6px;border-radius:7px;font-size:11px}
+#stnNoorHub .stnNote{display:none!important}
+#stnNoorHub .stnStatus{font-size:11px;line-height:1.45;padding:5px 7px;margin-top:6px;border-radius:7px}
+#stnNoorHub .stnStatus:empty{display:none}
+#stnNoorHub .stnPreview{max-height:100px;margin-top:5px;font-size:11px}
+#stnNoorHub .stnHubTabs{gap:4px;margin:2px 0 5px;padding:4px 0}
+#stnNoorHub .stnHubTabs button{min-height:30px;font-size:11px;border-radius:7px}
+#stnNoorHub .stnHubLanguage{padding:2px 0;font-size:10px}
+#stnNoorHub .stnHubLanguage select{min-height:27px;min-width:5.5rem;padding:3px 5px}
+#stnNoorHub .stnHubMinimized{width:min(250px,calc(100vw - 16px));max-height:72px}
+@media(max-width:520px){
+ #stnNoorHub .stnHubPanel{width:min(310px,calc(100vw - 16px));max-height:56dvh;padding:7px}
+ #stnNoorHub .stnHubChecks{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #stnNoorHub .stnHead{font-size:12px}
+}
+"""
+files[path] = s.encode()
+
+# Compact build invariants: retain the primary actions and task-specific fields.
+hub = files["noor-hub.js"].decode()
+for required in ['id="stnHubService"','id="stnHubClass"','id="stnHubUnit"','id="stnHubLesson"','id="stnHubGenerate"']:
+    if required not in hub:
+        raise SystemExit("Compact UI would remove a required control: " + required)
+css = files["noor-hub.css"].decode()
+for required in ['#stnHubOtherTab','#stnHubScormDiagnose','#stnHubScormTestModal','max-height:min(58dvh,520px)']:
+    if required not in css:
+        raise SystemExit("Compact CSS missing " + required)
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
