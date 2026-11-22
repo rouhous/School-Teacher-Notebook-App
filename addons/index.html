@@ -40,7 +40,7 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:3
 <h2>أدوات نور للمعلم</h2>
 <p class="summary">تحضير الدروس تلقائيًا، إدخال الدرجات، إدراج الاختبارات والأنشطة، وإضافة الدروس التفاعلية.</p>
 <a class="button" id="install-xpi" href="./files/Noor-Unified-v2.8.96-signed.xpi">تنزيل إضافة Firefox — 2.8.35</a>
-<p class="status" id="release-status">الإصدار الحالي: 2.8.35</p>
+<p class="status" id="release-status">جارٍ التحقق من أحدث إصدار</p>
 <p class="status" id="browser-note" role="status" aria-live="polite"></p>
 </section>
 <h2 class="section">طريقة التثبيت</h2>
@@ -95,7 +95,7 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:3
    status.textContent='الإصدار الحالي: '+latest.version;
    if(android)link.setAttribute('download',filename);
   }catch(_){
-   status.textContent='الإصدار المعلن: 2.8.35 — إذا ظهر رابط قديم، افتح المكتبة مجددًا في Firefox.';
+   status.textContent='تعذّر التحقق من أحدث إصدار. أعد تحميل الصفحة لاحقًا.';
   }
  })();
  // Show an installed state only if the running extension explicitly confirms it.
