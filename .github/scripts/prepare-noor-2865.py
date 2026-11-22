@@ -18,45 +18,6 @@ def replace_exact(content, old, new, path):
 
 with ZipFile(sources[0]) as original:
     files = {i.filename: original.read(i.filename) for i in original.infolist() if not i.is_dir()}
-# TEMP inspect activity-generation prompt sources in the base archive
-for _name,_raw in files.items():
-    if _name.endswith(".js") and ("gemini" in _name or "activity" in _name or "smart" in _name):
-        _lines=_raw.decode("utf-8",errors="replace").splitlines()
-        _hits=[i for i,line in enumerate(_lines) if any(k in line.lower() for k in ("prompt","lesson","generateactivity","activitygenerate","unit title","lesson title"))]
-        print("PROMPT_SOURCE",_name,"lines",len(_lines),"hits",len(_hits))
-        for _i in _hits[:24]:
-            print("PROMPT_CONTEXT",_name,_i+1,"\\n".join(_lines[max(0,_i-2):min(len(_lines),_i+3)])[:1200])
-# TEMP inspect activity source dispatch and saved preparation references
-for _name in ("noor-hub.js","page-helper.js","gemini-background.js","noor-lesson-evidence.js"):
-    if _name not in files: continue
-    _lines=files[_name].decode("utf-8",errors="replace").splitlines()
-    _terms=("NOOR_GEMINI_GENERATE","NOOR_GEMINI_ACTIVITY","lessonReferenceKey","reference:","teacherText","stnHubActivity","preparation","lessonText")
-    _hits=[i for i,line in enumerate(_lines) if any(k.lower() in line.lower() for k in _terms)]
-    print("FLOW_SOURCE",_name,"lines",len(_lines),"hits",len(_hits))
-    for _i in _hits[:100]:
-        print("FLOW_CONTEXT",_name,_i+1,"\\n".join(_lines[max(0,_i-2):min(len(_lines),_i+4)])[:1800])
-# TEMP precise generation dispatch map
-for _name in ("noor-hub.js","page-helper.js","gemini-background.js"):
-    _lines=files[_name].decode("utf-8",errors="replace").splitlines()
-    for _i,_line in enumerate(_lines):
-        if any(k in _line for k in ("sendMessage(","NOOR_GEMINI_GENERATE","NOOR_GEMINI_ACTIVITY","lessonReferenceKey","function activity","async function activity","generateActivity","activityPrompt","lessonText:")):
-            print("DISPATCH",_name,_i+1,"\\n".join(_lines[max(0,_i-6):min(len(_lines),_i+12)])[:4000])
-# TEMP exact activity launch + smart hub generation API
-for _name in ("noor-hub.js","page-helper.js","smart-background.js","smart/src/noor-gemini.js","smart/src/noor-panel.js"):
-    if _name not in files: continue
-    _lines=files[_name].decode("utf-8",errors="replace").splitlines()
-    for _start,_end in ((805,850),(1,180),(180,360),(360,560)):
-        if _start>len(_lines):continue
-        if _name=="noor-hub.js" and _start!=805:continue
-        if _name!="noor-hub.js" and _start==805:continue
-        print("EXACT_SOURCE",_name,_start,_end,"\\n".join(f"{i+1}: {_lines[i]}" for i in range(_start-1,min(len(_lines),_end)))[:16000])
-print("SMART_FILES",[n for n in files if "smart" in n.lower() or "activity" in n.lower() or "noor-hub" in n.lower()])
-for _name,_raw in files.items():
- if _name.endswith(".js"):
-  _lines=_raw.decode("utf-8",errors="replace").splitlines()
-  for _i,_line in enumerate(_lines):
-   if "NoorSmartHub" in _line or "NOOR_ACTIVITY_GEMINI_GENERATE" in _line or "lessonReferenceKey" in _line:
-    print("SMART_HUB_IMPL",_name,_i+1,"\\n".join(f"{j+1}: {_lines[j]}" for j in range(max(0,_i-5),min(len(_lines),_i+18)))[:6000])
 base_scorm_publisher = files["noor-scorm-publisher.js"]
 if any(p.startswith("META-INF/") for p in files):
     sys.exit("Refusing to use already signed source")
@@ -1793,6 +1754,102 @@ s += """
 }
 """
 files[path] = s.encode()
+
+
+# Lesson-grounded activity generation: retrieve the saved preparation for the
+# exact verified Noor lesson and combine it with Google Search curriculum sources.
+path = "noor-hub.js"
+s = files[path].decode()
+s = replace_exact(s,
+"""   const generated=await globalThis.NoorSmartHub.generate({unit:opts.unit,lesson:opts.lesson,count:opts.count,courseProof,kinds});""",
+"""   const refKey=resolved.lessonId?lessonReferenceKey(opts.course.cid,resolved.lessonId):'';
+   const savedPrep=refKey?(await browser.storage.local.get(refKey))[refKey]:null;
+   const prepFields=[
+    ['الأهداف التعليمية',savedPrep?.objectives],
+    ['المفاهيم والمصطلحات',savedPrep?.concepts],
+    ['التمهيد',savedPrep?.warmUp],
+    ['خطوات وإجراءات التدريس',savedPrep?.procedures],
+    ['التقويم والتدريب',savedPrep?.formative],
+    ['التقويم الختامي',savedPrep?.closing],
+    ['ملاحظات المعلم',savedPrep?.details]
+   ].filter(([,value])=>String(value||'').trim())
+    .map(([label,value])=>label+': '+String(value).trim()).join('\\\\n');
+   const sourceFocus=[
+    'STRICT LESSON IDENTITY — do not change, broaden or replace this lesson.',
+    'Subject: '+opts.subject+'; Grade: '+opts.course.grade+'; Unit: '+opts.unit+'; Exact lesson: '+opts.lesson+'.',
+    'The selected Noor lesson is the only assessment scope. Do not use a neighboring lesson or another topic from the same unit.',
+    savedPrep?'SAVED TEACHER PREPARATION — PRIMARY SOURCE (use before web sources):\\\\n'+prepFields:
+     'No saved teacher preparation was found for this exact lesson. Do not pretend one exists.',
+    'RESEARCH REQUIRED: use Google Search grounding to locate the Oman Ministry of Education curriculum sources for this exact grade, subject, unit and lesson. Search separately for the Student Book, Activity Book/Workbook, and Teacher Guide. Prefer official Oman Ministry sources and documents. Use only sources whose grade, subject and lesson match. Use the Student Book for taught concepts/examples, the Activity Book for practice formats, and the Teacher Guide for objectives, misconceptions and pedagogy.',
+    'SOURCE SAFETY: cite the actual source title and URL in warnings. If one source type cannot be found, say so. Never invent page numbers, quotations, exercises, answer keys or textbook content. If a source is missing, use only the saved preparation and verifiable search material.',
+    'QUESTION QUALITY: every question must assess the exact lesson concept, not merely the unit theme. Reject any generated question about another topic.'
+   ].join('\\\\n').slice(0,4800);
+   const generated=await globalThis.NoorSmartHub.generate({unit:opts.unit,lesson:opts.lesson,count:opts.count,courseProof,kinds,focus:sourceFocus});""",
+ path)
+files[path] = s.encode()
+
+path = "smart/src/noor-panel.js"
+s = files[path].decode()
+s = replace_exact(s,
+  'maxlength="800" placeholder="مثال: Renewable Energy – solar and wind"',
+  'maxlength="5200" placeholder="موضوع النشاط أو تعليمات المعلم (اختياري)"', path)
+s = replace_exact(s,
+  "$('geminiFocus').value=String(options.focus||'').slice(0,800);",
+  "$('geminiFocus').value=String(options.focus||'').slice(0,4800);", path)
+files[path] = s.encode()
+
+path = "smart/src/noor-gemini.js"
+s = files[path].decode()
+s = replace_exact(s,
+  "const instructions=trim(input.description,1800);",
+  "const instructions=trim(input.description,5000);", path)
+files[path] = s.encode()
+
+path = "smart-background.js"
+s = files[path].decode()
+s = replace_exact(s,
+"""   const rules=\`You are a qualified \${c.subject} teacher producing assessments for Omani public school students. Subject \${c.subject}; Grade \${c.grade}, Unit \${c.unit}, Lesson \${c.lesson}. Assessment title: \${c.title}. Difficulty: \${c.difficulty}. Requested question count: \${c.count}. Allowed Noor LMS types: \${c.kinds.join(', ')}. Focus: \${c.description}.\`;""",
+"""   const rules=\`You are a qualified \${c.subject} teacher producing assessments for Omani public school students. Subject \${c.subject}; Grade \${c.grade}, Unit \${c.unit}, Lesson \${c.lesson}. Assessment title: \${c.title}. Difficulty: \${c.difficulty}. Requested question count: \${c.count}. Allowed Noor LMS types: \${c.kinds.join(', ')}. Teacher source brief and exact lesson lock: \${c.description}.\`;
+   const research=\`MANDATORY CURRICULUM RESEARCH USING THE ENABLED GOOGLE SEARCH TOOL:
+Search for the exact Oman Ministry of Education curriculum materials for Grade \${c.grade}, subject \${c.subject}, Unit \${c.unit}, Lesson \${c.lesson}. Run separate searches for:
+1) Oman Grade \${c.grade} \${c.subject} Student Book \${c.unit} \${c.lesson};
+2) Oman Grade \${c.grade} \${c.subject} Activity Book or Workbook \${c.unit} \${c.lesson};
+3) Oman Grade \${c.grade} \${c.subject} Teacher Guide \${c.unit} \${c.lesson}.
+Prefer official Ministry of Education sources and exact matching editions. Use Student Book content to establish what was taught, Activity Book content for age-appropriate practice, and Teacher Guide content for lesson objectives, misconceptions and teaching emphasis. Verify the grade, subject and lesson before using a source. The exact lesson title is a strict boundary: never replace it with a different topic merely because that topic appears elsewhere in the same unit. If a source cannot be located or verified, report that fact in warnings and do not invent its contents, pages, quotations or answer keys. If the teacher brief contains a saved preparation, it is the primary source and web material only supplements it.\`;""",
+ path)
+s = replace_exact(s,
+"""   return rules+'\\\\n'+schema+'\\\\n'+(mode==='pdf'?pdfRules:'When assessing English vocabulary meaning, use a natural sentence with a single ____ and 3 or 4 plausible words as options; the surrounding context must determine only one answer. Never ask for a word by giving its definition, translation, or synonym. A vocabulary cloze may use a short passage with five numbered blanks and separate 3–4 options per blank. When assessing English grammar, use short natural dialogue, ideally five numbered gaps with exactly two plausible grammatical alternatives per gap and one correct answer. For passage or dialogue, represent each blank as one independent mcq item: repeat the shared text and explicitly name the numbered blank to answer. Count each blank as one question. Use five related items only when the requested count and assessment mix allow; otherwise use the requested number, with no orphaned gaps. For explicit written fill-in questions without choices, use the requested written fill format instead. Do not change the structure of other subjects or reading-comprehension questions.');""",
+"""   return rules+'\\\\n'+(mode==='generate'?research+'\\\\n':'')+schema+'\\\\n'+(mode==='pdf'?pdfRules:'When assessing English vocabulary meaning, use a natural sentence with a single ____ and 3 or 4 plausible words as options; the surrounding context must determine only one answer. Never ask for a word by giving its definition, translation, or synonym. A vocabulary cloze may use a short passage with five numbered blanks and separate 3–4 options per blank. When assessing English grammar, use short natural dialogue, ideally five numbered gaps with exactly two plausible grammatical alternatives per gap and one correct answer. For passage or dialogue, represent each blank as one independent mcq item: repeat the shared text and explicitly name the numbered blank to answer. Count each blank as one question. Use five related items only when the requested count and assessment mix allow; otherwise use the requested number, with no orphaned gaps. For explicit written fill-in questions without choices, use the requested written fill format instead. Do not change the structure of other subjects or reading-comprehension questions.');""", path)
+s = replace_exact(s,
+"""   const body={contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:mode==='pdf'?0.1:0.4,maxOutputTokens:16000}};""",
+"""   const body={contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:mode==='pdf'?0.1:0.4,maxOutputTokens:16000},
+    ...(mode==='generate'?{tools:[{googleSearch:{}}]}:{})};""", path)
+s = replace_exact(s,
+"""   return {ok:true,questions:parsed.questions.slice(0,mode==='pdf'?60:30),warnings:Array.isArray(parsed.warnings)?parsed.warnings.map(x=>trim(x,250)).slice(0,20):[],needsReview:true,modelUsed:generated.model};""",
+"""   const candidate=result?.candidates?.[0]||{};
+   const grounding=candidate.groundingMetadata||candidate.grounding_metadata||{};
+   const chunks=Array.isArray(grounding.groundingChunks)?grounding.groundingChunks:[];
+   const sources=[...new Map(chunks.map(chunk=>chunk.web||chunk).filter(source=>source?.uri)
+    .map(source=>[source.uri,{title:trim(source.title||source.uri,180),uri:trim(source.uri,500)}])).values()].slice(0,12);
+   const queries=Array.isArray(grounding.webSearchQueries)?grounding.webSearchQueries.map(x=>trim(x,180)).slice(0,8):[];
+   const warnings=Array.isArray(parsed.warnings)?parsed.warnings.map(x=>trim(x,250)).slice(0,16):[];
+   if(sources.length)warnings.push('مصادر Google Search المستخدمة: '+sources.map(x=>x.title+' — '+x.uri).join(' | ').slice(0,1800));
+   else if(mode==='generate')warnings.push('لم يُرجع بحث Google مصادر ويب قابلة للتوثيق لهذا الطلب؛ راجع الأسئلة مع التحضير قبل اعتمادها.');
+   if(queries.length)warnings.push('عبارات البحث: '+queries.join(' | ').slice(0,700));
+   return {ok:true,questions:parsed.questions.slice(0,mode==='pdf'?60:30),warnings:warnings.slice(0,20),sources,searchQueries:queries,needsReview:true,modelUsed:generated.model};""", path)
+files[path] = s.encode()
+
+hub=files["noor-hub.js"].decode()
+smart=files["smart-background.js"].decode()
+panel=files["smart/src/noor-panel.js"].decode()
+gemini=files["smart/src/noor-gemini.js"].decode()
+assert "SAVED TEACHER PREPARATION — PRIMARY SOURCE" in hub
+assert "lessonReferenceKey(opts.course.cid,resolved.lessonId)" in hub
+assert "focus:sourceFocus" in hub
+assert "MANDATORY CURRICULUM RESEARCH USING THE ENABLED GOOGLE SEARCH TOOL" in smart
+assert "tools:[{googleSearch:{}}]" in smart
+assert "groundingChunks" in smart and "webSearchQueries" in smart
+assert "slice(0,4800)" in panel and "trim(input.description,5000)" in gemini
 
 # Compact build invariants: retain the primary actions and task-specific fields.
 hub = files["noor-hub.js"].decode()
