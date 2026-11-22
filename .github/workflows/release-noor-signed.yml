@@ -161,6 +161,14 @@ jobs:
           grep -Fq 'stnHubSubject' extension/noor-hub.js
           grep -Fq 'stnHubActivityQuantity' extension/noor-hub.js
           grep -Fq 'stnHubScormQuantity' extension/noor-hub.js
+          grep -Fq 'SAVED TEACHER PREPARATION — PRIMARY SOURCE' extension/noor-hub.js
+          grep -Fq 'STRICT LESSON IDENTITY' extension/noor-hub.js
+          grep -Fq 'MANDATORY CURRICULUM RESEARCH USING THE ENABLED GOOGLE SEARCH TOOL' extension/smart-background.js
+          grep -Fq 'tools:[{googleSearch:{}}]' extension/smart-background.js
+          grep -Fq 'groundingChunks' extension/smart-background.js
+          grep -Fq 'webSearchQueries' extension/smart-background.js
+          grep -Fq 'slice(0,4800)' extension/smart/src/noor-panel.js
+          grep -Fq 'trim(input.description,5000)' extension/smart/src/noor-gemini.js
           grep -Fq 'publishSelection' extension/smart/src/noor-panel.js
           find extension -type f -name '*.js' \
              ! -name 'pdf.min.js' ! -name 'pdf.worker.min.js' ! -name 'mammoth.browser.min.js' \
