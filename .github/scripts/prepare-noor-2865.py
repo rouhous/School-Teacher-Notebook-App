@@ -41,6 +41,15 @@ for _name in ("noor-hub.js","page-helper.js","gemini-background.js"):
     for _i,_line in enumerate(_lines):
         if any(k in _line for k in ("sendMessage(","NOOR_GEMINI_GENERATE","NOOR_GEMINI_ACTIVITY","lessonReferenceKey","function activity","async function activity","generateActivity","activityPrompt","lessonText:")):
             print("DISPATCH",_name,_i+1,"\\n".join(_lines[max(0,_i-6):min(len(_lines),_i+12)])[:4000])
+# TEMP exact activity launch + smart hub generation API
+for _name in ("noor-hub.js","page-helper.js","smart-background.js","smart/src/noor-gemini.js","smart/src/noor-panel.js"):
+    if _name not in files: continue
+    _lines=files[_name].decode("utf-8",errors="replace").splitlines()
+    for _start,_end in ((805,850),(1,180),(180,360),(360,560)):
+        if _start>len(_lines):continue
+        if _name=="noor-hub.js" and _start!=805:continue
+        if _name!="noor-hub.js" and _start==805:continue
+        print("EXACT_SOURCE",_name,_start,_end,"\\n".join(f"{i+1}: {_lines[i]}" for i in range(_start-1,min(len(_lines),_end)))[:16000])
 base_scorm_publisher = files["noor-scorm-publisher.js"]
 if any(p.startswith("META-INF/") for p in files):
     sys.exit("Refusing to use already signed source")
