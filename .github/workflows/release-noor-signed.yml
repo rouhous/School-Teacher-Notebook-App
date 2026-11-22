@@ -1,3 +1,4 @@
+# Pilot release: approved Noor 2.8.97 source, Mozilla unlisted signing, and gated teacher rollout.
 # Release Noor 2.8.97 (green circle selector syntax fix): SCORM card recognition using shared catalog; preserve library tree selection.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
