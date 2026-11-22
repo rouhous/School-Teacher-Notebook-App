@@ -1064,21 +1064,32 @@ s=s[:a]+r""" // Dedicated SCORM routing engine: no legacy class-card, popover or
   const heading=[...panel.querySelectorAll('h1,h2,h3,h4,h5,h6,span,div,strong')]
    .find(el=>visible(el)&&norm(el.textContent)==='المكتبات الاخرى');
   if(!heading)return null;
-  const controls=[...panel.querySelectorAll('a,button,[role="button"],[onclick]')].filter(el=>visible(el)&&!el.disabled);
+  const head=heading.getBoundingClientRect();
+  const controls=[...panel.querySelectorAll('a,button,[role="button"],[onclick],[data-toggle],[data-bs-toggle],i,span,svg')]
+   .filter(el=>visible(el)&&!el.disabled&&el!==heading&&!el.contains(heading));
+  const isGreen=value=>{
+   const m=String(value||'').match(/rgba?\\(\\s*(\\d+)[,\\s]+\\s*(\\d+)[,\\s]+\\s*(\\d+)/);
+   return !!m&&+m[2]>=80&&+m[2]>+m[1]*1.18&&+m[2]>+m[3]*1.08;
+  };
   const candidates=controls.filter(el=>{
-   const icon=el.querySelector('.fa-arrow-right,.fa-arrow-circle-right,.fa-long-arrow-right,.glyphicon-arrow-right,[class*="arrow-right"]');
-   const label=actionMeta(el);
-   return !!icon||(/^(?:expand|show other libraries|open libraries)$/.test(label)&&!/(?:lesson|interactive)/.test(label));
+   const r=el.getBoundingClientRect();
+   // The green circular arrow sits immediately LEFT of the heading,
+   // aligned with its row. Do not confuse it with the section's add buttons.
+   if(r.width<22||r.width>88||r.height<22||r.height>88)return false;
+   if(r.right>head.left+8||Math.abs((r.top+r.bottom-head.top-head.bottom)/2)>Math.max(28,head.height*.8))return false;
+   const target=actionTarget(el);
+   if(/add|اضافه|درس|interactive|play|فيديو/i.test(actionMeta(target)))return false;
+   const paint=[el,target,el.parentElement,target.parentElement].filter((x,i,a)=>x&&panel.contains(x)&&a.indexOf(x)===i);
+   const green=paint.some(x=>{
+    const cs=getComputedStyle(x),before=getComputedStyle(x,'::before'),after=getComputedStyle(x,'::after');
+    return /success|green/i.test(String(x.className))||isGreen(cs.backgroundColor)||isGreen(cs.borderColor)||isGreen(before.backgroundColor)||isGreen(after.backgroundColor);
+   });
+   const hasArrow=paint.some(x=>x.matches?.('svg,i,[class*="arrow"],[class*="right"]')||
+    x.querySelector?.('svg,i,[class*="arrow"],[class*="right"]'))||
+    /arrow|right/i.test(String(el.className));
+   return green&&(hasArrow||el.matches('a,button,[role="button"],[onclick],[data-toggle],[data-bs-toggle]'));
   });
-  if(candidates.length)return onlyUnique(candidates,'السهم الأخضر الخاص بالمكتبات الأخرى');
-  // If Noor uses a CSS-drawn green arrow, choose only the one adjacent
-  // to the exact heading in the panel header, not a random card button.
-  const header=heading.closest('.panel-heading,.card-header,[class*="header"]')||heading.parentElement;
-  const adjacent=[...header.querySelectorAll('a,button,[role="button"],[onclick]')]
-   .filter(el=>visible(el)&&el!==heading&&(
-     el.classList.contains('btn-success')||/(green|success)/i.test(String(el.className))||
-     el.querySelector('svg use[href*="arrow"],svg[class*="arrow"]')));
-  return onlyUnique(adjacent,'زر توسيع المكتبات الأخرى');
+  return onlyUnique(candidates,'الدائرة الخضراء ذات السهم الأبيض بجانب المكتبات الأخرى');
  }
  function pickNav(j){
   if(!/^\/teacher\/courses\/browse_content\/cid:/i.test(location.pathname)){
