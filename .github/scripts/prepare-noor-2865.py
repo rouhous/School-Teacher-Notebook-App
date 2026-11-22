@@ -1807,26 +1807,32 @@ files[path] = s.encode()
 
 path = "smart-background.js"
 s = files[path].decode()
-s = replace_exact(s,
-"""   const rules=`You are a qualified ${c.subject} teacher producing assessments for Omani public school students. Subject ${c.subject}; Grade ${c.grade}, Unit ${c.unit}, Lesson ${c.lesson}. Assessment title: ${c.title}. Difficulty: ${c.difficulty}. Requested question count: ${c.count}. Allowed Noor LMS types: ${c.kinds.join(', ')}. Focus: ${c.description}.`;""",
-"""   const rules=`You are a qualified ${c.subject} teacher producing assessments for Omani public school students. Subject ${c.subject}; Grade ${c.grade}, Unit ${c.unit}, Lesson ${c.lesson}. Assessment title: ${c.title}. Difficulty: ${c.difficulty}. Requested question count: ${c.count}. Allowed Noor LMS types: ${c.kinds.join(', ')}. Teacher source brief and exact lesson lock: ${c.description}.`;
-   const research=`MANDATORY CURRICULUM RESEARCH USING THE ENABLED GOOGLE SEARCH TOOL:
+if s.count("Focus: ${c.description}.") != 1:
+    raise SystemExit("Could not locate activity focus prompt")
+s = s.replace("Focus: ${c.description}.", "Teacher source brief and exact lesson lock: ${c.description}.", 1)
+research_anchor = "   const schema="
+research_code = """   const research=`MANDATORY CURRICULUM RESEARCH USING THE ENABLED GOOGLE SEARCH TOOL:
 Search for the exact Oman Ministry of Education curriculum materials for Grade ${c.grade}, subject ${c.subject}, Unit ${c.unit}, Lesson ${c.lesson}. Run separate searches for:
 1) Oman Grade ${c.grade} ${c.subject} Student Book ${c.unit} ${c.lesson};
 2) Oman Grade ${c.grade} ${c.subject} Activity Book or Workbook ${c.unit} ${c.lesson};
 3) Oman Grade ${c.grade} ${c.subject} Teacher Guide ${c.unit} ${c.lesson}.
-Prefer official Ministry of Education sources and exact matching editions. Use Student Book content to establish what was taught, Activity Book content for age-appropriate practice, and Teacher Guide content for lesson objectives, misconceptions and teaching emphasis. Verify the grade, subject and lesson before using a source. The exact lesson title is a strict boundary: never replace it with a different topic merely because that topic appears elsewhere in the same unit. If a source cannot be located or verified, report that fact in warnings and do not invent its contents, pages, quotations or answer keys. If the teacher brief contains a saved preparation, it is the primary source and web material only supplements it.`;""",
- path)
-s = replace_exact(s,
-"""   return rules+'\\n'+schema+'\\n'+(mode==='pdf'?pdfRules:'When assessing English vocabulary meaning, use a natural sentence with a single ____ and 3 or 4 plausible words as options; the surrounding context must determine only one answer. Never ask for a word by giving its definition, translation, or synonym. A vocabulary cloze may use a short passage with five numbered blanks and separate 3–4 options per blank. When assessing English grammar, use short natural dialogue, ideally five numbered gaps with exactly two plausible grammatical alternatives per gap and one correct answer. For passage or dialogue, represent each blank as one independent mcq item: repeat the shared text and explicitly name the numbered blank to answer. Count each blank as one question. Use five related items only when the requested count and assessment mix allow; otherwise use the requested number, with no orphaned gaps. For explicit written fill-in questions without choices, use the requested written fill format instead. Do not change the structure of other subjects or reading-comprehension questions.');""",
-"""   return rules+'\\n'+(mode==='generate'?research+'\\n':'')+schema+'\\n'+(mode==='pdf'?pdfRules:'When assessing English vocabulary meaning, use a natural sentence with a single ____ and 3 or 4 plausible words as options; the surrounding context must determine only one answer. Never ask for a word by giving its definition, translation, or synonym. A vocabulary cloze may use a short passage with five numbered blanks and separate 3–4 options per blank. When assessing English grammar, use short natural dialogue, ideally five numbered gaps with exactly two plausible grammatical alternatives per gap and one correct answer. For passage or dialogue, represent each blank as one independent mcq item: repeat the shared text and explicitly name the numbered blank to answer. Count each blank as one question. Use five related items only when the requested count and assessment mix allow; otherwise use the requested number, with no orphaned gaps. For explicit written fill-in questions without choices, use the requested written fill format instead. Do not change the structure of other subjects or reading-comprehension questions.');""", path)
-s = replace_exact(s,
-"""   const body={contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:mode==='pdf'?0.1:0.4,maxOutputTokens:16000}};""",
-"""   const body={contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:mode==='pdf'?0.1:0.4,maxOutputTokens:16000},
-    ...(mode==='generate'?{tools:[{googleSearch:{}}]}:{})};""", path)
-s = replace_exact(s,
-"""   return {ok:true,questions:parsed.questions.slice(0,mode==='pdf'?60:30),warnings:Array.isArray(parsed.warnings)?parsed.warnings.map(x=>trim(x,250)).slice(0,20):[],needsReview:true,modelUsed:generated.model};""",
-"""   const candidate=result?.candidates?.[0]||{};
+Prefer official Ministry of Education sources and exact matching editions. Use Student Book content to establish what was taught, Activity Book content for age-appropriate practice, and Teacher Guide content for lesson objectives, misconceptions and teaching emphasis. Verify the grade, subject and lesson before using a source. The exact lesson title is a strict boundary: never replace it with a different topic merely because that topic appears elsewhere in the same unit. If a source cannot be located or verified, report that fact in warnings and do not invent its contents, pages, quotations or answer keys. If the teacher brief contains a saved preparation, it is the primary source and web material only supplements it.`;
+"""
+if s.count(research_anchor) != 1:
+    raise SystemExit("Could not locate activity schema insertion point")
+s = s.replace(research_anchor, research_code + research_anchor, 1)
+old_return = r"return rules+'\n'+schema"
+new_return = r"return rules+'\n'+(mode==='generate'?research+'\n':'')+schema"
+if s.count(old_return) != 1:
+    raise SystemExit("Could not locate activity prompt return")
+s = s.replace(old_return,new_return,1)
+old_body = "const body={contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:mode==='pdf'?0.1:0.4,maxOutputTokens:16000}};"
+new_body = "const body={contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:mode==='pdf'?0.1:0.4,maxOutputTokens:16000},...(mode==='generate'?{tools:[{googleSearch:{}}]}:{})};"
+if s.count(old_body) != 1:
+    raise SystemExit("Could not locate Gemini generateContent body")
+s = s.replace(old_body,new_body,1)
+old_result = "return {ok:true,questions:parsed.questions.slice(0,mode==='pdf'?60:30),warnings:Array.isArray(parsed.warnings)?parsed.warnings.map(x=>trim(x,250)).slice(0,20):[],needsReview:true,modelUsed:generated.model};"
+new_result = """const candidate=result?.candidates?.[0]||{};
    const grounding=candidate.groundingMetadata||candidate.grounding_metadata||{};
    const chunks=Array.isArray(grounding.groundingChunks)?grounding.groundingChunks:[];
    const sources=[...new Map(chunks.map(chunk=>chunk.web||chunk).filter(source=>source?.uri)
@@ -1836,7 +1842,10 @@ s = replace_exact(s,
    if(sources.length)warnings.push('مصادر Google Search المستخدمة: '+sources.map(x=>x.title+' — '+x.uri).join(' | ').slice(0,1800));
    else if(mode==='generate')warnings.push('لم يُرجع بحث Google مصادر ويب قابلة للتوثيق لهذا الطلب؛ راجع الأسئلة مع التحضير قبل اعتمادها.');
    if(queries.length)warnings.push('عبارات البحث: '+queries.join(' | ').slice(0,700));
-   return {ok:true,questions:parsed.questions.slice(0,mode==='pdf'?60:30),warnings:warnings.slice(0,20),sources,searchQueries:queries,needsReview:true,modelUsed:generated.model};""", path)
+   return {ok:true,questions:parsed.questions.slice(0,mode==='pdf'?60:30),warnings:warnings.slice(0,20),sources,searchQueries:queries,needsReview:true,modelUsed:generated.model};"""
+if s.count(old_result) != 1:
+    raise SystemExit("Could not locate Gemini activity result")
+s = s.replace(old_result,new_result,1)
 files[path] = s.encode()
 
 hub=files["noor-hub.js"].decode()
