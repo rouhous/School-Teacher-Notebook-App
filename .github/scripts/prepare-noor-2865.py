@@ -1818,9 +1818,9 @@ Search for the exact Oman Ministry of Education curriculum materials for Grade $
 3) Oman Grade ${c.grade} ${c.subject} Teacher Guide ${c.unit} ${c.lesson}.
 Prefer official Ministry of Education sources and exact matching editions. Use Student Book content to establish what was taught, Activity Book content for age-appropriate practice, and Teacher Guide content for lesson objectives, misconceptions and teaching emphasis. Verify the grade, subject and lesson before using a source. The exact lesson title is a strict boundary: never replace it with a different topic merely because that topic appears elsewhere in the same unit. If a source cannot be located or verified, report that fact in warnings and do not invent its contents, pages, quotations or answer keys. If the teacher brief contains a saved preparation, it is the primary source and web material only supplements it.`;
 """
-if s.count(research_anchor) != 1:
+if "const schema=" not in s:
     raise SystemExit("Could not locate activity schema insertion point")
-s = s.replace(research_anchor, research_code + research_anchor, 1)
+s = s.replace("const schema=", research_code + "const schema=", 1)
 old_return = r"return rules+'\n'+schema"
 new_return = r"return rules+'\n'+(mode==='generate'?research+'\n':'')+schema"
 if s.count(old_return) != 1:
