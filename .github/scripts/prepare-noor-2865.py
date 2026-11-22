@@ -1386,8 +1386,8 @@ s=s[:a]+r""" function otherLibrariesExpand(panel){
      /arrow|right/i.test(String(el.className));
     return green&&arrow;
    });
-  const targets=[...new Set(nearby.map(el=>el.closest('a,button,[role="button"],[onclick],[data-toggle],[data-bs-toggle]')||el))];
-  const leaves=targets.filter(el=>!targets.some(other=>other!==el&&el.contains(other)));
+  const nearbyTargets=[...new Set(nearby.map(el=>el.closest('a,button,[role="button"],[onclick],[data-toggle],[data-bs-toggle]')||el))];
+  const leaves=nearbyTargets.filter(el=>!nearbyTargets.some(other=>other!==el&&el.contains(other)));
   return leaves.length===1?leaves[0]:null;
  }
  function revealedLessonPlay(panel){
