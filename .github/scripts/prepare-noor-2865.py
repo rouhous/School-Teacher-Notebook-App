@@ -26,6 +26,15 @@ for _name,_raw in files.items():
         print("PROMPT_SOURCE",_name,"lines",len(_lines),"hits",len(_hits))
         for _i in _hits[:24]:
             print("PROMPT_CONTEXT",_name,_i+1,"\\n".join(_lines[max(0,_i-2):min(len(_lines),_i+3)])[:1200])
+# TEMP inspect activity source dispatch and saved preparation references
+for _name in ("noor-hub.js","page-helper.js","gemini-background.js","noor-lesson-evidence.js"):
+    if _name not in files: continue
+    _lines=files[_name].decode("utf-8",errors="replace").splitlines()
+    _terms=("NOOR_GEMINI_GENERATE","NOOR_GEMINI_ACTIVITY","lessonReferenceKey","reference:","teacherText","stnHubActivity","preparation","lessonText")
+    _hits=[i for i,line in enumerate(_lines) if any(k.lower() in line.lower() for k in _terms)]
+    print("FLOW_SOURCE",_name,"lines",len(_lines),"hits",len(_hits))
+    for _i in _hits[:100]:
+        print("FLOW_CONTEXT",_name,_i+1,"\\n".join(_lines[max(0,_i-2):min(len(_lines),_i+4)])[:1800])
 base_scorm_publisher = files["noor-scorm-publisher.js"]
 if any(p.startswith("META-INF/") for p in files):
     sys.exit("Refusing to use already signed source")
