@@ -1584,7 +1584,7 @@ assert "cards.next({label:j.label},3,REPOSITORY_ACTION)" in files["noor-scorm-pu
 
 # Regression checks: retain the original digital-library publisher exactly.
 with ZipFile(sources[0]) as original:
-    assert files["noor-scorm-publisher.js"]!=original.read("noor-scorm-publisher.js")
+    assert files["noor-scorm-publisher.js"]==original.read("noor-scorm-publisher.js")
 assert "stnHubScormReference" not in files["noor-hub.js"].decode()
 assert "await curriculum.start({...inputs(),cid:opts.course.cid,label:opts.course.label,purpose:'scorm'})" not in files["noor-hub.js"].decode()
 assert "cards.next(" not in files["noor-scorm-publisher.js"].decode()
