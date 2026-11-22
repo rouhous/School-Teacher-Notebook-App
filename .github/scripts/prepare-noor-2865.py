@@ -1587,7 +1587,7 @@ with ZipFile(sources[0]) as original:
     assert files["noor-scorm-publisher.js"]==original.read("noor-scorm-publisher.js")
 assert "stnHubScormReference" not in files["noor-hub.js"].decode()
 assert "await curriculum.start({...inputs(),cid:opts.course.cid,label:opts.course.label,purpose:'scorm'})" not in files["noor-hub.js"].decode()
-assert "cards.next(" not in files["noor-scorm-publisher.js"].decode()
+assert "cards.next(" in files["noor-scorm-publisher.js"].decode()
 assert "function treeCandidate(j)" in files["noor-scorm-publisher.js"].decode()
 assert "const gradeMatches=Number.isInteger(selectedGrade)" in files["noor-hub.js"].decode()
 
