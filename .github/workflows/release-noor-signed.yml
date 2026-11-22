@@ -89,9 +89,9 @@ jobs:
           grep -Fq 'NOOR_GEMINI_SCORM_IMAGE' extension/gemini-background.js
           grep -Fq 'generateScormImage' extension/noor-hub.js
           grep -Fq 'const LESSONS_ACTION=' extension/noor-scorm-publisher.js
-          grep -Fq 'function otherLibrariesAdd(panel)' extension/noor-scorm-publisher.js
-          grep -Fq 'function otherLibrariesExpand(panel)' extension/noor-scorm-publisher.js
-          if grep -Fq 'cards.next(' extension/noor-scorm-publisher.js; then echo 'Legacy SCORM card route must not exist'; exit 1; fi
+          grep -Fq 'cards.next(' extension/noor-scorm-publisher.js
+          grep -Fq 'function pickNav(j)' extension/noor-scorm-publisher.js
+          if grep -Fq 'function otherLibrariesExpand(panel)' extension/noor-scorm-publisher.js; then echo 'New Other Libraries route must not exist in card-resume release'; exit 1; fi
           grep -Fq 'id="stnHubCount" type="number"' extension/noor-hub.js
           grep -Fq 'retryActivityGeneration' extension/noor-hub.js
           grep -Fq 'cancelCurrentTask' extension/noor-hub.js
