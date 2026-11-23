@@ -1647,7 +1647,7 @@ files[path] = s.encode()
 # Keep compact controls without turning the entire details container into a grid.
 s = files[path].decode()
 s += """
-/* 2.8.97 responsive panel and readable task form */
+/* 2.8.98 responsive panel and readable task form */
 #stnNoorHub .stnHubPanel{
  width:min(520px,calc(100vw - 24px))!important;
  max-width:calc(100vw - 24px)!important;
