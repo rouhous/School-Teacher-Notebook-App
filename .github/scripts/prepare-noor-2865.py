@@ -1877,11 +1877,11 @@ s = replace_exact(s, '<div class="stnHubTaskPicker"><label for="stnHubService">Ø
 anchor = " const taskService=()=>$('stnHubService').value;"
 if anchor not in s: raise SystemExit("Task service helper anchor missing")
 s = replace_exact(s, anchor, anchor + """
- document.querySelectorAll('#stnNoorHub .stnTaskCard').forEach(button=>{
+ root.querySelectorAll('.stnTaskCard').forEach(button=>{
   button.addEventListener('click',()=>{
    const service=$('stnHubService');service.value=button.dataset.service;
    service.dispatchEvent(new Event('change',{bubbles:true}));
-   document.querySelectorAll('#stnNoorHub .stnTaskCard').forEach(item=>item.classList.toggle('active',item===button));
+   root.querySelectorAll('.stnTaskCard').forEach(item=>item.classList.toggle('active',item===button));
   });
  });
 """, path)
