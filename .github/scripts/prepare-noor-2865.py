@@ -1958,16 +1958,7 @@ s = replace_exact(s, anchor, anchor + """
  $('stnHubUnit').addEventListener('input',syncTaskAvailability);
  $('stnHubLesson').addEventListener('input',syncTaskAvailability);
  syncTaskAvailability();
- const initialTask=taskService();
- root.querySelectorAll('.stnTaskCard').forEach(item=>item.classList.toggle('active',item.dataset.service===initialTask));
-""", path)
-files[path] = s.encode()
-
-# 2.8.102: select the official Oman 2026/2027 semester automatically.
-path = "noor-hub.js"
-s = files[path].decode()
-anchor = "
- // 2.8.105: class first, then two numeric coordinates; never expose a lesson-name tree.
+ // 2.8.105: class first, then numeric unit and lesson coordinates.
  const unitInput=$('stnHubUnit'),lessonInput=$('stnHubLesson');
  const unitLabel=root.querySelector('label[for="stnHubUnit"]');
  const lessonLabel=root.querySelector('label[for="stnHubLesson"]');
@@ -1988,8 +1979,15 @@ anchor = "
  };
  for(const input of [selectionClassSelect,unitInput,lessonInput])input.addEventListener('input',updateTaskReady);
  updateTaskReady();
+ const initialTask=taskService();
+ root.querySelectorAll('.stnTaskCard').forEach(item=>item.classList.toggle('active',item.dataset.service===initialTask));
+""", path)
+files[path] = s.encode()
 
- const initialTask=taskService();"
+# 2.8.102: select the official Oman 2026/2027 semester automatically.
+path = "noor-hub.js"
+s = files[path].decode()
+anchor = " const initialTask=taskService();"
 if s.count(anchor) != 1:
     raise SystemExit("Could not locate task initialization for Oman term logic")
 s = replace_exact(s, anchor, """
