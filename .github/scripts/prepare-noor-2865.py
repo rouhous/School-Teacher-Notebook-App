@@ -1927,20 +1927,20 @@ s = replace_exact(s, anchor, anchor + """
 
  // 2.8.104: class + numeric unit/lesson selectors precede task cards.
  const taskPicker=root.querySelector('.stnHubTaskPicker');
- const classSelect=$('stnHubClass');
+ const selectionClassSelect=$('stnHubClass');
  const classLabel=root.querySelector('label[for="stnHubClass"]');
  const unitLessonRow=root.querySelector('#stnHubLessonChoiceBox .stnLegacyTreeFields');
- if(!taskPicker||!classSelect||!classLabel||!unitLessonRow)throw new Error('تعذر تجهيز شريط اختيار الصف والدرس.');
+ if(!taskPicker||!selectionClassSelect||!classLabel||!unitLessonRow)throw new Error('تعذر تجهيز شريط اختيار الصف والدرس.');
  const selectionDock=document.createElement('section');
  selectionDock.className='stnSelectionDock';
  selectionDock.setAttribute('aria-label','تحديد الصف والدرس قبل اختيار المهمة');
  const classRow=document.createElement('div');classRow.className='stnSelectionClass';
- classRow.append(classLabel,classSelect);
+ classRow.append(classLabel,selectionClassSelect);
  const selectionTitle=document.createElement('div');
  selectionTitle.className='stnSelectionCaption';selectionTitle.textContent='أولًا: اختر الصف ورقم الوحدة والدرس';
  selectionDock.append(selectionTitle,classRow,unitLessonRow);
  taskPicker.before(selectionDock);
- classSelect.required=true;
+ selectionClassSelect.required=true;
  for(const id of ['stnHubOpenCurriculumTree','stnHubSelectedPath','stnHubRefreshTree','stnHubLessonPreview']){
   const el=$(id);if(el)el.hidden=true;
  }
@@ -1948,13 +1948,13 @@ s = replace_exact(s, anchor, anchor + """
  if(semesterLabel)semesterLabel.hidden=true;
  $('stnHubSemester').hidden=true;
  const syncTaskAvailability=()=>{
-  const ready=Boolean(classSelect.value&&position($('stnHubUnit').value)&&position($('stnHubLesson').value));
+  const ready=Boolean(selectionClassSelect.value&&position($('stnHubUnit').value)&&position($('stnHubLesson').value));
   root.querySelectorAll('.stnTaskCard').forEach(card=>{
    card.disabled=!ready;card.setAttribute('aria-disabled',String(!ready));
    card.title=ready?'':'اختر الصف ورقم الوحدة والدرس أولًا';
   });
  };
- classSelect.addEventListener('change',syncTaskAvailability);
+ selectionClassSelect.addEventListener('change',syncTaskAvailability);
  $('stnHubUnit').addEventListener('input',syncTaskAvailability);
  $('stnHubLesson').addEventListener('input',syncTaskAvailability);
  syncTaskAvailability();
