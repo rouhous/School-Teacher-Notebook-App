@@ -1,5 +1,4 @@
-# Pilot release: approved Noor 2.8.105 source, Mozilla unlisted signing, and gated teacher rollout.
-# Release Noor 2.8.105 (green circle selector syntax fix): SCORM card recognition using shared catalog; preserve library tree selection.
+# Release Noor 2.8.106: retain the 2.8.105 SCORM card-recognition fix and remove unsafe HTML injection from the membership notice.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
@@ -13,7 +12,7 @@ on:
         description: "Tested unified source version, e.g. 2.8.105"
         type: string
         required: true
-        default: "2.8.105"
+        default: "2.8.106"
 permissions:
   contents: write
   pages: write
@@ -31,12 +30,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Generate 2.8.105 source from the existing approved 2.8.64 source
+      - name: Generate 2.8.106 source from the existing approved 2.8.64 source
         run: python3 .github/scripts/prepare-noor-2865.py
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.105' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.106' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -57,6 +56,8 @@ jobs:
           node --check .github/scripts/publish-noor-release.mjs
           test -f extension/noor-license.js
           test -f extension/noor-license-ui.js
+          grep -Fq 'widget.append(heading,message,link' extension/noor-license-ui.js
+          if grep -Fq 'innerHTML' extension/noor-license-ui.js; then echo 'Unsafe membership UI HTML assignment'; exit 1; fi
           test -f extension/noor-scorm.js
           grep -Fq 'stnHubScormImageMode' extension/noor-hub.js
           grep -Fq 'gemini_none' extension/noor-hub.js
@@ -209,7 +210,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Generate 2.8.105 source for Mozilla signing
+      - name: Generate 2.8.106 source for Mozilla signing
         run: python3 .github/scripts/prepare-noor-2865.py
       - name: Verify one-time signing credentials and release branch
         shell: bash

@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.105-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.106-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,7 +24,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.105"
+manifest["version"] = "2.8.106"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -2157,6 +2157,38 @@ assert ">درس تفاعلي</button>" in hub
 assert "إنشاء درس تفاعلي" in hub
 assert "data-service=\"scorm\"" in hub
 assert "const isScormForm=()=>onUploadPage()&&Boolean(optionOfRadio('SCORM'));" in publisher
+
+
+# 2.8.106: build the membership notice with DOM APIs rather than HTML parsing.
+# This removes the Mozilla unsafe-innerHTML warning without changing the UI flow.
+path = "noor-license-ui.js"
+s = files[path].decode()
+old = "widget.innerHTML='<strong>🧩 أدوات نور | دفتر المعلم</strong><p style=\"margin:5px 0 8px\" id=\"stnMembershipMessage\">جارٍ التحقق من العضوية...</p><a href=\"https://rouhous.github.io/School-Teacher-Notebook-App/school-edition/school-notebook.html\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:#087a5b\">فتح دفتر المعلم للتحقق</a>　<button type=\"button\" id=\"stnMembershipRetry\" style=\"cursor:pointer;border:1px solid #087a5b;border-radius:7px;color:#087a5b;background:#fff;padding:4px 8px\">إعادة الفحص</button>';"
+new = """const heading=document.createElement('strong');
+heading.textContent='🧩 أدوات نور | دفتر المعلم';
+const message=document.createElement('p');
+message.id='stnMembershipMessage';
+message.style.cssText='margin:5px 0 8px';
+message.textContent='جارٍ التحقق من العضوية...';
+const link=document.createElement('a');
+link.href='https://rouhous.github.io/School-Teacher-Notebook-App/school-edition/school-notebook.html';
+link.target='_blank';link.rel='noopener noreferrer';
+link.style.color='#087a5b';link.textContent='فتح دفتر المعلم للتحقق';
+const retry=document.createElement('button');
+retry.type='button';retry.id='stnMembershipRetry';retry.textContent='إعادة الفحص';
+retry.style.cssText='cursor:pointer;border:1px solid #087a5b;border-radius:7px;color:#087a5b;background:#fff;padding:4px 8px';
+widget.append(heading,message,link,document.createTextNode('　'),retry);"""
+s = replace_exact(s, old, new, path)
+if "innerHTML" in s:
+    sys.exit("Unsafe innerHTML remains in membership UI")
+files[path] = s.encode()
+
+# Keep the packaged documentation aligned with the actual manifest version.
+if "README.md" in files:
+    readme=files["README.md"].decode()
+    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.106",1)
+    files["README.md"]=readme.encode()
+
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():

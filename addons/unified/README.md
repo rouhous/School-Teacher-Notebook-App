@@ -1,3 +1,12 @@
+# Noor Unified 2.8.106 — Mozilla signing release
+
+- Builds from the supplied and approved 2.8.64 source lineage, preserving the 2.8.105 fixes for SCORM class-card recognition, verified course selection, safe pause/resume, and prevention of duplicate Save submissions.
+- Replaces the membership notice's HTML-string injection with explicit DOM element creation and text assignment. This removes the unsafe `innerHTML` pattern without changing membership checks or teacher-only access.
+- Preserves the extension ID, existing storage keys, personal Gemini-key flow, Firefox desktop/Android manifest constraints, and manual review requirements.
+- Validation includes JavaScript syntax checks and release-workflow regression checks. A real authenticated Noor session is still required to confirm the live LMS save/publish behavior.
+
+---
+
 ## الإصدار 2.8.38 — مغامرات SCORM عمانية حديثة ومتنوعة
 - يطلب Gemini محتوى تفاعليًا للصف والمادة والوحدة والدرس المعتمدين؛ تدرج الطلبات المهمة والقصة والأهداف والتلميحات والتفسيرات الدقيقة في الاستجابة.
 - **أربع أنشطة** داخل حزمة SCORM واحدة: اختيار من متعدد، صح وخطأ، ترتيب خطوات، توصيل أزواج، بمراحل Explore / Practice / Challenge، رسومات قارب عُماني وقلعة وجبال، شريط إنجاز ونجوم ونتيجة نهائية.
