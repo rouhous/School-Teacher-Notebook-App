@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.103-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.104-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,7 +24,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.103"
+manifest["version"] = "2.8.104"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -1924,6 +1924,40 @@ s = replace_exact(s, anchor, anchor + """
   headButtons.append(toggle);
  }
 
+
+ // 2.8.104: class + numeric unit/lesson selectors precede task cards.
+ const taskPicker=root.querySelector('.stnHubTaskPicker');
+ const classSelect=$('stnHubClass');
+ const classLabel=root.querySelector('label[for="stnHubClass"]');
+ const unitLessonRow=root.querySelector('#stnHubLessonChoiceBox .stnLegacyTreeFields');
+ if(!taskPicker||!classSelect||!classLabel||!unitLessonRow)throw new Error('تعذر تجهيز شريط اختيار الصف والدرس.');
+ const selectionDock=document.createElement('section');
+ selectionDock.className='stnSelectionDock';
+ selectionDock.setAttribute('aria-label','تحديد الصف والدرس قبل اختيار المهمة');
+ const classRow=document.createElement('div');classRow.className='stnSelectionClass';
+ classRow.append(classLabel,classSelect);
+ const selectionTitle=document.createElement('div');
+ selectionTitle.className='stnSelectionCaption';selectionTitle.textContent='أولًا: اختر الصف ورقم الوحدة والدرس';
+ selectionDock.append(selectionTitle,classRow,unitLessonRow);
+ taskPicker.before(selectionDock);
+ classSelect.required=true;
+ for(const id of ['stnHubOpenCurriculumTree','stnHubSelectedPath','stnHubRefreshTree','stnHubLessonPreview']){
+  const el=$(id);if(el)el.hidden=true;
+ }
+ const semesterLabel=root.querySelector('label[for="stnHubSemester"]');
+ if(semesterLabel)semesterLabel.hidden=true;
+ $('stnHubSemester').hidden=true;
+ const syncTaskAvailability=()=>{
+  const ready=Boolean(classSelect.value&&position($('stnHubUnit').value)&&position($('stnHubLesson').value));
+  root.querySelectorAll('.stnTaskCard').forEach(card=>{
+   card.disabled=!ready;card.setAttribute('aria-disabled',String(!ready));
+   card.title=ready?'':'اختر الصف ورقم الوحدة والدرس أولًا';
+  });
+ };
+ classSelect.addEventListener('change',syncTaskAvailability);
+ $('stnHubUnit').addEventListener('input',syncTaskAvailability);
+ $('stnHubLesson').addEventListener('input',syncTaskAvailability);
+ syncTaskAvailability();
  const initialTask=taskService();
  root.querySelectorAll('.stnTaskCard').forEach(item=>item.classList.toggle('active',item.dataset.service===initialTask));
 """, path)
@@ -2047,13 +2081,26 @@ s = replace_exact(s,
 files[path]=s.encode()
 path="noor-hub.css"
 s=files[path].decode()+"""
+
+/* 2.8.104 selection-first layout */
+#stnNoorHub .stnSelectionDock{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important;margin:8px 0 10px!important;padding:10px!important;border:1px solid #d9e5dc!important;border-radius:12px!important;background:#f5faf6!important}
+#stnNoorHub .stnSelectionCaption{font-size:12px!important;font-weight:800!important;color:#075b49!important}
+#stnNoorHub .stnSelectionClass{display:grid!important;grid-template-columns:76px minmax(0,1fr)!important;align-items:center!important;gap:8px!important}
+#stnNoorHub .stnSelectionClass label{margin:0!important}
+#stnNoorHub .stnSelectionDock .stnLegacyTreeFields{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:0!important}
+#stnNoorHub .stnSelectionDock .stnLegacyTreeFields>div{min-width:0!important}
+#stnNoorHub .stnSelectionDock .stnLegacyTreeFields input{width:100%!important;text-align:center!important;font-size:15px!important;font-weight:700!important}
+#stnNoorHub .stnHubTaskPicker{margin-top:8px!important}
+#stnNoorHub .stnTaskCard:disabled{opacity:.42!important;filter:grayscale(1)!important;cursor:not-allowed!important}
+#stnNoorHub #stnHubOpenCurriculumTree[hidden],#stnNoorHub #stnHubRefreshTree[hidden],#stnNoorHub #stnHubLessonPreview[hidden]{display:none!important}
+@media(max-width:520px){#stnNoorHub .stnSelectionDock{padding:8px!important;gap:6px!important}#stnNoorHub .stnSelectionClass{grid-template-columns:62px minmax(0,1fr)!important}#stnNoorHub .stnSelectionDock .stnLegacyTreeFields{gap:6px!important}}
 /* 2.8.102: minimize the complete workspace, not only its task tabs */
 #stnNoorHub .stnHubPanel.stnHubMinimized{display:none!important}
 #stnNoorHub #stnHubRefreshTree[hidden]{display:none!important}
 """
 files[path]=s.encode()
 
-# 2.8.103: teacher-facing terminology — keep the internal service key "scorm".
+# 2.8.104: teacher-facing terminology — keep the internal service key "scorm".
 # Release gate: this label-only patch does not alter Noor SCORM routing or upload semantics.
 hub = files["noor-hub.js"].decode()
 hub = hub.replace(">SCORM</button>", ">درس تفاعلي</button>")
