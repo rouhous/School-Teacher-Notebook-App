@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.104-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.105-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,7 +24,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.104"
+manifest["version"] = "2.8.105"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -1966,7 +1966,30 @@ files[path] = s.encode()
 # 2.8.102: select the official Oman 2026/2027 semester automatically.
 path = "noor-hub.js"
 s = files[path].decode()
-anchor = " const initialTask=taskService();"
+anchor = "
+ // 2.8.105: class first, then two numeric coordinates; never expose a lesson-name tree.
+ const unitInput=$('stnHubUnit'),lessonInput=$('stnHubLesson');
+ const unitLabel=root.querySelector('label[for="stnHubUnit"]');
+ const lessonLabel=root.querySelector('label[for="stnHubLesson"]');
+ if(!unitInput||!lessonInput||!unitLabel||!lessonLabel)throw new Error('حقلا رقم الوحدة ورقم الدرس غير متاحين.');
+ for(const [input,label,text] of [[unitInput,unitLabel,'رقم الوحدة'],[lessonInput,lessonLabel,'رقم الدرس']]){
+  input.type='number';input.inputMode='numeric';input.min='1';input.max='99';input.step='1';
+  input.placeholder=text;input.setAttribute('aria-label',text);label.textContent=text;input.required=true;
+ }
+ const legacyTree=root.querySelector('#stnHubLessonChoiceBox');if(legacyTree)legacyTree.hidden=true;
+ const selectionSummary=root.querySelector('#stnHubSelectedPath');if(selectionSummary)selectionSummary.hidden=true;
+ const lessonPreview=root.querySelector('#stnHubLessonPreview');if(lessonPreview)lessonPreview.hidden=true;
+ if(taskPicker.previousElementSibling!==selectionDock)taskPicker.before(selectionDock);
+ selectionDock.querySelector('.stnSelectionCaption').textContent='اختر الصف ثم أدخل رقم الوحدة والدرس';
+ const taskCards=[...root.querySelectorAll('.stnTaskCard')];
+ const updateTaskReady=()=>{
+  const ready=Boolean(selectionClassSelect.value&&Number.isInteger(Number(unitInput.value))&&Number(unitInput.value)>0&&Number.isInteger(Number(lessonInput.value))&&Number(lessonInput.value)>0);
+  taskCards.forEach(card=>{card.disabled=!ready;card.setAttribute('aria-disabled',String(!ready));});
+ };
+ for(const input of [selectionClassSelect,unitInput,lessonInput])input.addEventListener('input',updateTaskReady);
+ updateTaskReady();
+
+ const initialTask=taskService();"
 if s.count(anchor) != 1:
     raise SystemExit("Could not locate task initialization for Oman term logic")
 s = replace_exact(s, anchor, """
@@ -2082,6 +2105,22 @@ files[path]=s.encode()
 path="noor-hub.css"
 s=files[path].decode()+"""
 
+
+/* 2.8.105 class + numeric lesson coordinates, shown before task selection */
+#stnNoorHub .stnSelectionDock{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important;margin:8px 0 10px!important;padding:9px!important;border:1px solid #d9e5dc!important;border-radius:11px!important;background:#f5faf6!important}
+#stnNoorHub .stnSelectionCaption{font-size:12px!important;font-weight:800!important;color:#075b49!important}
+#stnNoorHub .stnSelectionClass{display:grid!important;grid-template-columns:58px minmax(0,1fr)!important;align-items:center!important;gap:7px!important}
+#stnNoorHub .stnSelectionClass label{margin:0!important}
+#stnNoorHub .stnSelectionDock .stnLegacyTreeFields{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;margin:0!important}
+#stnNoorHub .stnSelectionDock .stnLegacyTreeFields>div{min-width:0!important}
+#stnNoorHub .stnSelectionDock input[type=number]{width:100%!important;min-height:38px!important;text-align:center!important;font-size:14px!important;font-weight:700!important}
+#stnNoorHub .stnHubTaskPicker{margin:7px 0 9px!important;gap:6px!important}
+#stnNoorHub .stnTaskCard{min-height:54px!important;padding:6px 3px!important;font-size:11px!important;gap:3px!important}
+#stnNoorHub .stnTaskCard span{font-size:17px!important}
+#stnNoorHub .stnTaskCard:disabled{opacity:.4!important;cursor:not-allowed!important}
+#stnNoorHub #stnHubLessonChoiceBox[hidden],#stnNoorHub #stnHubLessonPreview[hidden],#stnNoorHub #stnHubSelectedPath[hidden]{display:none!important}
+@media(max-width:520px){#stnNoorHub .stnSelectionDock{padding:7px!important;gap:6px!important}#stnNoorHub .stnSelectionDock .stnLegacyTreeFields{gap:6px!important}}
+
 /* 2.8.104 selection-first layout */
 #stnNoorHub .stnSelectionDock{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important;margin:8px 0 10px!important;padding:10px!important;border:1px solid #d9e5dc!important;border-radius:12px!important;background:#f5faf6!important}
 #stnNoorHub .stnSelectionCaption{font-size:12px!important;font-weight:800!important;color:#075b49!important}
@@ -2125,3 +2164,8 @@ with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
         dest.writestr(path,data)
 print(f"Generated {output} ({output.stat().st_size} bytes)")
+
+assert '2.8.105 class + numeric lesson coordinates' in files["noor-hub.css"].decode()
+assert "input.type='number'" in files["noor-hub.js"].decode()
+assert "اختر الصف ثم أدخل رقم الوحدة والدرس" in files["noor-hub.js"].decode()
+assert "taskPicker.before(selectionDock)" in files["noor-hub.js"].decode()
