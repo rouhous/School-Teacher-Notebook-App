@@ -1,5 +1,5 @@
-# Pilot release: approved Noor 2.8.101 source, Mozilla unlisted signing, and gated teacher rollout.
-# Release Noor 2.8.101 (green circle selector syntax fix): SCORM card recognition using shared catalog; preserve library tree selection.
+# Pilot release: approved Noor 2.8.102 source, Mozilla unlisted signing, and gated teacher rollout.
+# Release Noor 2.8.102 (green circle selector syntax fix): SCORM card recognition using shared catalog; preserve library tree selection.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Tested unified source version, e.g. 2.8.101"
+        description: "Tested unified source version, e.g. 2.8.102"
         type: string
         required: true
-        default: "2.8.101"
+        default: "2.8.102"
 permissions:
   contents: write
   pages: write
@@ -31,12 +31,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Generate 2.8.101 source from the existing approved 2.8.64 source
+      - name: Generate 2.8.102 source from the existing approved 2.8.64 source
         run: python3 .github/scripts/prepare-noor-2865.py
       - name: Check source and expected extension ID
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.101' }}
+          RELEASE_VERSION: ${{ inputs.version || '2.8.102' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -168,7 +168,7 @@ jobs:
           grep -Fq 'stnHubSubject' extension/noor-hub.js
           grep -Fq 'stnHubActivityQuantity' extension/noor-hub.js
           grep -Fq 'stnHubScormQuantity' extension/noor-hub.js
-          grep -Fq '2.8.101 responsive panel and readable task form' extension/noor-hub.css
+          grep -Fq '2.8.102 responsive panel and readable task form' extension/noor-hub.css
           grep -Fq 'width:calc(100vw - 24px)!important' extension/noor-hub.css
           grep -Fq 'display:block!important' extension/noor-hub.css
           grep -Fq 'SAVED TEACHER PREPARATION — PRIMARY SOURCE' extension/noor-hub.js
@@ -192,7 +192,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.101' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.102' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -206,7 +206,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Generate 2.8.101 source for Mozilla signing
+      - name: Generate 2.8.102 source for Mozilla signing
         run: python3 .github/scripts/prepare-noor-2865.py
       - name: Verify one-time signing credentials and release branch
         shell: bash
@@ -295,7 +295,7 @@ jobs:
       - name: Save the signed XPI as a build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.101' }}-Mozilla-signed
+          name: Noor-v${{ inputs.version || '2.8.102' }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
       - name: Publish the signed XPI and update manifest

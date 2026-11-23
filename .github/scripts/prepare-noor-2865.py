@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.101-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.102-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,7 +24,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.101"
+manifest["version"] = "2.8.102"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -1648,7 +1648,7 @@ files[path] = s.encode()
 s = files[path].decode()
 s += """
 
-/* 2.8.101 compact teacher controls and language switch */
+/* 2.8.102 compact teacher controls and language switch */
 #stnNoorHub .stnLangToggle{min-width:34px!important;height:30px!important;min-height:30px!important;padding:3px 7px!important;border:1px solid #ffffff55!important;border-radius:9px!important;background:#ffffff18!important;color:#fff!important;font-size:11px!important;font-weight:800!important;line-height:1!important}
 #stnNoorHub .stnHubLanguage[hidden]{display:none!important}
 #stnNoorHub .stnHubChecks{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px 10px!important;padding:7px!important;margin:5px 0 7px!important}
@@ -1661,7 +1661,7 @@ s += """
 #stnNoorHub #stnHubDetails .stnTeacherTree .stnBtn,#stnNoorHub #stnHubDetails button{min-height:34px!important;padding:6px 9px!important;font-size:11px!important}
 @media(max-width:520px){#stnNoorHub .stnHubPanel{max-height:78dvh!important;padding:9px!important}#stnNoorHub .stnHubChecks{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important}#stnNoorHub .stnHubChecks label{font-size:10px!important}}
 
-/* 2.8.101 responsive panel and readable task form */
+/* 2.8.102 responsive panel and readable task form */
 #stnNoorHub .stnHubPanel{
  width:min(520px,calc(100vw - 24px))!important;
  max-width:calc(100vw - 24px)!important;
@@ -1879,7 +1879,7 @@ for required in ['#stnHubOtherTab','#stnHubScormDiagnose','#stnHubScormTestModal
         raise SystemExit("Compact CSS missing " + required)
 
 
-# 2.8.101 approved identity and mobile task-card workspace.
+# 2.8.102 approved identity and mobile task-card workspace.
 path = "noor-hub.js"
 s = files[path].decode()
 s = replace_exact(s, 'title="اضغط للفتح، واسحب لنقل الزر">🧩 أدوات نور</button>',
@@ -1929,7 +1929,7 @@ s = replace_exact(s, anchor, anchor + """
 """, path)
 files[path] = s.encode()
 
-# 2.8.101: select the official Oman 2026/2027 semester automatically.
+# 2.8.102: select the official Oman 2026/2027 semester automatically.
 path = "noor-hub.js"
 s = files[path].decode()
 anchor = " const initialTask=taskService();"
@@ -1962,7 +1962,7 @@ files[path] = s.encode()
 path = "noor-hub.css"
 s = files[path].decode()
 s += """
-/* 2.8.101 hide manual semester selector; term is calendar-driven */
+/* 2.8.102 hide manual semester selector; term is calendar-driven */
 #stnNoorHub label[for="stnHubSemester"],
 #stnNoorHub #stnHubSemester{display:none!important}
 """
@@ -1971,7 +1971,7 @@ files[path] = s.encode()
 path = "noor-hub.css"
 s = files[path].decode()
 s += """
-/* 2.8.101 Daftar Noor approved task-card workspace */
+/* 2.8.102 Daftar Noor approved task-card workspace */
 #stnNoorHub{font-family:Tahoma,Arial,sans-serif;color:#214b3e}
 #stnNoorHub #stnHubOpen{background:linear-gradient(135deg,#08745a,#075744)!important;border:1px solid #d5c28a!important;border-radius:28px!important;padding:12px 18px!important;font-size:14px!important;font-weight:800!important}
 #stnNoorHub .stnHubPanel{width:min(440px,calc(100vw - 18px))!important;max-height:min(84dvh,780px)!important;overflow:auto!important;background:#fffefa!important;border:1px solid #d8c89c!important;border-radius:18px!important;padding:12px!important;box-shadow:0 14px 40px #082c2055!important}
@@ -1995,6 +1995,63 @@ s += """
 @media(max-width:520px){#stnNoorHub{left:8px!important;bottom:8px!important}#stnNoorHub .stnHubPanel{width:calc(100vw - 16px)!important;max-height:82dvh!important}#stnNoorHub .stnTaskCard{min-height:62px!important;font-size:11px!important}}
 """
 files[path] = s.encode()
+
+
+# 2.8.102: true minimize hides the entire panel and leaves only the floating launcher.
+path = "noor-hub.js"
+s = files[path].decode()
+s = replace_exact(s,
+"""  $('stnHubMinimize').addEventListener('click',()=>{const pane=$('stnHubPanel'),mini=pane.classList.toggle('stnHubMinimized');
+   $('stnHubMinimize').textContent=mini?'▢':'−';$('stnHubMinimize').setAttribute('aria-expanded',String(!mini));
+   if(!mini)requestAnimationFrame(()=>{if(panelPosition)placePanel(panelPosition.x,panelPosition.y)});
+  });""",
+"""  $('stnHubMinimize').addEventListener('click',()=>{
+   const pane=$('stnHubPanel');
+   pane.classList.remove('stnHubMinimized');
+   pane.hidden=true;
+   $('stnHubMinimize').textContent='−';
+   $('stnHubMinimize').setAttribute('aria-expanded','false');
+  });""",path)
+s = replace_exact(s,
+"""  $('stnHubOpen').addEventListener('click',()=>{if(draggedOpener)return;const p=$('stnHubPanel');if(p.hidden)showPanel();else p.hidden=true});""",
+"""  $('stnHubOpen').addEventListener('click',()=>{if(draggedOpener)return;const p=$('stnHubPanel');if(p.hidden){p.classList.remove('stnHubMinimized');$('stnHubMinimize').textContent='−';$('stnHubMinimize').setAttribute('aria-expanded','true');showPanel();}else p.hidden=true});""",path)
+s = replace_exact(s,
+"""    <button type="button" class="stnBtn outline" id="stnHubRefreshTree">تحقّق من الاختيار في نور</button>""",
+"""    <button type="button" class="stnBtn outline" id="stnHubRefreshTree" hidden aria-hidden="true" tabindex="-1">تحقّق من الاختيار في نور</button>""",path)
+s = replace_exact(s,
+""" let stoppingAll=false;""",
+""" let lastAutoTreeSignature='';
+ let stoppingAll=false;""",path)
+s = replace_exact(s,
+"""   if(useCache)previewNumberSelection({useCache:true}).catch(()=>{});
+  }""",
+"""   if(useCache)previewNumberSelection({useCache:true}).catch(()=>{});
+   const course=selectedClass(),coordinates=inputs();
+   if(course&&coordinates.unitNo&&(!$('stnHubLesson').value||coordinates.lessonNo)&&
+      !curriculumScanning()&&!busy&&!unitBatchBusy){
+    const epoch=operationEpoch,signature=[course.cid,coordinates.semester,coordinates.unitNo,coordinates.lessonNo].join(':');
+    if(lastAutoTreeSignature!==signature){
+     lastAutoTreeSignature=signature;
+     setTimeout(async()=>{
+      if(epoch!==operationEpoch||curriculumScanning()||busy||unitBatchBusy)return;
+      const current=selectedClass(),now=inputs();
+      if(!current||current.cid!==course.cid||!samePositions(coordinates,now))return;
+      if(!await curriculumAllowed())return;
+      clearPreview();persistSelection({course});
+      try{await curriculum.start({...coordinates,cid:course.cid,label:course.label});}
+      catch(error){curriculumStatus('تعذرت قراءة شجرة الصف تلقائيًا: '+String(error.message||error));}
+     },260);
+    }
+   }
+  }""",path)
+files[path]=s.encode()
+path="noor-hub.css"
+s=files[path].decode()+"""
+/* 2.8.102: minimize the complete workspace, not only its task tabs */
+#stnNoorHub .stnHubPanel.stnHubMinimized{display:none!important}
+#stnNoorHub #stnHubRefreshTree[hidden]{display:none!important}
+"""
+files[path]=s.encode()
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
