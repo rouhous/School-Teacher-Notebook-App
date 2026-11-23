@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.98-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.99-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,7 +24,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.98"
+manifest["version"] = "2.8.99"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -1647,7 +1647,7 @@ files[path] = s.encode()
 # Keep compact controls without turning the entire details container into a grid.
 s = files[path].decode()
 s += """
-/* 2.8.98 responsive panel and readable task form */
+/* 2.8.99 responsive panel and readable task form */
 #stnNoorHub .stnHubPanel{
  width:min(520px,calc(100vw - 24px))!important;
  max-width:calc(100vw - 24px)!important;
@@ -1865,7 +1865,7 @@ for required in ['#stnHubOtherTab','#stnHubScormDiagnose','#stnHubScormTestModal
         raise SystemExit("Compact CSS missing " + required)
 
 
-# 2.8.98 approved identity and mobile task-card workspace.
+# 2.8.99 approved identity and mobile task-card workspace.
 path = "noor-hub.js"
 s = files[path].decode()
 s = replace_exact(s, 'title="اضغط للفتح، واسحب لنقل الزر">🧩 أدوات نور</button>',
@@ -1878,19 +1878,25 @@ anchor = " const taskService=()=>$('stnHubService').value;"
 if anchor not in s: raise SystemExit("Task service helper anchor missing")
 s = replace_exact(s, anchor, anchor + """
  root.querySelectorAll('.stnTaskCard').forEach(button=>{
-  button.addEventListener('click',()=>{
-   const service=$('stnHubService');service.value=button.dataset.service;
-   service.dispatchEvent(new Event('change',{bubbles:true}));
+  button.addEventListener('click',async()=>{
+   const service=$('stnHubService'),task=button.dataset.service;
+   if(!['preparation','activities','scorm'].includes(task))return;
+   service.value=task;
+   sessionStorage.setItem(serviceStorageKey(),task);
    root.querySelectorAll('.stnTaskCard').forEach(item=>item.classList.toggle('active',item===button));
+   try{await switchTask(task);}
+   catch(error){actionStatus('تعذر فتح المهمة: '+String(error?.message||error));}
   });
  });
+ const initialTask=taskService();
+ root.querySelectorAll('.stnTaskCard').forEach(item=>item.classList.toggle('active',item.dataset.service===initialTask));
 """, path)
 files[path] = s.encode()
 
 path = "noor-hub.css"
 s = files[path].decode()
 s += """
-/* 2.8.98 Daftar Noor approved task-card workspace */
+/* 2.8.99 Daftar Noor approved task-card workspace */
 #stnNoorHub{font-family:Tahoma,Arial,sans-serif;color:#214b3e}
 #stnNoorHub #stnHubOpen{background:linear-gradient(135deg,#08745a,#075744)!important;border:1px solid #d5c28a!important;border-radius:28px!important;padding:12px 18px!important;font-size:14px!important;font-weight:800!important}
 #stnNoorHub .stnHubPanel{width:min(440px,calc(100vw - 18px))!important;max-height:min(84dvh,780px)!important;overflow:auto!important;background:#fffefa!important;border:1px solid #d8c89c!important;border-radius:18px!important;padding:12px!important;box-shadow:0 14px 40px #082c2055!important}
