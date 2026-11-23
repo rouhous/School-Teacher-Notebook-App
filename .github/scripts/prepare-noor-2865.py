@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.99-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.100-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,7 +24,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.99"
+manifest["version"] = "2.8.100"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -1647,7 +1647,21 @@ files[path] = s.encode()
 # Keep compact controls without turning the entire details container into a grid.
 s = files[path].decode()
 s += """
-/* 2.8.99 responsive panel and readable task form */
+
+/* 2.8.100 compact teacher controls and language switch */
+#stnNoorHub .stnLangToggle{min-width:34px!important;height:30px!important;min-height:30px!important;padding:3px 7px!important;border:1px solid #ffffff55!important;border-radius:9px!important;background:#ffffff18!important;color:#fff!important;font-size:11px!important;font-weight:800!important;line-height:1!important}
+#stnNoorHub .stnHubLanguage[hidden]{display:none!important}
+#stnNoorHub .stnHubChecks{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px 10px!important;padding:7px!important;margin:5px 0 7px!important}
+#stnNoorHub .stnHubChecks label{display:flex!important;align-items:center!important;gap:6px!important;min-height:28px!important;margin:0!important;padding:2px 4px!important;font-size:11px!important;line-height:1.3!important}
+#stnNoorHub .stnHubChecks input[type=checkbox],#stnNoorHub .stnHubChecks input[type=radio]{appearance:auto!important;-webkit-appearance:auto!important;width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;margin:0 2px!important;padding:0!important;accent-color:#08745a!important;transform:none!important}
+#stnNoorHub .stnActions{gap:6px!important;margin-top:8px!important}
+#stnNoorHub .stnActions .stnBtn{min-height:34px!important;height:auto!important;padding:6px 8px!important;border-radius:9px!important;font-size:11px!important;line-height:1.35!important}
+#stnNoorHub #stnHubDetails label{font-size:11px!important;margin:5px 0 3px!important}
+#stnNoorHub #stnHubDetails select,#stnNoorHub #stnHubDetails input:not([type=file]),#stnNoorHub #stnHubDetails textarea{min-height:36px!important;padding:6px 9px!important;border-radius:9px!important;font-size:12px!important}
+#stnNoorHub #stnHubDetails .stnTeacherTree .stnBtn,#stnNoorHub #stnHubDetails button{min-height:34px!important;padding:6px 9px!important;font-size:11px!important}
+@media(max-width:520px){#stnNoorHub .stnHubPanel{max-height:78dvh!important;padding:9px!important}#stnNoorHub .stnHubChecks{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important}#stnNoorHub .stnHubChecks label{font-size:10px!important}}
+
+/* 2.8.100 responsive panel and readable task form */
 #stnNoorHub .stnHubPanel{
  width:min(520px,calc(100vw - 24px))!important;
  max-width:calc(100vw - 24px)!important;
@@ -1865,7 +1879,7 @@ for required in ['#stnHubOtherTab','#stnHubScormDiagnose','#stnHubScormTestModal
         raise SystemExit("Compact CSS missing " + required)
 
 
-# 2.8.99 approved identity and mobile task-card workspace.
+# 2.8.100 approved identity and mobile task-card workspace.
 path = "noor-hub.js"
 s = files[path].decode()
 s = replace_exact(s, 'title="اضغط للفتح، واسحب لنقل الزر">🧩 أدوات نور</button>',
@@ -1888,6 +1902,28 @@ s = replace_exact(s, anchor, anchor + """
    catch(error){actionStatus('تعذر فتح المهمة: '+String(error?.message||error));}
   });
  });
+
+ // Compact language toggle: reuse the existing localization engine.
+ const languageWrap=root.querySelector('.stnHubLanguage');
+ const languageSelect=languageWrap?.querySelector('select');
+ const headButtons=root.querySelector('.stnHeadButtons');
+ if(languageSelect&&headButtons&&!headButtons.querySelector('.stnLangToggle')){
+  languageWrap.hidden=true;
+  const toggle=document.createElement('button');
+  toggle.type='button';toggle.className='stnLangToggle';
+  const languageLabel=()=>{const v=String(languageSelect.value||'').toLowerCase();return /^(en|english)/.test(v)?'EN':'عربي';};
+  toggle.textContent=languageLabel();
+  toggle.setAttribute('aria-label','تغيير لغة الواجهة');
+  toggle.addEventListener('click',()=>{
+   const options=[...languageSelect.options],current=languageSelect.selectedIndex;
+   const target=options.findIndex((o,i)=>i!==current&&(/english|\\ben\\b/i.test(o.textContent+' '+o.value)));
+   languageSelect.selectedIndex=target>=0?target:(current+1)%Math.max(1,options.length);
+   languageSelect.dispatchEvent(new Event('change',{bubbles:true}));
+   toggle.textContent=languageLabel();
+  });
+  headButtons.append(toggle);
+ }
+
  const initialTask=taskService();
  root.querySelectorAll('.stnTaskCard').forEach(item=>item.classList.toggle('active',item.dataset.service===initialTask));
 """, path)
@@ -1896,7 +1932,7 @@ files[path] = s.encode()
 path = "noor-hub.css"
 s = files[path].decode()
 s += """
-/* 2.8.99 Daftar Noor approved task-card workspace */
+/* 2.8.100 Daftar Noor approved task-card workspace */
 #stnNoorHub{font-family:Tahoma,Arial,sans-serif;color:#214b3e}
 #stnNoorHub #stnHubOpen{background:linear-gradient(135deg,#08745a,#075744)!important;border:1px solid #d5c28a!important;border-radius:28px!important;padding:12px 18px!important;font-size:14px!important;font-weight:800!important}
 #stnNoorHub .stnHubPanel{width:min(440px,calc(100vw - 18px))!important;max-height:min(84dvh,780px)!important;overflow:auto!important;background:#fffefa!important;border:1px solid #d8c89c!important;border-radius:18px!important;padding:12px!important;box-shadow:0 14px 40px #082c2055!important}
