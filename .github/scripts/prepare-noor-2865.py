@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.97-Compact-source.zip"
+output = directory / "Noor-Unified-v2.8.98-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,8 +24,9 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.97"
-manifest["description"] = "Noor Unified 2.8.97: responsive mobile layout and readable task forms."
+manifest["version"] = "2.8.98"
+manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
+manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
 
 path = "noor-class-card.js"
@@ -1862,6 +1863,57 @@ css = files["noor-hub.css"].decode()
 for required in ['#stnHubOtherTab','#stnHubScormDiagnose','#stnHubScormTestModal','max-height:min(58dvh,520px)']:
     if required not in css:
         raise SystemExit("Compact CSS missing " + required)
+
+
+# 2.8.98 approved identity and mobile task-card workspace.
+path = "noor-hub.js"
+s = files[path].decode()
+s = replace_exact(s, 'title="اضغط للفتح، واسحب لنقل الزر">🧩 أدوات نور</button>',
+    'title="دفتر نور — اضغط للفتح واسحب لتغيير المكان">📘 دفتر نور</button>', path)
+s = replace_exact(s, 'aria-label="أدوات نور الموحدة"', 'aria-label="دفتر نور"', path)
+s = replace_exact(s, 'أدوات نور · دفتر المعلم <bdi class="stnHubVersion">', 'دفتر نور <bdi class="stnHubVersion">', path)
+s = replace_exact(s, '<div class="stnHubTaskPicker"><label for="stnHubService">المهمة</label><select id="stnHubService">',
+    '<div class="stnHubTaskPicker" aria-label="اختر المهمة"><button type="button" class="stnTaskCard" data-service="preparation"><span>✎</span>التحضير</button><button type="button" class="stnTaskCard" data-service="activities"><span>▦</span>النشاط</button><button type="button" class="stnTaskCard" data-service="scorm"><span>▣</span>SCORM</button><select id="stnHubService" aria-hidden="true" tabindex="-1">', path)
+anchor = " const taskService=()=>$('stnHubService').value;"
+if anchor not in s: raise SystemExit("Task service helper anchor missing")
+s = replace_exact(s, anchor, anchor + """
+ document.querySelectorAll('#stnNoorHub .stnTaskCard').forEach(button=>{
+  button.addEventListener('click',()=>{
+   const service=$('stnHubService');service.value=button.dataset.service;
+   service.dispatchEvent(new Event('change',{bubbles:true}));
+   document.querySelectorAll('#stnNoorHub .stnTaskCard').forEach(item=>item.classList.toggle('active',item===button));
+  });
+ });
+""", path)
+files[path] = s.encode()
+
+path = "noor-hub.css"
+s = files[path].decode()
+s += """
+/* 2.8.98 Daftar Noor approved task-card workspace */
+#stnNoorHub{font-family:Tahoma,Arial,sans-serif;color:#214b3e}
+#stnNoorHub #stnHubOpen{background:linear-gradient(135deg,#08745a,#075744)!important;border:1px solid #d5c28a!important;border-radius:28px!important;padding:12px 18px!important;font-size:14px!important;font-weight:800!important}
+#stnNoorHub .stnHubPanel{width:min(440px,calc(100vw - 18px))!important;max-height:min(84dvh,780px)!important;overflow:auto!important;background:#fffefa!important;border:1px solid #d8c89c!important;border-radius:18px!important;padding:12px!important;box-shadow:0 14px 40px #082c2055!important}
+#stnNoorHub .stnHead{background:linear-gradient(115deg,#075b49,#0a765d)!important;color:#fff!important;border-radius:13px!important;padding:13px 12px!important;margin:-12px -12px 10px!important;min-height:64px!important}
+#stnNoorHub .stnHeadButtons button{color:#fff!important;background:#ffffff1b!important;border-radius:9px!important}
+#stnNoorHub .stnHubTaskPicker{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;margin:10px 0 12px!important}
+#stnNoorHub .stnHubTaskPicker label{display:none!important}
+#stnNoorHub .stnHubTaskPicker select{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden!important}
+#stnNoorHub .stnTaskCard{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;min-width:0!important;min-height:68px!important;border:1px solid #dce6df!important;border-radius:12px!important;background:#fff!important;color:#526e62!important;font-size:12px!important;font-weight:800!important;padding:8px 4px!important;cursor:pointer!important}
+#stnNoorHub .stnTaskCard span{font-size:20px!important;line-height:1.1!important}
+#stnNoorHub .stnTaskCard.active{background:#eaf5ef!important;border:2px solid #168267!important;color:#075b49!important}
+#stnNoorHub #stnHubDetails{display:block!important;min-width:0!important;padding-top:3px!important}
+#stnNoorHub .stnRow{display:grid!important;grid-template-columns:1.35fr .75fr!important;gap:8px!important}
+#stnNoorHub label{font-size:12px!important;margin:8px 0 4px!important}
+#stnNoorHub select,#stnNoorHub input:not([type=file]),#stnNoorHub textarea{width:100%!important;min-width:0!important;min-height:42px!important;border:1px solid #d4dfd8!important;border-radius:10px!important;background:#fff!important;padding:8px 10px!important;font-size:13px!important}
+#stnNoorHub .stnHubChecks{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;padding:10px!important;border:1px solid #e0e8e2!important;border-radius:12px!important;background:#f7faf7!important}
+#stnNoorHub .stnActions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin-top:12px!important}
+#stnNoorHub .stnBtn{min-height:42px!important;max-height:none!important;height:auto!important;border-radius:10px!important;padding:9px 10px!important;font-size:12px!important;line-height:1.45!important;white-space:normal!important;overflow:visible!important}
+#stnNoorHub .stnNote{display:block!important;font-size:11px!important;line-height:1.55!important}
+#stnNoorHub .stnStatus{font-size:12px!important;line-height:1.6!important;padding:9px!important}
+@media(max-width:520px){#stnNoorHub{left:8px!important;bottom:8px!important}#stnNoorHub .stnHubPanel{width:calc(100vw - 16px)!important;max-height:82dvh!important}#stnNoorHub .stnTaskCard{min-height:62px!important;font-size:11px!important}}
+"""
+files[path] = s.encode()
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
