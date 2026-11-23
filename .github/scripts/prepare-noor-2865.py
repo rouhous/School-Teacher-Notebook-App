@@ -1954,9 +1954,7 @@ s = replace_exact(s, anchor, """
  }
  applyOfficialOmanSemester();
 """ + anchor, path)
-old_inputs = " function inputs(){return {semester:$('stnHubSemester').value,unitNo:position($('stnHubUnit').value),lessonNo:position($('stnHubLesson').value)}}"
-new_inputs = " function inputs(){applyOfficialOmanSemester();return {semester:$('stnHubSemester').value,unitNo:position($('stnHubUnit').value),lessonNo:position($('stnHubLesson').value)}}"
-s = replace_exact(s, old_inputs, new_inputs, path)
+# Semester is refreshed at initialization and every task switch; no manual selector remains.
 s = replace_exact(s, "  $('stnHubSemester').value=data?.semester||'1';", "  applyOfficialOmanSemester();", path)
 s = replace_exact(s, " function bind(){\n  bindPrimaryActions();", " function bind(){\n  applyOfficialOmanSemester();\n  bindPrimaryActions();", path)
 files[path] = s.encode()
