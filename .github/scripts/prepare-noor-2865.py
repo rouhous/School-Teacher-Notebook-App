@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.106-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.107-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,7 +24,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.106"
+manifest["version"] = "2.8.107"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -1929,7 +1929,7 @@ s = replace_exact(s, anchor, anchor + """
  const taskPicker=root.querySelector('.stnHubTaskPicker');
  const selectionClassSelect=$('stnHubClass');
  const classLabel=root.querySelector('label[for="stnHubClass"]');
- const unitLessonRow=root.querySelector('#stnHubLessonChoiceBox .stnLegacyTreeFields');
+ const unitLessonRow=root.querySelector('#stnHubLessonChoiceBox .stnRow');
  if(!taskPicker||!selectionClassSelect||!classLabel||!unitLessonRow)throw new Error('تعذر تجهيز شريط اختيار الصف والدرس.');
  const selectionDock=document.createElement('section');
  selectionDock.className='stnSelectionDock';
@@ -2135,7 +2135,7 @@ s=files[path].decode()+"""
 #stnNoorHub .stnHubPanel.stnHubMinimized{display:none!important}
 #stnNoorHub #stnHubRefreshTree[hidden]{display:none!important}
 """
-files[path]=s.encode()
+files[path]=s.replace(".stnLegacyTreeFields",".stnRow").encode()
 
 # 2.8.104: teacher-facing terminology — keep the internal service key "scorm".
 # Release gate: this label-only patch does not alter Noor SCORM routing or upload semantics.
@@ -2159,7 +2159,7 @@ assert "data-service=\"scorm\"" in hub
 assert "const isScormForm=()=>onUploadPage()&&Boolean(optionOfRadio('SCORM'));" in publisher
 
 
-# 2.8.106: build the membership notice with DOM APIs rather than HTML parsing.
+# 2.8.107: build the membership notice with DOM APIs rather than HTML parsing.
 # This removes the Mozilla unsafe-innerHTML warning without changing the UI flow.
 path = "noor-license-ui.js"
 s = files[path].decode()
@@ -2186,7 +2186,7 @@ files[path] = s.encode()
 # Keep the packaged documentation aligned with the actual manifest version.
 if "README.md" in files:
     readme=files["README.md"].decode()
-    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.106",1)
+    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.107",1)
     files["README.md"]=readme.encode()
 
 
@@ -2199,3 +2199,6 @@ assert '2.8.105 class + numeric lesson coordinates' in files["noor-hub.css"].dec
 assert "input.type='number'" in files["noor-hub.js"].decode()
 assert "اختر الصف ثم أدخل رقم الوحدة والدرس" in files["noor-hub.js"].decode()
 assert "taskPicker.before(selectionDock)" in files["noor-hub.js"].decode()
+assert "const unitLessonRow=root.querySelector('#stnHubLessonChoiceBox .stnRow');" in files["noor-hub.js"].decode()
+assert ".stnSelectionDock .stnRow" in files["noor-hub.css"].decode()
+assert ".stnSelectionDock .stnLegacyTreeFields" not in files["noor-hub.css"].decode()
