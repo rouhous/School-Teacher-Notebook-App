@@ -2054,6 +2054,7 @@ s=files[path].decode()+"""
 files[path]=s.encode()
 
 # 2.8.103: teacher-facing terminology — keep the internal service key "scorm".
+# Release gate: this label-only patch does not alter Noor SCORM routing or upload semantics.
 hub = files["noor-hub.js"].decode()
 hub = hub.replace(">SCORM</button>", ">درس تفاعلي</button>")
 hub = hub.replace("توليد SCORM", "إنشاء درس تفاعلي")
