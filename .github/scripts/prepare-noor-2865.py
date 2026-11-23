@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# [release-noor] 2.8.107 corrected selection-dock row selector
 """Generate Noor 2.8.97 lesson-grounded activity generation and compact inline-field teacher panel.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
