@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.100-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.101-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,7 +24,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.100"
+manifest["version"] = "2.8.101"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -1648,7 +1648,7 @@ files[path] = s.encode()
 s = files[path].decode()
 s += """
 
-/* 2.8.100 compact teacher controls and language switch */
+/* 2.8.101 compact teacher controls and language switch */
 #stnNoorHub .stnLangToggle{min-width:34px!important;height:30px!important;min-height:30px!important;padding:3px 7px!important;border:1px solid #ffffff55!important;border-radius:9px!important;background:#ffffff18!important;color:#fff!important;font-size:11px!important;font-weight:800!important;line-height:1!important}
 #stnNoorHub .stnHubLanguage[hidden]{display:none!important}
 #stnNoorHub .stnHubChecks{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px 10px!important;padding:7px!important;margin:5px 0 7px!important}
@@ -1661,7 +1661,7 @@ s += """
 #stnNoorHub #stnHubDetails .stnTeacherTree .stnBtn,#stnNoorHub #stnHubDetails button{min-height:34px!important;padding:6px 9px!important;font-size:11px!important}
 @media(max-width:520px){#stnNoorHub .stnHubPanel{max-height:78dvh!important;padding:9px!important}#stnNoorHub .stnHubChecks{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important}#stnNoorHub .stnHubChecks label{font-size:10px!important}}
 
-/* 2.8.100 responsive panel and readable task form */
+/* 2.8.101 responsive panel and readable task form */
 #stnNoorHub .stnHubPanel{
  width:min(520px,calc(100vw - 24px))!important;
  max-width:calc(100vw - 24px)!important;
@@ -1879,7 +1879,7 @@ for required in ['#stnHubOtherTab','#stnHubScormDiagnose','#stnHubScormTestModal
         raise SystemExit("Compact CSS missing " + required)
 
 
-# 2.8.100 approved identity and mobile task-card workspace.
+# 2.8.101 approved identity and mobile task-card workspace.
 path = "noor-hub.js"
 s = files[path].decode()
 s = replace_exact(s, 'title="اضغط للفتح، واسحب لنقل الزر">🧩 أدوات نور</button>',
@@ -1929,10 +1929,51 @@ s = replace_exact(s, anchor, anchor + """
 """, path)
 files[path] = s.encode()
 
+# 2.8.101: select the official Oman 2026/2027 semester automatically.
+path = "noor-hub.js"
+s = files[path].decode()
+anchor = " const initialTask=taskService();"
+if s.count(anchor) != 1:
+    raise SystemExit("Could not locate task initialization for Oman term logic")
+s = replace_exact(s, anchor, """
+ function applyOfficialOmanSemester(){
+  const parts=new Intl.DateTimeFormat('en-CA',{
+   timeZone:'Asia/Muscat',year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(new Date());
+  const part=name=>parts.find(item=>item.type===name)?.value||'';
+  const today=part('year')+'-'+part('month')+'-'+part('day');
+  // Ministry calendar 2026/2027: semester 1 begins 6 Sep 2026;
+  // semester 2 begins 31 Jan 2027; school year ends 13 Jul 2027.
+  const semester=today>='2027-01-31'&&today<'2027-07-14'?'2':'1';
+  const select=$('stnHubSemester');
+  if(select&&select.value!==semester)select.value=semester;
+  const label=root.querySelector('label[for="stnHubSemester"]');
+  if(label)label.style.setProperty('display','none','important');
+  if(select)select.style.setProperty('display','none','important');
+  return semester;
+ }
+ applyOfficialOmanSemester();
+""" + anchor, path)
+old_inputs = " function inputs(){return {semester:$('stnHubSemester').value,unitNo:position($('stnHubUnit').value),lessonNo:position($('stnHubLesson').value)}}"
+new_inputs = " function inputs(){applyOfficialOmanSemester();return {semester:$('stnHubSemester').value,unitNo:position($('stnHubUnit').value),lessonNo:position($('stnHubLesson').value)}}"
+s = replace_exact(s, old_inputs, new_inputs, path)
+s = replace_exact(s, "  $('stnHubSemester').value=data?.semester||'1';", "  applyOfficialOmanSemester();", path)
+s = replace_exact(s, " function bind(){\n  bindPrimaryActions();", " function bind(){\n  applyOfficialOmanSemester();\n  bindPrimaryActions();", path)
+files[path] = s.encode()
+
 path = "noor-hub.css"
 s = files[path].decode()
 s += """
-/* 2.8.100 Daftar Noor approved task-card workspace */
+/* 2.8.101 hide manual semester selector; term is calendar-driven */
+#stnNoorHub label[for="stnHubSemester"],
+#stnNoorHub #stnHubSemester{display:none!important}
+"""
+files[path] = s.encode()
+
+path = "noor-hub.css"
+s = files[path].decode()
+s += """
+/* 2.8.101 Daftar Noor approved task-card workspace */
 #stnNoorHub{font-family:Tahoma,Arial,sans-serif;color:#214b3e}
 #stnNoorHub #stnHubOpen{background:linear-gradient(135deg,#08745a,#075744)!important;border:1px solid #d5c28a!important;border-radius:28px!important;padding:12px 18px!important;font-size:14px!important;font-weight:800!important}
 #stnNoorHub .stnHubPanel{width:min(440px,calc(100vw - 18px))!important;max-height:min(84dvh,780px)!important;overflow:auto!important;background:#fffefa!important;border:1px solid #d8c89c!important;border-radius:18px!important;padding:12px!important;box-shadow:0 14px 40px #082c2055!important}
