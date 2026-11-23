@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# [release-noor] 2.8.107 corrected selection-dock row selector
+# [release-noor] 2.8.108 corrected selection-dock row selector
 """Generate Noor 2.8.97 lesson-grounded activity generation and compact inline-field teacher panel.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
@@ -10,7 +10,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.107-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.108-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -25,7 +25,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.107"
+manifest["version"] = "2.8.108"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -1935,8 +1935,10 @@ s = replace_exact(s, anchor, anchor + """
  const selectionDock=document.createElement('section');
  selectionDock.className='stnSelectionDock';
  selectionDock.setAttribute('aria-label','تحديد الصف والدرس قبل اختيار المهمة');
+ const classField=document.createElement('div');classField.className='stnSelectionField';
+ classField.append(classLabel,selectionClassSelect);
  const classRow=document.createElement('div');classRow.className='stnSelectionClass';
- classRow.append(classLabel,selectionClassSelect);
+ classRow.append(classField);
  const selectionTitle=document.createElement('div');
  selectionTitle.className='stnSelectionCaption';selectionTitle.textContent='أولًا: اختر الصف ورقم الوحدة والدرس';
  selectionDock.append(selectionTitle,classRow,unitLessonRow);
@@ -2120,6 +2122,27 @@ s=files[path].decode()+"""
 #stnNoorHub #stnHubLessonChoiceBox[hidden],#stnNoorHub #stnHubLessonPreview[hidden],#stnNoorHub #stnHubSelectedPath[hidden]{display:none!important}
 @media(max-width:520px){#stnNoorHub .stnSelectionDock{padding:7px!important;gap:6px!important}#stnNoorHub .stnSelectionDock .stnLegacyTreeFields{gap:6px!important}}
 
+
+/* 2.8.108: keep grade, unit and lesson in one horizontal row */
+#stnNoorHub .stnSelectionDock{
+ display:grid!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ align-items:end!important;
+ gap:8px!important;
+}
+#stnNoorHub .stnSelectionCaption{grid-column:1/-1!important}
+#stnNoorHub .stnSelectionClass{display:contents!important}
+#stnNoorHub .stnSelectionField{display:grid!important;grid-template-columns:minmax(0,1fr)!important;min-width:0!important;gap:4px!important}
+#stnNoorHub .stnSelectionDock .stnRow{display:contents!important}
+#stnNoorHub .stnSelectionDock .stnRow>div{display:grid!important;grid-template-columns:minmax(0,1fr)!important;min-width:0!important;gap:4px!important}
+#stnNoorHub .stnSelectionDock label{font-size:11px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin:0!important}
+#stnNoorHub .stnSelectionDock select,#stnNoorHub .stnSelectionDock input{min-width:0!important;width:100%!important;min-height:40px!important;padding:6px 5px!important;font-size:12px!important;text-align:center!important}
+@media(max-width:520px){
+ #stnNoorHub .stnSelectionDock{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important;padding:7px!important}
+ #stnNoorHub .stnSelectionDock label{font-size:10px!important}
+ #stnNoorHub .stnSelectionDock select,#stnNoorHub .stnSelectionDock input{font-size:11px!important;min-height:38px!important}
+}
+
 /* 2.8.104 selection-first layout */
 #stnNoorHub .stnSelectionDock{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important;margin:8px 0 10px!important;padding:10px!important;border:1px solid #d9e5dc!important;border-radius:12px!important;background:#f5faf6!important}
 #stnNoorHub .stnSelectionCaption{font-size:12px!important;font-weight:800!important;color:#075b49!important}
@@ -2160,7 +2183,7 @@ assert "data-service=\"scorm\"" in hub
 assert "const isScormForm=()=>onUploadPage()&&Boolean(optionOfRadio('SCORM'));" in publisher
 
 
-# 2.8.107: build the membership notice with DOM APIs rather than HTML parsing.
+# 2.8.108: build the membership notice with DOM APIs rather than HTML parsing.
 # This removes the Mozilla unsafe-innerHTML warning without changing the UI flow.
 path = "noor-license-ui.js"
 s = files[path].decode()
@@ -2187,7 +2210,7 @@ files[path] = s.encode()
 # Keep the packaged documentation aligned with the actual manifest version.
 if "README.md" in files:
     readme=files["README.md"].decode()
-    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.107",1)
+    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.108",1)
     files["README.md"]=readme.encode()
 
 
@@ -2203,3 +2226,4 @@ assert "taskPicker.before(selectionDock)" in files["noor-hub.js"].decode()
 assert "const unitLessonRow=root.querySelector('#stnHubLessonChoiceBox .stnRow');" in files["noor-hub.js"].decode()
 assert ".stnSelectionDock .stnRow" in files["noor-hub.css"].decode()
 assert ".stnSelectionDock .stnLegacyTreeFields" not in files["noor-hub.css"].decode()
+assert "grid-template-columns:repeat(3,minmax(0,1fr))" in files["noor-hub.css"].decode()
