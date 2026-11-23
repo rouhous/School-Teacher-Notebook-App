@@ -9,7 +9,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.102-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.103-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -24,7 +24,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.102"
+manifest["version"] = "2.8.103"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -2052,6 +2052,26 @@ s=files[path].decode()+"""
 #stnNoorHub #stnHubRefreshTree[hidden]{display:none!important}
 """
 files[path]=s.encode()
+
+# 2.8.103: teacher-facing terminology — keep the internal service key "scorm".
+hub = files["noor-hub.js"].decode()
+hub = hub.replace(">SCORM</button>", ">درس تفاعلي</button>")
+hub = hub.replace("توليد SCORM", "إنشاء درس تفاعلي")
+hub = hub.replace("ملفات SCORM", "ملفات الدروس التفاعلية")
+hub = hub.replace("رفع ملفات SCORM", "رفع ملفات الدروس التفاعلية")
+hub = hub.replace("منزلة SCORM", "منزلة الدرس التفاعلي")
+files["noor-hub.js"] = hub.encode()
+
+publisher = files["noor-scorm-publisher.js"].decode()
+publisher = publisher.replace("حفظ ملف SCORM", "حفظ ملف الدرس التفاعلي")
+publisher = publisher.replace("حالة حفظ SCORM", "حالة حفظ الدرس التفاعلي")
+publisher = publisher.replace("ظهور SCORM في القائمة", "ظهور الدرس التفاعلي في القائمة")
+files["noor-scorm-publisher.js"] = publisher.encode()
+
+assert ">درس تفاعلي</button>" in hub
+assert "إنشاء درس تفاعلي" in hub
+assert "data-service=\"scorm\"" in hub
+assert "const isScormForm=()=>onUploadPage()&&Boolean(optionOfRadio('SCORM'));" in publisher
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
