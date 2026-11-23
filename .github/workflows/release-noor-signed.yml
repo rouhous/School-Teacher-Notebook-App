@@ -168,7 +168,7 @@ jobs:
           grep -Fq 'stnHubSubject' extension/noor-hub.js
           grep -Fq 'stnHubActivityQuantity' extension/noor-hub.js
           grep -Fq 'stnHubScormQuantity' extension/noor-hub.js
-          grep -Fq '2.8.103 responsive panel and readable task form' extension/noor-hub.css
+          grep -Fq '2.8.102 responsive panel and readable task form' extension/noor-hub.css
           grep -Fq 'width:calc(100vw - 24px)!important' extension/noor-hub.css
           grep -Fq 'display:block!important' extension/noor-hub.css
           grep -Fq 'SAVED TEACHER PREPARATION — PRIMARY SOURCE' extension/noor-hub.js
