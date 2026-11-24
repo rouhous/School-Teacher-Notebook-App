@@ -460,11 +460,9 @@ select{max-width:100%;touch-action:auto}
 #sc-grades .grades-toolbar-actions>.btn svg{width:18px;height:18px}
 #sc-grades .grades-toolbar-actions>.btn:last-child{flex:1.35 1 0}
 @media(max-width:360px){#sc-grades .grades-toolbar-actions{gap:3px}#sc-grades .grades-toolbar-actions>.btn{font-size:.64rem;padding:7px 2px}}
-/* Hide the grade-entry and student-behavior navigation shortcuts without deleting their screens or records. */
-<style id="hide-grade-and-behavior-shortcuts">
-.bottom-nav button[data-s="grades"],
-.bottom-nav button[data-s="students"]{display:none!important}
-</style>
+/* Hide grade-entry and student-behavior shortcuts; keep their screens and records intact. */
+.bottom-nav .nav-btn[data-s="grades"],
+.bottom-nav .nav-btn[data-s="students"]{display:none!important}
 </style>
 <div id="sc-grades" class="screen">
 <div class="grades-toolbar">
