@@ -2301,7 +2301,7 @@ path = "noor-hub.js"
 s = files[path].decode()
 # Put the key entry point in the title toolbar; reuse the existing key box and save handlers.
 s = replace_exact(s,
-  "  const panelRoot=root.querySelector('#stnHubPanel');",
+  " const panelRoot=root.querySelector('#stnHubPanel');",
   """  const panelRoot=root.querySelector('#stnHubPanel');
   const headButtons=panelRoot.querySelector('.stnHeadButtons');
   const geminiButton=document.createElement('button');
@@ -2361,74 +2361,10 @@ assert "keyDialogClose.addEventListener" in files["noor-hub.js"].decode()
 assert "#stnNoorHub #stnHubLegacyActions{display:grid!important;grid-template-columns:repeat(3" in files["noor-hub.css"].decode()
 
 
-# 2.8.110: replace manual numeric fields with dependent unit/lesson dropdowns.
-path="noor-hub.js"
-s=files[path].decode()
-s=replace_exact(s,
- """<input id="stnHubUnit" type="text" inputmode="numeric" pattern="[0-9٠-٩۰-۹]+" placeholder="مثال 3">""",
- """<select id="stnHubUnit" aria-label="اختر الوحدة"><option value="">اختر الوحدة</option></select>""",path)
-s=replace_exact(s,
- """<input id="stnHubLesson" type="text" inputmode="numeric" pattern="[0-9٠-٩۰-۹]+" placeholder="مثال 2">""",
- """<select id="stnHubLesson" aria-label="اختر الدرس" disabled><option value="">اختر الوحدة أولًا</option></select>""",path)
-# Replace the number-input setup with dropdown labels and reset dependent lesson choices.
-s=replace_exact(s,
- """ for(const [input,label,text] of [[unitInput,unitLabel,'رقم الوحدة'],[lessonInput,lessonLabel,'رقم الدرس']]){
-  input.type='number';input.inputMode='numeric';input.min='1';input.max='99';input.step='1';
-  input.placeholder=text;input.setAttribute('aria-label',text);label.textContent=text;input.required=true;
- }""",
- """ unitLabel.textContent='الوحدة';
- lessonLabel.textContent='الدرس';
- unitInput.required=true;lessonInput.required=true;
- unitInput.addEventListener('change',()=>{
-  lessonInput.innerHTML='<option value="">جارٍ تحميل دروس الوحدة…</option>';
-  lessonInput.disabled=true;
- });
- """,path)
-# When the selected unit is read from Noor, populate its actual lesson titles.
-s=replace_exact(s,
- """   const branch=result.branch,lesson=lookup.lessonAt(branch,job.lessonNo);
-   if(job.lessonNo&&!lesson){curriculumStatus('عدد الدروس في هذه الوحدة '+branch.lessons.length+'.');return;}""",
- """   const branch=result.branch,lesson=lookup.lessonAt(branch,job.lessonNo);
-   const unitSelect=$('stnHubUnit'),lessonSelect=$('stnHubLesson');
-   const unitOption=[...unitSelect.options].find(option=>option.value===String(job.unitNo));
-   if(unitOption)unitOption.textContent='الوحدة '+job.unitNo+' — '+branch.unit;
-   lessonSelect.replaceChildren(new Option('اختر الدرس',''));
-   (branch.lessons||[]).forEach((item,index)=>lessonSelect.add(new Option('الدرس '+(index+1)+' — '+item.title,String(index+1))));
-   lessonSelect.disabled=!(branch.lessons||[]).length;
-   if(job.lessonNo&&!lesson){curriculumStatus('عدد الدروس في هذه الوحدة '+branch.lessons.length+'.');return;}""",path)
-# Ensure the dependent lesson list is cleared when the class changes.
-s=replace_exact(s,
- """ selectionClassSelect.addEventListener('change',syncTaskAvailability);""",
- """ selectionClassSelect.addEventListener('change',()=>{
-  $('stnHubUnit').value='';
-  $('stnHubLesson').replaceChildren(new Option('اختر الوحدة أولًا',''));
-  $('stnHubLesson').disabled=true;
-  syncTaskAvailability();
- });""",path)
-files[path]=s.encode()
-
-path="noor-hub.css"
-s=files[path].decode()+"""
-/* 2.8.110 dependent curriculum dropdowns */
-#stnNoorHub .stnSelectionDock .stnRow{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
-#stnNoorHub .stnSelectionDock .stnRow>div{min-width:0!important}
-#stnNoorHub .stnSelectionDock select{width:100%!important;min-width:0!important;min-height:40px!important;padding:6px!important;font-size:12px!important}
-#stnNoorHub .stnSelectionDock select:disabled{opacity:.55!important}
-"""
-files[path]=s.encode()
-assert '<select id="stnHubUnit"' in files["noor-hub.js"].decode()
-assert "branch.lessons||[]" in files["noor-hub.js"].decode()
+# Unit/lesson dropdown work is deferred for this release.
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
         dest.writestr(path,data)
 print(f"Generated {output} ({output.stat().st_size} bytes)")
 
-assert '2.8.105 class + numeric lesson coordinates' in files["noor-hub.css"].decode()
-assert "input.type='number'" in files["noor-hub.js"].decode()
-assert "اختر الصف ثم أدخل رقم الوحدة والدرس" in files["noor-hub.js"].decode()
-assert "taskPicker.before(selectionDock)" in files["noor-hub.js"].decode()
-assert "const unitLessonRow=root.querySelector('#stnHubLessonChoiceBox .stnRow');" in files["noor-hub.js"].decode()
-assert ".stnSelectionDock .stnRow" in files["noor-hub.css"].decode()
-assert ".stnSelectionDock .stnLegacyTreeFields" not in files["noor-hub.css"].decode()
-assert "grid-template-columns:repeat(3,minmax(0,1fr))" in files["noor-hub.css"].decode()
