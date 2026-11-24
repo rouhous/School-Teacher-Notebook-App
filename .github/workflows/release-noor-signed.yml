@@ -196,7 +196,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.110' }}
+      RELEASE_VERSION: ${{ inputs.version || '2.8.111' }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -210,7 +210,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Generate 2.8.110 source for Mozilla signing
+      - name: Generate 2.8.111 source for Mozilla signing
         run: python3 .github/scripts/prepare-noor-2865.py
       - name: Verify one-time signing credentials and release branch
         shell: bash
