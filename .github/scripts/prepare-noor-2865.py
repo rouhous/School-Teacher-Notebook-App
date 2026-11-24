@@ -2364,10 +2364,10 @@ assert "#stnNoorHub #stnHubLegacyActions{display:grid!important;grid-template-co
 # 2.8.110: replace manual numeric fields with dependent unit/lesson dropdowns.
 path="noor-hub.js"
 s=files[path].decode()
- s=replace_exact(s,
+s=replace_exact(s,
  """<input id="stnHubUnit" type="text" inputmode="numeric" pattern="[0-9٠-٩۰-۹]+" placeholder="مثال 3">""",
  """<select id="stnHubUnit" aria-label="اختر الوحدة"><option value="">اختر الوحدة</option></select>""",path)
- s=replace_exact(s,
+s=replace_exact(s,
  """<input id="stnHubLesson" type="text" inputmode="numeric" pattern="[0-9٠-٩۰-۹]+" placeholder="مثال 2">""",
  """<select id="stnHubLesson" aria-label="اختر الدرس" disabled><option value="">اختر الوحدة أولًا</option></select>""",path)
 # Replace the number-input setup with dropdown labels and reset dependent lesson choices.
