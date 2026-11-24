@@ -1,4 +1,4 @@
-# Release Noor 2.8.110: retain the 2.8.105 SCORM card-recognition fix and remove unsafe HTML injection from the membership notice.
+# [release-noor] Publish and Mozilla-sign Noor 2.8.110 after source validation; footer Gemini launcher removed.
 name: Sign and publish Noor Firefox extension via Mozilla
 on:
   push:
