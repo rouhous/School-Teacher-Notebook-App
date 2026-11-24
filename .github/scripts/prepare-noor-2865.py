@@ -2506,6 +2506,16 @@ s = replace_exact(s,
    discoverOfficialTree().catch(()=>{});
   });""",path)
 s = replace_exact(s,
+ '  <label for="stnHubSubject">المادة المكتشفة من نور</label><input id="stnHubSubject" type="text" readonly placeholder="اختر صفًا من بطاقة المادة أولًا" aria-label="المادة المكتشفة من نور">',
+ '  <div id="stnHubSubjectField" hidden><label for="stnHubSubject">المادة</label><input id="stnHubSubject" type="text" readonly placeholder="المادة المكتشفة من نور" aria-label="المادة المكتشفة من نور"></div>',path)
+s = replace_exact(s,
+ "function updateSubject(){const c=selectedClass();$('stnHubSubject').value=c?.subject||'';if(!c?.subject&&c)status('تم اكتشاف الصف ولكن لم تتأكد المادة من بطاقته؛ لا يمكن بدء التوليد قبل فتح بطاقة المادة الصحيحة.');}",
+ """function updateSubject(){
+  const c=selectedClass(),subjects=[...new Set(courseCandidates.filter(item=>Number(item.grade)===Number(c?.grade)).map(item=>norm(item.subject)).filter(Boolean))];
+  $('stnHubSubject').value=c?.subject||'';$('stnHubSubjectField').hidden=!c||subjects.length<=1;
+  if(!c?.subject&&c)status('تم اكتشاف الصف ولكن لم تتأكد المادة من بطاقته؛ لا يمكن بدء التوليد قبل فتح بطاقة المادة الصحيحة.');
+ }""",path)
+s = replace_exact(s,
  """ function syncClassOptions(discovered=[]){
   courseCandidates=courseChoices(discovered);""",
  """ function classDisplayLabel(course){
