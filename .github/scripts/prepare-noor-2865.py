@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# [release-noor] 2.8.111 automatic Noor lesson recognition with optional manual fallback
+# [release-noor] 2.8.112 automatic Noor lesson recognition with optional manual fallback
 """Generate Noor 2.8.97 lesson-grounded activity generation and compact inline-field teacher panel.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
@@ -10,7 +10,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.111-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.112-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -25,7 +25,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.111"
+manifest["version"] = "2.8.112"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -2155,7 +2155,7 @@ s=files[path].decode()+"""
 #stnNoorHub .stnTaskCard:disabled{opacity:.42!important;filter:grayscale(1)!important;cursor:not-allowed!important}
 #stnNoorHub #stnHubOpenCurriculumTree[hidden],#stnNoorHub #stnHubRefreshTree[hidden],#stnNoorHub #stnHubLessonPreview[hidden]{display:none!important}
 @media(max-width:520px){#stnNoorHub .stnSelectionDock{padding:8px!important;gap:6px!important}#stnNoorHub .stnSelectionClass{grid-template-columns:62px minmax(0,1fr)!important}#stnNoorHub .stnSelectionDock .stnLegacyTreeFields{gap:6px!important}}
-/* 2.8.111: tasks are always available; manual coordinates are fallback only */
+/* 2.8.112: tasks are always available; manual coordinates are fallback only */
 #stnNoorHub .stnTaskCard:disabled{opacity:1!important;filter:none!important;cursor:pointer!important}
 #stnNoorHub .stnSelectionCaption{line-height:1.55!important}
 /* 2.8.102: minimize the complete workspace, not only its task tabs */
@@ -2213,7 +2213,7 @@ files[path] = s.encode()
 # Keep the packaged documentation aligned with the actual manifest version.
 if "README.md" in files:
     readme=files["README.md"].decode()
-    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.111",1)
+    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.112",1)
     files["README.md"]=readme.encode()
 
 
@@ -2352,7 +2352,206 @@ assert "keyDialogClose.addEventListener" in files["noor-hub.js"].decode()
 assert "#stnNoorHub #stnHubLegacyActions{display:grid!important;grid-template-columns:repeat(3" in files["noor-hub.css"].decode()
 
 
-# Unit/lesson dropdown work is deferred for this release.
+
+# 2.8.112: official outcomes selection and live Noor curriculum selectors.
+path = "page-helper.js"
+s = files[path].decode()
+s = replace_exact(s,
+'''    setObjective({ text }) {
+      const el = document.getElementById("PreparationObjective");
+      if (!el || !text) return { set: false };
+      el.value = text;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      return { set: true, len: el.value.length };
+    },''',
+'''    setObjective({ text }) {
+      const el = document.getElementById("PreparationObjective");
+      if (!el || !text) return { set: false, selectedOutcomes: 0 };
+      el.value = text;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      const form = document.getElementById("add_preparation_form");
+      const active = getActiveTreeLesson();
+      let selectedOutcomes = 0;
+      if (form && active?.ok && active.lessonNodeId) {
+        const headingPattern = /المخرجات التعليمية|نواتج التعلم|learning outcomes|learning objectives/i;
+        const candidates = new Set([...form.querySelectorAll('input[type="checkbox"]')].filter(input =>
+          /outcome|(?:^|[_\\[])slo(?:s|[_\\]])/i.test(String(input.name || "") + " " + String(input.id || ""))));
+        const headings = [...form.querySelectorAll("legend,h2,h3,h4,h5,label,strong")].filter(node =>
+          headingPattern.test(node.textContent.trim()) && node.textContent.trim().length < 65);
+        for (const heading of headings) {
+          const group = heading.closest("fieldset,.form-group,section");
+          if (!group) continue;
+          const boxes = [...group.querySelectorAll('input[type="checkbox"]')];
+          if (boxes.length && boxes.length <= 30) boxes.forEach(input => candidates.add(input));
+        }
+        for (const input of candidates) {
+          if (input.disabled || input.closest('#stnNoorHub,#noor-prep-panel')) continue;
+          const label = input.labels?.[0] || input.closest("label") || input.parentElement;
+          const labelText = String(label?.textContent || "").trim();
+          if (labelText.length < 12 || labelText.length > 300 || headingPattern.test(labelText)) continue;
+          if (!input.checked) {
+            input.checked = true;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          if (input.checked) selectedOutcomes++;
+        }
+      }
+      return { set: true, len: el.value.length, selectedOutcomes };
+    },''',path)
+files[path] = s.encode()
+
+path = "content.js"
+s = files[path].decode()
+s = replace_exact(s,
+'results.push("Objectives: " + (r && r.set ? "OK (" + r.len + ")" : "FAIL"));',
+'results.push("Objectives: " + (r && r.set ? "OK (" + r.len + ", official outcomes selected: " + Number(r.selectedOutcomes||0) + ")" : "FAIL"));',
+path)
+files[path] = s.encode()
+
+path = "noor-hub.js"
+s = files[path].decode()
+s = replace_exact(s,
+ " selectionDock.append(selectionTitle,classRow,unitLessonRow);\n taskPicker.before(selectionDock);",
+ """ const officialTreePicker=document.createElement('div');
+ officialTreePicker.className='stnOfficialTreePicker';
+ officialTreePicker.innerHTML='<div><label for="stnHubTreeUnit">الوحدة من شجرة نور</label><select id="stnHubTreeUnit" disabled><option value="">تظهر عند فتح صفحة التحضير في نور</option></select></div><div><label for="stnHubTreeLesson">الدرس من شجرة نور</label><select id="stnHubTreeLesson" disabled><option value="">اختر الوحدة أولًا</option></select></div>';
+ selectionDock.append(selectionTitle,classRow,officialTreePicker,unitLessonRow);
+ taskPicker.before(selectionDock);
+ let officialTreeUnits=[],officialTreeLoading=false,officialTreeSignature='',officialTreeTeacher='',officialTreeCourse='',treeManualOverrideAt=0;
+ const treeUnitSelect=officialTreePicker.querySelector('#stnHubTreeUnit');
+ const treeLessonSelect=officialTreePicker.querySelector('#stnHubTreeLesson');
+ function renderOfficialTreeUnits(active=null){
+  const previousUnit=active?.unitNodeId||treeUnitSelect.value;
+  treeUnitSelect.replaceChildren(new Option('اختر الوحدة',''));
+  officialTreeUnits.forEach(unit=>treeUnitSelect.append(new Option(unit.unit+' — '+unit.term,unit.termId+'|'+unit.unitId)));
+  treeUnitSelect.disabled=!officialTreeUnits.length;
+  const match=officialTreeUnits.find(unit=>unit.unitId===previousUnit)||officialTreeUnits[0];
+  if(match){treeUnitSelect.value=match.termId+'|'+match.unitId;renderOfficialTreeLessons(match,active?.lessonNodeId||'');}
+ }
+ function renderOfficialTreeLessons(unit,selectedId=''){
+  treeLessonSelect.replaceChildren(new Option('اختر الدرس',''));
+  (unit?.lessons||[]).forEach((lesson,index)=>treeLessonSelect.append(new Option((index+1)+'. '+lesson.title,lesson.id)));
+  treeLessonSelect.disabled=!(unit?.lessons?.length);
+  if(selectedId&&unit?.lessons?.some(lesson=>lesson.id===selectedId))treeLessonSelect.value=selectedId;
+ }
+ async function discoverOfficialTree(){
+  const bridge=globalThis.NoorPrepBridge2828,course=selectedClass();
+  if(officialTreeLoading||!bridge?.onAddPage?.()||!course?.verified)return;
+  officialTreeLoading=true;
+  const page=location.href,teacher=classTeacherId,cid=course.cid;
+  try{
+   const identity=await bridge.courseIdentity().catch(()=>null);
+   if(page!==location.href||teacher!==classTeacherId||identity?.cid&&String(identity.cid)!==String(cid))return;
+   const signature=[teacher,cid,page].join('|'),sameTree=signature===officialTreeSignature&&officialTreeUnits.length>0;
+   const [units,active]=await Promise.all([sameTree?Promise.resolve(officialTreeUnits):bridge.curriculum().catch(()=>[]),bridge.activeTreeLesson().catch(()=>null)]);
+   if(page!==location.href||teacher!==classTeacherId||selectedClass()?.cid!==cid)return;
+   if(!sameTree){officialTreeUnits=Array.isArray(units)?units:[];officialTreeSignature=signature;officialTreeTeacher=teacher;officialTreeCourse=cid;}
+   if(Date.now()-treeManualOverrideAt>3000)renderOfficialTreeUnits(active?.ok?active:null);
+   if(active?.ok&&Date.now()-treeManualOverrideAt>3000){
+    const unit=officialTreeUnits.find(item=>item.unitId===active.unitNodeId);
+    const lessonIndex=unit?.lessons?.findIndex(item=>item.id===active.lessonNodeId)??-1;
+    if(unit&&lessonIndex>=0){
+     treeUnitSelect.value=unit.termId+'|'+unit.unitId;renderOfficialTreeLessons(unit,active.lessonNodeId);
+     $('stnHubSemester').value=String([...new Set(officialTreeUnits.map(x=>x.termId))].indexOf(unit.termId)+1);
+     $('stnHubUnit').value=String(officialTreeUnits.filter(x=>x.termId===unit.termId).indexOf(unit)+1);
+     $('stnHubLesson').value=String(lessonIndex+1);
+     const proof={termId:unit.termId,unitId:unit.unitId,lessonId:active.lessonNodeId};
+     persistSelection({course,proof});displayLessonTitles({unit:unit.unit,title:unit.lessons[lessonIndex].title});
+    }
+   }
+  }finally{officialTreeLoading=false;}
+ }
+ treeUnitSelect.addEventListener('change',()=>{
+  const [termId,unitId]=treeUnitSelect.value.split('|');
+  const unit=officialTreeUnits.find(x=>x.termId===termId&&x.unitId===unitId);
+  renderOfficialTreeLessons(unit);treeLessonSelect.value='';
+ });
+ treeLessonSelect.addEventListener('change',async()=>{
+  const [termId,unitId]=treeUnitSelect.value.split('|'),unit=officialTreeUnits.find(x=>x.termId===termId&&x.unitId===unitId);
+  const lesson=unit?.lessons?.find(x=>x.id===treeLessonSelect.value);if(!lesson)return;
+  const bridge=globalThis.NoorPrepBridge2828,course=selectedClass();
+  if(!bridge?.onAddPage?.()){curriculumStatus('افتح نموذج التحضير في نور لاختيار درس من الشجرة.');return;}
+  try{
+   treeManualOverrideAt=Date.now();
+   const result=await bridge.selectLesson({termId,unitId,lessonId:lesson.id,title:lesson.title});
+   if(!result?.ok)throw Error('لم يؤكد نور اختيار الدرس.');
+   const unitIndex=officialTreeUnits.filter(x=>x.termId===termId).indexOf(unit)+1;
+   const lessonIndex=unit.lessons.findIndex(x=>x.id===lesson.id)+1;
+   $('stnHubSemester').value=String([...new Set(officialTreeUnits.map(x=>x.termId))].indexOf(termId)+1);
+   $('stnHubUnit').value=String(unitIndex);$('stnHubLesson').value=String(lessonIndex);
+   const proof={termId,unitId,lessonId:lesson.id};persistSelection({course,proof});
+   livePrep={url:location.href,course,unit:unit.unit,title:lesson.title,semester:$('stnHubSemester').value,termId,unitId,lessonId:lesson.id};
+   $('stnHubNativeLesson').textContent=course.label+' — '+unit.unit+' — '+lesson.title;
+   displayLessonTitles({unit:unit.unit,title:lesson.title});
+  }catch(error){curriculumStatus('تعذر اعتماد الدرس المختار: '+String(error.message||error));}
+ });""",path)
+s = replace_exact(s,
+ """  syncClassOptions();
+  if(taskService()==='activities')reflectVisibleActivityClass();
+ }""",
+ """  syncClassOptions();
+  if(taskService()==='activities')reflectVisibleActivityClass();
+  if(globalThis.NoorPrepBridge2828?.onAddPage?.())setTimeout(()=>discoverOfficialTree().catch(()=>{}),0);
+ }""",path)
+s = replace_exact(s,
+ """   updateSubject();
+   changeSelection();
+  });""",
+ """   updateSubject();
+   officialTreeSignature='';officialTreeUnits=[];
+   changeSelection();
+   discoverOfficialTree().catch(()=>{});
+  });""",path)
+s = replace_exact(s,
+ """ function syncClassOptions(discovered=[]){
+  courseCandidates=courseChoices(discovered);""",
+ """ function classDisplayLabel(course){
+  const sameGrade=courseCandidates.filter(item=>Number(item.grade)===Number(course.grade));
+  const subjects=[...new Set(sameGrade.map(item=>norm(item.subject)).filter(Boolean))];
+  return 'الصف '+course.grade+(subjects.length>1&&course.subject?' — '+course.subject:'');
+ }
+ function syncClassOptions(discovered=[]){
+  courseCandidates=courseChoices(discovered);""",path)
+s = replace_exact(s,'for(const c of courseCandidates)select.append(new Option(c.label,classValue(c)));',
+ 'for(const c of courseCandidates)select.append(new Option(classDisplayLabel(c),classValue(c)));',path)
+s = replace_exact(s,'select.append(new Option(placeholder.label,classValue(placeholder)));',
+ 'select.append(new Option(classDisplayLabel(placeholder),classValue(placeholder)));',path)
+s = replace_exact(s,
+ "const legacyTree=root.querySelector('#stnHubLessonChoiceBox');if(legacyTree)legacyTree.hidden=true;",
+ "const legacyTree=root.querySelector('#stnHubLessonChoiceBox');if(legacyTree)legacyTree.hidden=false;",path)
+files[path] = s.encode()
+
+path = "noor-hub.css"
+s = files[path].decode()
+s += """
+/* 2.8.112 official Noor curriculum tree selectors */
+#stnNoorHub .stnSelectionDock{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr)!important;align-items:end!important}
+#stnNoorHub .stnSelectionCaption{grid-column:1/-1!important}
+#stnNoorHub .stnSelectionClass{display:contents!important}
+#stnNoorHub .stnSelectionField{min-width:0!important}
+#stnNoorHub .stnSelectionField select{min-height:42px!important}
+#stnNoorHub .stnOfficialTreePicker{grid-column:2/4!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;min-width:0!important}
+#stnNoorHub .stnOfficialTreePicker>div{display:grid!important;gap:4px!important;min-width:0!important}
+#stnNoorHub .stnOfficialTreePicker label{font-size:11px!important;white-space:nowrap!important}
+#stnNoorHub .stnOfficialTreePicker select{width:100%!important;min-width:0!important;min-height:42px!important;font-size:12px!important;padding:5px!important}
+#stnNoorHub .stnOfficialTreePicker select:disabled{opacity:.72!important;background:#f1f4f1!important}
+#stnNoorHub .stnSelectionDock .stnRow{display:contents!important}
+#stnNoorHub .stnSelectionDock .stnRow>div{min-width:0!important}
+#stnNoorHub #stnHubLessonChoiceBox:not([hidden]){display:none!important}
+@media(max-width:520px){#stnNoorHub .stnSelectionDock{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr)!important;gap:6px!important}#stnNoorHub .stnOfficialTreePicker{grid-column:2/4!important;gap:5px!important}#stnNoorHub .stnOfficialTreePicker select{font-size:10px!important;min-height:39px!important}}
+"""
+files[path] = s.encode()
+
+# 2.8.112 assertions
+assert "stnOfficialTreePicker" in files["noor-hub.js"].decode()
+assert "bridge.curriculum()" in files["noor-hub.js"].decode()
+assert "bridge.selectLesson({termId,unitId,lessonId:lesson.id,title:lesson.title})" in files["noor-hub.js"].decode()
+assert "official outcomes selected" in files["content.js"].decode()
+assert "selectedOutcomes" in files["page-helper.js"].decode()
+
 
 # 2.8.110: never auto-navigate during grade transfer; require the teacher-opened gradebook.
 path = "noor-hub.js"
