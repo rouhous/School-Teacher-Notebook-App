@@ -2295,6 +2295,71 @@ hub = replace_exact(hub,
     path)
 files[path] = hub.encode()
 
+
+# 2.8.110: compact header Gemini key dialog and one-row action controls.
+path = "noor-hub.js"
+s = files[path].decode()
+# Put the key entry point in the title toolbar; reuse the existing key box and save handlers.
+s = replace_exact(s,
+  "  const panelRoot=root.querySelector('#stnHubPanel');",
+  """  const panelRoot=root.querySelector('#stnHubPanel');
+  const headButtons=panelRoot.querySelector('.stnHeadButtons');
+  const geminiButton=document.createElement('button');
+  geminiButton.type='button';geminiButton.id='stnHubGeminiHeader';
+  geminiButton.className='stnHeadGemini';geminiButton.title='إعداد مفتاح Gemini';
+  geminiButton.setAttribute('aria-label','إعداد مفتاح Gemini');
+  geminiButton.textContent='🔑 Gemini';
+  headButtons?.insertBefore(geminiButton,headButtons.firstChild);
+  const keyBox=panelRoot.querySelector('#stnHubKeyBox');
+  const keyDialog=document.createElement('div');
+  keyDialog.id='stnHubKeyDialog';keyDialog.hidden=true;
+  keyDialog.setAttribute('role','dialog');keyDialog.setAttribute('aria-modal','true');
+  keyDialog.setAttribute('aria-label','إعداد مفتاح Gemini');
+  const keyDialogHead=document.createElement('div');keyDialogHead.className='stnKeyDialogHead';
+  const keyDialogTitle=document.createElement('strong');keyDialogTitle.textContent='🔑 إعداد مفتاح Gemini';
+  const keyDialogClose=document.createElement('button');keyDialogClose.type='button';
+  keyDialogClose.textContent='×';keyDialogClose.setAttribute('aria-label','إغلاق');
+  keyDialogHead.append(keyDialogTitle,keyDialogClose);
+  keyDialog.append(keyDialogHead,keyBox);
+  panelRoot.append(keyDialog);
+  geminiButton.addEventListener('click',()=>{keyDialog.hidden=false;keyBox.hidden=false;});
+  keyDialogClose.addEventListener('click',()=>{keyDialog.hidden=true;});
+  keyDialog.addEventListener('click',event=>{if(event.target===keyDialog)keyDialog.hidden=true;});
+  const legacyActions=panelRoot.querySelector('#stnHubLegacyActions');
+  const stopButton=panelRoot.querySelector('#stnHubBatchCancel');
+  if(legacyActions&&stopButton)legacyActions.append(stopButton);""",
+  path)
+# Use a 3-column action row; do not leave the stop action on its own line.
+files[path]=s.encode()
+
+path = "noor-hub.css"
+s=files[path].decode()
+s += """
+/* 2.8.110 compact Gemini header and single-line task actions */
+#stnNoorHub .stnHeadButtons{display:flex!important;align-items:center!important;gap:5px!important;flex-wrap:nowrap!important}
+#stnNoorHub .stnHeadGemini{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:3px!important;min-width:76px!important;height:34px!important;padding:0 8px!important;border:1px solid #ffffff55!important;border-radius:10px!important;background:#ffffff18!important;color:#fff!important;font-size:11px!important;font-weight:800!important}
+#stnNoorHub #stnHubKeyDialog[hidden]{display:none!important}
+#stnNoorHub #stnHubKeyDialog{position:absolute!important;z-index:100000!important;inset:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:stretch!important;gap:12px!important;padding:18px!important;background:#102b25d9!important;border-radius:18px!important}
+#stnNoorHub .stnKeyDialogHead{display:flex!important;align-items:center!important;justify-content:space-between!important;color:#fff!important;font-size:15px!important}
+#stnNoorHub .stnKeyDialogHead button{width:34px!important;height:34px!important;border:0!important;border-radius:9px!important;background:#ffffff22!important;color:#fff!important;font-size:23px!important}
+#stnNoorHub #stnHubKeyBox{display:block!important;padding:14px!important;border:1px solid #d9e5dc!important;border-radius:13px!important;background:#fffefa!important}
+#stnNoorHub #stnHubKeyBox[hidden]{display:block!important}
+#stnNoorHub #stnHubKeyBox .stnActions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+#stnNoorHub #stnHubLegacyActions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;align-items:stretch!important;margin-top:10px!important}
+#stnNoorHub #stnHubLegacyActions .stnBtn,#stnNoorHub #stnHubLegacyActions .stnFilePicker{min-width:0!important;min-height:38px!important;padding:6px 5px!important;font-size:10px!important;line-height:1.25!important;white-space:normal!important;text-align:center!important}
+#stnNoorHub #stnHubLegacyActions #stnHubBatchCancel{margin:0!important}
+@media(max-width:520px){
+ #stnNoorHub .stnHeadButtons{gap:3px!important}
+ #stnNoorHub .stnHeadGemini{min-width:67px!important;padding:0 5px!important;font-size:10px!important}
+ #stnNoorHub #stnHubLegacyActions{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important}
+ #stnNoorHub #stnHubLegacyActions .stnBtn,#stnNoorHub #stnHubLegacyActions .stnFilePicker{font-size:9px!important;padding:5px 3px!important}
+}
+"""
+files[path]=s.encode()
+assert "stnHubGeminiHeader" in files["noor-hub.js"].decode()
+assert "keyDialogClose.addEventListener" in files["noor-hub.js"].decode()
+assert "#stnNoorHub #stnHubLegacyActions{display:grid!important;grid-template-columns:repeat(3" in files["noor-hub.css"].decode()
+
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
         dest.writestr(path,data)
