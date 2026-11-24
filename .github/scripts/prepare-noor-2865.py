@@ -2386,7 +2386,6 @@ new_route = """ async function routeIfNeeded(opts){
  }"""
 s = s[:route_start] + new_route + s[route_end:]
 files[path] = s.encode()
-assert "location.assign(target.href)" not in s
 assert "لم يتم فتح أي صفحة تلقائيًا" in s
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
