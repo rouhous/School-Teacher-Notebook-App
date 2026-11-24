@@ -2282,16 +2282,7 @@ assert "quotaLimited=true;failures.push(model);break;" in models
 assert "discovered=SUPPORTED.slice();" in models
 files[path]=models.encode()
 
-# Persistent Gemini-key entry point: allow opening the key field even when a key is already saved.
-path = "noor-hub.js"
-hub = files[path].decode()
-hub = replace_exact(hub,
-    '<div id="stnHubKeyBox" hidden>',
-    '<div id="stnHubKeyBox" hidden>',
-    path)
-hub = replace_exact(hub,
-files[path] = hub.encode()
-
+# Gemini key is available only from the compact header dialog; no footer launcher.
 
 # 2.8.110: compact header Gemini key dialog and one-row action controls.
 path = "noor-hub.js"
