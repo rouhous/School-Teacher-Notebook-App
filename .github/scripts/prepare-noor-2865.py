@@ -2287,12 +2287,9 @@ path = "noor-hub.js"
 hub = files[path].decode()
 hub = replace_exact(hub,
     '<div id="stnHubKeyBox" hidden>',
-    '<div class="stnActions"><button type="button" id="stnHubManageKey" class="stnBtn outline">🔑 إعداد مفتاح Gemini</button></div><div id="stnHubKeyBox" hidden>',
+    '<div id="stnHubKeyBox" hidden>',
     path)
 hub = replace_exact(hub,
-    "$('stnHubCreateKey').addEventListener('click',()=>window.open('https://aistudio.google.com/api-keys','_blank','noopener,noreferrer'));",
-    "$('stnHubManageKey').addEventListener('click',()=>{ $('stnHubKeyBox').hidden=false; $('stnHubKey').focus(); status(keyReady?'يمكنك لصق مفتاح Gemini جديد لاستبدال المفتاح الحالي.':'أضف مفتاح Gemini ثم اضغط «لصق وحفظ».'); }); $('stnHubCreateKey').addEventListener('click',()=>window.open('https://aistudio.google.com/api-keys','_blank','noopener,noreferrer'));",
-    path)
 files[path] = hub.encode()
 
 
