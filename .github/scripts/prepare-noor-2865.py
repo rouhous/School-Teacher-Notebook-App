@@ -2303,13 +2303,13 @@ s = files[path].decode()
 s = replace_exact(s,
   " const panelRoot=root.querySelector('#stnHubPanel');",
   """  const panelRoot=root.querySelector('#stnHubPanel');
-  const headButtons=panelRoot.querySelector('.stnHeadButtons');
+  const geminiHeadButtons=panelRoot.querySelector('.stnHeadButtons');
   const geminiButton=document.createElement('button');
   geminiButton.type='button';geminiButton.id='stnHubGeminiHeader';
   geminiButton.className='stnHeadGemini';geminiButton.title='إعداد مفتاح Gemini';
   geminiButton.setAttribute('aria-label','إعداد مفتاح Gemini');
   geminiButton.textContent='🔑 Gemini';
-  headButtons?.insertBefore(geminiButton,headButtons.firstChild);
+  geminiHeadButtons?.insertBefore(geminiButton,geminiHeadButtons.firstChild);
   const keyBox=panelRoot.querySelector('#stnHubKeyBox');
   const keyDialog=document.createElement('div');
   keyDialog.id='stnHubKeyDialog';keyDialog.hidden=true;
