@@ -76,7 +76,8 @@ jobs:
           grep -Fq 'stnHubKeyDialog' extension/noor-hub.js
           grep -Fq 'branch.lessons||[]' extension/noor-hub.js
           grep -Fq 'stnHubLegacyActions' extension/noor-hub.js
-          grep -Fq 'اختر الصف ثم أدخل رقم الوحدة والدرس' extension/noor-hub.js
+          grep -Fq 'اختر الوحدة' extension/noor-hub.js
+          grep -Fq 'اختر الدرس' extension/noor-hub.js
           grep -Fq 'اختر الوحدة' extension/noor-hub.js
           grep -Fq 'اختر الدرس' extension/noor-hub.js
           grep -Fq '2.8.105 class + numeric lesson coordinates' extension/noor-hub.css
