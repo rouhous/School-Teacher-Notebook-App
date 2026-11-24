@@ -2215,6 +2215,73 @@ if "README.md" in files:
 
 
 
+# 2.8.109: restore automatic Gemini model fallback on quota/rate-limit responses.
+# The shared model router previously stopped immediately on HTTP 429, so the
+# configured lower-tier model was never attempted. Keep key handling and
+# generation/publishing flows unchanged; only repair model selection.
+path = "noor-gemini-models.js"
+models = files[path].decode()
+models = replace_exact(models,
+    "if(status===429)return 'تجاوز مشروع Gemini حد الطلبات أو الحصة (429). انتظر تجدد الحصة؛ لن نُعيد الطلب تلقائيًا.';",
+    "if(status===429)return 'تجاوز النموذج الأساسي حد الطلبات أو الحصة (429)، وتمت تجربة النموذج الاحتياطي تلقائيًا إن كان متاحًا.';",
+    path)
+models = replace_exact(models,
+    """   const discovered=await available(key);
+   if(!discovered.length)throw Error('لا يعرض مشروع Google نموذجًا حديثًا من Gemini Flash-Lite قادرًا على التوليد. تحقق من المشروع والمفتاح في AI Studio.');""",
+    """   let discovered=[];
+   try{discovered=await available(key);}
+   catch(error){
+     // A transient quota/rate-limit on the model-list endpoint must not
+     // prevent a direct attempt with the configured primary and fallback.
+     const message=String(error?.message||error);
+     if(!/429|HTTP 5\\d\\d|غير متاحة حاليًا|تعذر الاتصال/.test(message))throw error;
+     discovered=SUPPORTED.slice();
+   }
+   if(!discovered.length)throw Error('لا يعرض مشروع Google نموذجًا حديثًا من Gemini Flash-Lite قادرًا على التوليد. تحقق من المشروع والمفتاح في AI Studio.');""",
+    path)
+models = replace_exact(models,
+    """   let overloaded=false;
+   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));""",
+    """   let overloaded=false,quotaLimited=false;
+   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));""",
+    path)
+models = replace_exact(models,
+    """       if(r.status===404){failures.push(model);break;}
+       if(r.status===503){
+         overloaded=true;
+         if(attempt===0){await sleep(1800+Math.floor(Math.random()*500));continue;}
+         break; // Try another discovered Lite model only after bounded backoff.
+       }
+       // Never retry quota, permission, invalid request or other server failures.
+       throw Error(safeError(r.status));""",
+    """       if(r.status===404){failures.push(model);break;}
+       if(r.status===429){
+         // Quota/rate limit can be model-specific. Do not repeat the exhausted
+         // model; move immediately to the next configured lower-tier model.
+         quotaLimited=true;failures.push(model);break;
+       }
+       if(r.status===503){
+         overloaded=true;
+         if(attempt===0){await sleep(1800+Math.floor(Math.random()*500));continue;}
+         break; // Try another discovered Lite model only after bounded backoff.
+       }
+       if([500,502,504].includes(r.status)){
+         overloaded=true;failures.push(model);break;
+       }
+       // Permission and invalid-request failures are not solved by switching models.
+       throw Error(safeError(r.status));""",
+    path)
+models = replace_exact(models,
+    """   if(overloaded)throw Error(safeError(503));
+   throw Error('نماذج Gemini Flash-Lite غير متاحة للتوليد بهذا المفتاح ('+failures.join('، ')+'). قد تظهر في قائمة Google رغم تقييد الاستخدام. جرّب مفتاح مشروع يدعم النماذج الحديثة.');""",
+    """   if(quotaLimited)throw Error(safeError(429));
+   if(overloaded)throw Error(safeError(503));
+   throw Error('نماذج Gemini Flash-Lite غير متاحة للتوليد بهذا المفتاح ('+failures.join('، ')+'). قد تظهر في قائمة Google رغم تقييد الاستخدام. جرّب مفتاح مشروع يدعم النماذج الحديثة.');""",
+    path)
+assert "quotaLimited=true;failures.push(model);break;" in models
+assert "discovered=SUPPORTED.slice();" in models
+files[path]=models.encode()
+
 # Persistent Gemini-key entry point: allow opening the key field even when a key is already saved.
 path = "noor-hub.js"
 hub = files[path].decode()
