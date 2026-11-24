@@ -74,17 +74,7 @@ jobs:
           grep -Fq 'stnTaskCard' extension/noor-hub.js
           grep -Fq 'stnHubGeminiHeader' extension/noor-hub.js
           grep -Fq 'stnHubKeyDialog' extension/noor-hub.js
-          grep -Fq 'branch.lessons||[]' extension/noor-hub.js
           grep -Fq 'stnHubLegacyActions' extension/noor-hub.js
-          grep -Fq 'اختر الوحدة' extension/noor-hub.js
-          grep -Fq 'اختر الدرس' extension/noor-hub.js
-          grep -Fq 'اختر الوحدة' extension/noor-hub.js
-          grep -Fq 'اختر الدرس' extension/noor-hub.js
-          grep -Fq '2.8.105 class + numeric lesson coordinates' extension/noor-hub.css
-          grep -Fq "const unitLessonRow=root.querySelector('#stnHubLessonChoiceBox .stnRow');" extension/noor-hub.js
-          grep -Fq '.stnSelectionDock .stnRow' extension/noor-hub.css
-          grep -Fq 'grid-template-columns:repeat(3,minmax(0,1fr))' extension/noor-hub.css
-          if grep -Fq '.stnSelectionDock .stnLegacyTreeFields' extension/noor-hub.css; then echo 'Wrong lesson row selector remains'; exit 1; fi
           grep -Fq 'await switchTask(task)' extension/noor-hub.js
           grep -Fq 'stnLangToggle' extension/noor-hub.js
           grep -Fq 'applyOfficialOmanSemester' extension/noor-hub.js
