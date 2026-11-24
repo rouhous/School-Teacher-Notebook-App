@@ -2363,6 +2363,32 @@ assert "#stnNoorHub #stnHubLegacyActions{display:grid!important;grid-template-co
 
 # Unit/lesson dropdown work is deferred for this release.
 
+# 2.8.110: never auto-navigate during grade transfer; require the teacher-opened gradebook.
+path = "noor-hub.js"
+s = files[path].decode()
+route_start = s.find(" async function routeIfNeeded(opts){")
+if route_start < 0: sys.exit("Could not find grade route handler in noor-hub.js")
+route_end = s.find("\n }", route_start)
+if route_end < 0: sys.exit("Could not find end of grade route handler in noor-hub.js")
+route_end += 3
+new_route = """ async function routeIfNeeded(opts){
+  if(opts.service!=='grades')return false;
+  // The teacher opens the gradebook manually; never follow a cached route.
+  if(routetype()!=='grades')
+   throw Error('افتح صفحة رصد الدرجات في نور بنفسك، ثم أعد المطابقة. لم يتم فتح أي صفحة تلقائيًا.');
+  if(csvFileInfo){
+   try{gradePageScan();}
+   catch(error){throw Error('الصفحة الحالية ليست صفحة رصد درجات قابلة للمطابقة. افتح صفحة الدرجات بنفسك ثم أعد المحاولة.');}
+  }else if(!document.querySelector('#stnGradeAssessment')){
+   throw Error('لم أتعرف على نموذج رصد الدرجات في الصفحة الحالية. افتح صفحة الدرجات بنفسك ثم أعد المحاولة.');
+  }
+  return false;
+ }"""
+s = s[:route_start] + new_route + s[route_end:]
+files[path] = s.encode()
+assert "location.assign(target.href)" not in s
+assert "لم يتم فتح أي صفحة تلقائيًا" in s
+
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
         dest.writestr(path,data)
