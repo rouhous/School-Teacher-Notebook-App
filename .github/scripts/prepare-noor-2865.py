@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# [release-noor] 2.8.108 corrected selection-dock row selector
+# [release-noor] 2.8.111 automatic Noor lesson recognition with optional manual fallback
 """Generate Noor 2.8.97 lesson-grounded activity generation and compact inline-field teacher panel.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
@@ -10,7 +10,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.110-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.111-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -25,7 +25,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.110"
+manifest["version"] = "2.8.111"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -1943,18 +1943,18 @@ s = replace_exact(s, anchor, anchor + """
  selectionTitle.className='stnSelectionCaption';selectionTitle.textContent='أولًا: اختر الصف ورقم الوحدة والدرس';
  selectionDock.append(selectionTitle,classRow,unitLessonRow);
  taskPicker.before(selectionDock);
- selectionClassSelect.required=true;
- for(const id of ['stnHubOpenCurriculumTree','stnHubSelectedPath','stnHubRefreshTree','stnHubLessonPreview']){
+ selectionClassSelect.required=false;
+ for(const id of ['stnHubOpenCurriculumTree','stnHubRefreshTree']){
   const el=$(id);if(el)el.hidden=true;
  }
  const semesterLabel=root.querySelector('label[for="stnHubSemester"]');
  if(semesterLabel)semesterLabel.hidden=true;
  $('stnHubSemester').hidden=true;
  const syncTaskAvailability=()=>{
-  const ready=Boolean(selectionClassSelect.value&&position($('stnHubUnit').value)&&position($('stnHubLesson').value));
+  const ready=true;
   root.querySelectorAll('.stnTaskCard').forEach(card=>{
    card.disabled=!ready;card.setAttribute('aria-disabled',String(!ready));
-   card.title=ready?'':'اختر الصف ورقم الوحدة والدرس أولًا';
+   card.title='اختر المهمة؛ يمكن التعرف على الدرس تلقائيًا من صفحة نور.';
   });
  };
  selectionClassSelect.addEventListener('change',syncTaskAvailability);
@@ -1966,18 +1966,18 @@ s = replace_exact(s, anchor, anchor + """
  const unitLabel=root.querySelector('label[for="stnHubUnit"]');
  const lessonLabel=root.querySelector('label[for="stnHubLesson"]');
  if(!unitInput||!lessonInput||!unitLabel||!lessonLabel)throw new Error('حقلا رقم الوحدة ورقم الدرس غير متاحين.');
- for(const [input,label,text] of [[unitInput,unitLabel,'رقم الوحدة'],[lessonInput,lessonLabel,'رقم الدرس']]){
+ for(const [input,label,text] of [[unitInput,unitLabel,'رقم الوحدة (اختياري)'],[lessonInput,lessonLabel,'رقم الدرس (اختياري)']]){
   input.type='number';input.inputMode='numeric';input.min='1';input.max='99';input.step='1';
-  input.placeholder=text;input.setAttribute('aria-label',text);label.textContent=text;input.required=true;
+  input.placeholder=text;input.setAttribute('aria-label',text);label.textContent=text;input.required=false;
  }
  const legacyTree=root.querySelector('#stnHubLessonChoiceBox');if(legacyTree)legacyTree.hidden=true;
  const selectionSummary=root.querySelector('#stnHubSelectedPath');if(selectionSummary)selectionSummary.hidden=true;
  const lessonPreview=root.querySelector('#stnHubLessonPreview');if(lessonPreview)lessonPreview.hidden=true;
  if(taskPicker.previousElementSibling!==selectionDock)taskPicker.before(selectionDock);
- selectionDock.querySelector('.stnSelectionCaption').textContent='اختر الصف ثم أدخل رقم الوحدة والدرس';
+ selectionDock.querySelector('.stnSelectionCaption').textContent='اختر المهمة؛ يتعرف دفتر نور على الصف والدرس من الصفحة المفتوحة تلقائيًا. ويمكن إدخال أرقام الوحدة والدرس عند الحاجة.';
  const taskCards=[...root.querySelectorAll('.stnTaskCard')];
  const updateTaskReady=()=>{
-  const ready=Boolean(selectionClassSelect.value&&Number.isInteger(Number(unitInput.value))&&Number(unitInput.value)>0&&Number.isInteger(Number(lessonInput.value))&&Number(lessonInput.value)>0);
+  const ready=true;
   taskCards.forEach(card=>{card.disabled=!ready;card.setAttribute('aria-disabled',String(!ready));});
  };
  for(const input of [selectionClassSelect,unitInput,lessonInput])input.addEventListener('input',updateTaskReady);
@@ -2155,6 +2155,9 @@ s=files[path].decode()+"""
 #stnNoorHub .stnTaskCard:disabled{opacity:.42!important;filter:grayscale(1)!important;cursor:not-allowed!important}
 #stnNoorHub #stnHubOpenCurriculumTree[hidden],#stnNoorHub #stnHubRefreshTree[hidden],#stnNoorHub #stnHubLessonPreview[hidden]{display:none!important}
 @media(max-width:520px){#stnNoorHub .stnSelectionDock{padding:8px!important;gap:6px!important}#stnNoorHub .stnSelectionClass{grid-template-columns:62px minmax(0,1fr)!important}#stnNoorHub .stnSelectionDock .stnLegacyTreeFields{gap:6px!important}}
+/* 2.8.111: tasks are always available; manual coordinates are fallback only */
+#stnNoorHub .stnTaskCard:disabled{opacity:1!important;filter:none!important;cursor:pointer!important}
+#stnNoorHub .stnSelectionCaption{line-height:1.55!important}
 /* 2.8.102: minimize the complete workspace, not only its task tabs */
 #stnNoorHub .stnHubPanel.stnHubMinimized{display:none!important}
 #stnNoorHub #stnHubRefreshTree[hidden]{display:none!important}
@@ -2210,7 +2213,7 @@ files[path] = s.encode()
 # Keep the packaged documentation aligned with the actual manifest version.
 if "README.md" in files:
     readme=files["README.md"].decode()
-    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.110",1)
+    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.111",1)
     files["README.md"]=readme.encode()
 
 
