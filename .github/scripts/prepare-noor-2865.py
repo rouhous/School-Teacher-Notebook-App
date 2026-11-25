@@ -2773,6 +2773,16 @@ assert "themeNodeId:chain[2]?.nodeId" in files["page-helper.js"].decode()
 assert "semester\\\\s*1" in files["noor-hub.js"].decode()
 assert "refreshOfficialTreeInBackground" in files["noor-hub.js"].decode()
 
+# Preserve usable units when Noor's lazy tree reports a partial branch.
+path = "content.js"
+s = files[path].decode()
+s = s.replace(
+'''      if (tree?.error || !Array.isArray(tree?.units) || !tree.units.length)
+        throw Error('لم أتمكن من قراءة شجرة نور الحقيقية: '+(tree?.error||'empty_tree'));''',
+'''      if (!Array.isArray(tree?.units) || !tree.units.length)
+        throw Error('لم أتمكن من قراءة شجرة نور الحقيقية: '+(tree?.error||'empty_tree'));''')
+files[path] = s.encode()
+
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
         dest.writestr(path,data)
