@@ -2766,6 +2766,12 @@ s=s[:idx]+poll+s[idx:]
 # Do not leave a non-functional legacy tree box visible.
 s=s.replace("const legacyTree=root.querySelector('#stnHubLessonChoiceBox');if(legacyTree)legacyTree.hidden=false;",
             "const legacyTree=root.querySelector('#stnHubLessonChoiceBox');if(legacyTree)legacyTree.hidden=true;")
+s=s.replace("treeUnitSelect.value=unit.termId+'|'+unit.unitId;renderOfficialTreeLessons(unit,active.lessonNodeId);",
+            "treeUnitSelect.value=unit.termId+'|'+unit.themeId+'|'+unit.unitId;renderOfficialTreeLessons(unit,active.lessonNodeId);")
+s=s.replace("if(unit&&lessonIndex>=0){",
+            "if(unit&&lessonIndex>=0&&/(?:الأول|الاول|first|1st|semester\\s*1|term\\s*1)/i.test(String(unit.term||''))){")
+if "unit.themeId+'|'+unit.unitId" not in s: sys.exit("Could not patch active unit selection key")
+if "firstSemester=officialTreeUnits.filter" not in s: sys.exit("Could not patch first-semester unit filter")
 files[path] = s.encode()
 
 assert "themeId:tree.themeId||''" in files["content.js"].decode()
