@@ -2779,6 +2779,22 @@ assert "themeNodeId:chain[2]?.nodeId" in files["page-helper.js"].decode()
 assert "semester\\\\s*1" in files["noor-hub.js"].decode()
 assert "refreshOfficialTreeInBackground" in files["noor-hub.js"].decode()
 
+# Keep a teacher's chosen unit stable while the background observer refreshes the tree.
+path = "noor-hub.js"
+s = files[path].decode()
+s=s.replace("let officialTreeUnits=[],officialTreeLoading=false,officialTreeSignature='',officialTreeTeacher='',officialTreeCourse='',treeManualOverrideAt=0;",
+            "let officialTreeUnits=[],officialTreeLoading=false,officialTreeSignature='',officialTreeTeacher='',officialTreeCourse='',treeManualOverrideAt=0,teacherUnitOverride='';")
+s=s.replace("const previousUnit=active?.unitNodeId||treeUnitSelect.value;",
+            "const selectedParts=String(treeUnitSelect.value||'').split('|');const previousUnit=teacherUnitOverride.split('|')[2]||active?.unitNodeId||selectedParts[2]||'';")
+s=s.replace("treeUnitSelect.addEventListener('change',()=>{\n  const [termId,themeId,unitId]=treeUnitSelect.value.split('|');",
+            "treeUnitSelect.addEventListener('change',()=>{\n  teacherUnitOverride=treeUnitSelect.value;\n  const [termId,themeId,unitId]=treeUnitSelect.value.split('|');")
+s=s.replace("treeLessonSelect.addEventListener('change',async()=>{\n  const [termId,themeId,unitId]=treeUnitSelect.value.split('|')",
+            "treeLessonSelect.addEventListener('change',async()=>{\n  teacherUnitOverride=treeUnitSelect.value;\n  const [termId,themeId,unitId]=treeUnitSelect.value.split('|')")
+s=s.replace("officialTreeSignature='';officialTreeUnits=[];\n   changeSelection();",
+            "officialTreeSignature='';officialTreeUnits=[];teacherUnitOverride='';\n   changeSelection();")
+if "teacherUnitOverride.split('|')[2]" not in s: sys.exit("Unit override persistence patch failed")
+files[path] = s.encode()
+
 # Preserve usable units when Noor's lazy tree reports a partial branch.
 path = "content.js"
 s = files[path].decode()
