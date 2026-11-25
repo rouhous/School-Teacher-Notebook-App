@@ -62,6 +62,13 @@ jobs:
           grep -Fq 'stnHubScormImageMode' extension/noor-hub.js
           grep -Fq 'gemini_none' extension/noor-hub.js
           grep -Fq "kind:'svg-fallback'" extension/noor-hub.js
+          grep -Fq "themeId" extension/page-helper.js
+          grep -Fq "themeId:tree.themeId||''" extension/content.js
+          grep -Fq "firstSemester=officialTreeUnits.filter" extension/noor-hub.js
+          grep -Fq "refreshOfficialTreeInBackground" extension/noor-hub.js
+          node --check extension/page-helper.js
+          node --check extension/content.js
+          node --check extension/noor-hub.js
           grep -Fq "omani-lesson-scene.svg" extension/noor-scorm.js
           grep -Fq 'stnNoorPrepSubmitReceipt:v1' extension/page-helper.js
           grep -Fq 'scheduled:true' extension/page-helper.js
