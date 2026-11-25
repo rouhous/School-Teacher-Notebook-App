@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# [release-noor] 2.8.112 automatic Noor lesson recognition with optional manual fallback
+# [release-noor] 2.8.113 automatic Noor lesson recognition with optional manual fallback
 """Generate Noor 2.8.97 lesson-grounded activity generation and compact inline-field teacher panel.
 Keeps the v2.8.65 card recognizer and original SCORM publisher; fixes only task-side card resolution."""
 from pathlib import Path
@@ -10,7 +10,7 @@ directory = Path("addons/unified")
 sources = sorted(directory.glob("*-v2.8.64-*-source.zip"))
 if len(sources) != 1:
     sys.exit(f"Expected one 2.8.64 source archive, found {len(sources)}")
-output = directory / "Noor-Unified-v2.8.112-TeacherWorkspace-source.zip"
+output = directory / "Noor-Unified-v2.8.113-TeacherWorkspace-source.zip"
 
 def replace_exact(content, old, new, path):
     if content.count(old) != 1:
@@ -25,7 +25,7 @@ if any(p.startswith("META-INF/") for p in files):
 manifest = json.loads(files["manifest.json"])
 if manifest["version"] != "2.8.64":
     sys.exit("Unexpected base version")
-manifest["version"] = "2.8.112"
+manifest["version"] = "2.8.113"
 manifest["name"] = "دفتر نور | المساعد الذكي لدفتر المعلم المدرسي"
 manifest["description"] = "دفتر نور: مساحة عمل متجاوبة للتحضير والأنشطة والدروس التفاعلية والتكامل مع دفتر المعلم المدرسي."
 files["manifest.json"] = (json.dumps(manifest,ensure_ascii=False,indent=2)+"\n").encode()
@@ -2155,7 +2155,7 @@ s=files[path].decode()+"""
 #stnNoorHub .stnTaskCard:disabled{opacity:.42!important;filter:grayscale(1)!important;cursor:not-allowed!important}
 #stnNoorHub #stnHubOpenCurriculumTree[hidden],#stnNoorHub #stnHubRefreshTree[hidden],#stnNoorHub #stnHubLessonPreview[hidden]{display:none!important}
 @media(max-width:520px){#stnNoorHub .stnSelectionDock{padding:8px!important;gap:6px!important}#stnNoorHub .stnSelectionClass{grid-template-columns:62px minmax(0,1fr)!important}#stnNoorHub .stnSelectionDock .stnLegacyTreeFields{gap:6px!important}}
-/* 2.8.112: tasks are always available; manual coordinates are fallback only */
+/* 2.8.113: tasks are always available; manual coordinates are fallback only */
 #stnNoorHub .stnTaskCard:disabled{opacity:1!important;filter:none!important;cursor:pointer!important}
 #stnNoorHub .stnSelectionCaption{line-height:1.55!important}
 /* 2.8.102: minimize the complete workspace, not only its task tabs */
@@ -2213,7 +2213,7 @@ files[path] = s.encode()
 # Keep the packaged documentation aligned with the actual manifest version.
 if "README.md" in files:
     readme=files["README.md"].decode()
-    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.112",1)
+    readme=readme.replace("Noor Unified Firefox Extension 2.8.64","Noor Unified Firefox Extension 2.8.113",1)
     files["README.md"]=readme.encode()
 
 
@@ -2353,7 +2353,7 @@ assert "#stnNoorHub #stnHubLegacyActions{display:grid!important;grid-template-co
 
 
 
-# 2.8.112: official outcomes selection and live Noor curriculum selectors.
+# 2.8.113: official outcomes selection and live Noor curriculum selectors.
 path = "page-helper.js"
 s = files[path].decode()
 s = replace_exact(s,
@@ -2537,7 +2537,7 @@ files[path] = s.encode()
 path = "noor-hub.css"
 s = files[path].decode()
 s += """
-/* 2.8.112 official Noor curriculum tree selectors */
+/* 2.8.113 official Noor curriculum tree selectors */
 #stnNoorHub .stnSelectionDock{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr)!important;align-items:end!important}
 #stnNoorHub .stnSelectionCaption{grid-column:1/-1!important}
 #stnNoorHub .stnSelectionClass{display:contents!important}
@@ -2555,7 +2555,7 @@ s += """
 """
 files[path] = s.encode()
 
-# 2.8.112 assertions
+# 2.8.113 assertions
 assert "stnOfficialTreePicker" in files["noor-hub.js"].decode()
 assert "bridge.curriculum()" in files["noor-hub.js"].decode()
 assert "bridge.selectLesson({termId,unitId,lessonId:lesson.id,title:lesson.title})" in files["noor-hub.js"].decode()
@@ -2587,6 +2587,191 @@ new_route = """ async function routeIfNeeded(opts){
 s = s[:route_start] + new_route + s[route_end:]
 files[path] = s.encode()
 assert "لم يتم فتح أي صفحة تلقائيًا" in s
+
+
+# 2.8.113: correct the Noor hierarchy (semester > theme > unit > lesson),
+# restrict the picker to semester one, and keep the tree synchronized in the background.
+path = "page-helper.js"
+s = files[path].decode()
+a = s.find("    async curriculum() {")
+b = s.find("\n    async selectLesson(", a)
+if a < 0 or b < 0: sys.exit("Could not locate curriculum reader for 2.8.113")
+curriculum = r'''    async curriculum() {
+      let inst;
+      for(let attempt=0;attempt<40&&!inst;attempt++){
+        if($?.fn?.jstree)inst=$("#jstree_node_tree").jstree(true);
+        if(!inst)await sleep(200);
+      }
+      if(!inst)return {error:"no_tree_instance",units:[]};
+      const open=async id=>{
+        if(inst.is_open(id)||inst.is_leaf(id))return;
+        await new Promise(resolve=>{
+          const timer=setTimeout(resolve,5000);
+          inst.open_node(id,()=>{clearTimeout(timer);resolve();},0);
+        });
+      };
+      let root;
+      for(let attempt=0;attempt<25&&!root;attempt++){
+        const roots=inst.get_node("#")?.children||[];
+        root=roots.length===1?inst.get_node(roots[0]):null;
+        if(!root)await sleep(200);
+      }
+      if(!root)return {error:"no_root",units:[]};
+      await open(root.id);root=inst.get_node(root.id);
+      const sub=async id=>{
+        try{
+          let r=await $.post("/schadmin/nodes/get_sub_nodes",{
+            parent_node_id:id,
+            custom_lessons:($("#match_lessons_list").val&&$("#match_lessons_list").val())||""
+          });
+          if(typeof r==="string")r=JSON.parse(r);
+          return r&&typeof r==="object"?r:{};
+        }catch(e){return {__error:String(e.message||e)};}
+      };
+      const units=[];let incomplete=false;
+      for(const termTreeId of root.children||[]){
+        const termNode=inst.get_node(termTreeId);
+        const termId=termNode?.li_attr?.node_id||termNode?.a_attr?.node_id;
+        if(!termId){incomplete=true;continue;}
+        const themes=await sub(termId);
+        if(themes.__error){incomplete=true;continue;}
+        for(const [themeId,themeData] of Object.entries(themes)){
+          if(themeId==="__error")continue;
+          const themeName=treeTitle(themeData?.title??themeData?.text??themeData?.name??themeData);
+          const themeUnits=await sub(themeId);
+          if(themeUnits.__error){incomplete=true;continue;}
+          for(const [unitId,unitData] of Object.entries(themeUnits)){
+            if(unitId==="__error")continue;
+            const lessonData=await sub(unitId);
+            if(lessonData.__error){incomplete=true;continue;}
+            const lessons=Object.entries(lessonData)
+              .filter(([id])=>id!=="__error")
+              .map(([id,item])=>({id:String(id),title:treeTitle(item?.title??item?.text??item?.name??item)}))
+              .filter(item=>item.id&&item.title);
+            if(lessons.length){
+              units.push({
+                termId:String(termId),term:treeTitle(termNode.text),
+                themeId:String(themeId),theme:themeName,
+                unitId:String(unitId),unit:treeTitle(unitData?.title??unitData?.text??unitData?.name??unitData),
+                lessons
+              });
+            }
+          }
+        }
+      }
+      // If the AJAX tree is incomplete, expand the real jsTree and recover
+      // all four levels. Merge missing units instead of discarding partial results.
+      const seen=new Set(units.map(x=>x.unitId));
+      for(const termTreeId of root.children||[]){
+        const term=inst.get_node(termTreeId),termId=term?.li_attr?.node_id||term?.a_attr?.node_id;
+        if(!termId)continue;
+        await open(termTreeId);
+        for(const themeTreeId of term.children||[]){
+          const theme=inst.get_node(themeTreeId),themeId=theme?.li_attr?.node_id||theme?.a_attr?.node_id;
+          if(!themeId)continue;
+          await open(themeTreeId);
+          for(const unitTreeId of theme.children||[]){
+            const unit=inst.get_node(unitTreeId),unitId=unit?.li_attr?.node_id||unit?.a_attr?.node_id;
+            if(!unitId||seen.has(String(unitId)))continue;
+            await open(unitTreeId);
+            const lessons=[];
+            for(const lessonTreeId of unit.children||[]){
+              const lesson=inst.get_node(lessonTreeId);
+              const id=lesson?.li_attr?.node_id||lesson?.a_attr?.node_id;
+              const title=treeTitle(lesson?.text);
+              if(id&&title&&(!lesson.children||lesson.children.length===0))lessons.push({id:String(id),title});
+            }
+            if(lessons.length){
+              units.push({termId:String(termId),term:treeTitle(term.text),
+                themeId:String(themeId),theme:treeTitle(theme.text),
+                unitId:String(unitId),unit:treeTitle(unit.text),lessons});
+              seen.add(String(unitId));
+            }
+          }
+        }
+      }
+      return {units,...(incomplete?{error:"incomplete_tree"}:{}),treeId:"jstree_node_tree"};
+    },
+'''
+s=s[:a]+curriculum+s[b:]
+# Update active selection path for the additional Theme level.
+s=s.replace('termNodeId:chain[2]?.nodeId||\'\'',
+            'themeNodeId:chain[2]?.nodeId||\'\',termNodeId:chain[3]?.nodeId||\'\'')
+# The active lesson's parent is the actual unit; its grandparent is the theme.
+# selectLesson must open term -> theme -> unit -> lesson.
+s=s.replace('async selectLesson({ termId, unitId, lessonId, title })',
+            'async selectLesson({ termId, themeId, unitId, lessonId, title })')
+s=s.replace('''          for (const [nid, next] of [
+            [termId, unitId],
+            [unitId, lessonId]
+          ]) {''',
+'''          const path = themeId
+            ? [[termId, themeId], [themeId, unitId], [unitId, lessonId]]
+            : [[termId, unitId], [unitId, lessonId]];
+          for (const [nid, next] of path) {''')
+files[path] = s.encode()
+
+path = "content.js"
+s = files[path].decode()
+s=s.replace('''    async selectLesson(tree) {
+      if (!isAddPage())throw Error('نموذج التحضير لم يفتح بعد.');
+      if (!tree?.termId||!tree?.unitId||!tree?.lessonId)throw Error('معرفات الدرس غير مؤكدة من شجرة نور.');
+      await waitHelper(12000);
+      const sel=await callPage('selectLesson',{termId:tree.termId,unitId:tree.unitId,
+        lessonId:tree.lessonId},45000);''',
+'''    async selectLesson(tree) {
+      if (!isAddPage())throw Error('نموذج التحضير لم يفتح بعد.');
+      if (!tree?.termId||!tree?.unitId||!tree?.lessonId)throw Error('معرفات الدرس غير مؤكدة من شجرة نور.');
+      await waitHelper(12000);
+      const sel=await callPage('selectLesson',{termId:tree.termId,themeId:tree.themeId||'',unitId:tree.unitId,
+        lessonId:tree.lessonId},45000);''')
+files[path] = s.encode()
+
+path = "noor-hub.js"
+s = files[path].decode()
+s=s.replace('''  officialTreeUnits.forEach(unit=>treeUnitSelect.append(new Option(unit.unit+' — '+unit.term,unit.termId+'|'+unit.unitId)));
+  treeUnitSelect.disabled=!officialTreeUnits.length;
+  const match=officialTreeUnits.find(unit=>unit.unitId===previousUnit)||officialTreeUnits[0];''',
+'''  const firstSemester=officialTreeUnits.filter(unit=>/(?:الأول|الاول|first|1st|semester\\\\s*1|term\\\\s*1)/i.test(String(unit.term||'')));
+  firstSemester.forEach(unit=>treeUnitSelect.append(new Option((unit.theme?unit.theme+' / ':'')+unit.unit,unit.termId+'|'+unit.themeId+'|'+unit.unitId)));
+  treeUnitSelect.disabled=!firstSemester.length;
+  const match=firstSemester.find(unit=>unit.unitId===previousUnit)||firstSemester[0];''')
+s=s.replace('''  if(match){treeUnitSelect.value=match.termId+'|'+match.unitId;renderOfficialTreeLessons(match,active?.lessonNodeId||'');}''',
+'''  if(match){treeUnitSelect.value=match.termId+'|'+match.themeId+'|'+match.unitId;renderOfficialTreeLessons(match,active?.lessonNodeId||'');}
+  else{treeLessonSelect.replaceChildren(new Option('لا توجد وحدات للفصل الأول في الشجرة الحالية',''));treeLessonSelect.disabled=true;}''')
+s=s.replace('''  const [termId,unitId]=treeUnitSelect.value.split('|');
+  const unit=officialTreeUnits.find(x=>x.termId===termId&&x.unitId===unitId);''',
+'''  const [termId,themeId,unitId]=treeUnitSelect.value.split('|');
+  const unit=officialTreeUnits.find(x=>x.termId===termId&&x.themeId===themeId&&x.unitId===unitId);''')
+s=s.replace('''  const [termId,unitId]=treeUnitSelect.value.split('|'),unit=officialTreeUnits.find(x=>x.termId===termId&&x.unitId===unitId);''',
+'''  const [termId,themeId,unitId]=treeUnitSelect.value.split('|'),unit=officialTreeUnits.find(x=>x.termId===termId&&x.themeId===themeId&&x.unitId===unitId);''')
+s=s.replace('''   const result=await bridge.selectLesson({termId,unitId,lessonId:lesson.id,title:lesson.title});''',
+'''   const result=await bridge.selectLesson({termId,themeId,unitId,lessonId:lesson.id,title:lesson.title});''')
+s=s.replace('''   const proof={termId,unitId,lessonId:lesson.id};persistSelection({course,proof});''',
+'''   const proof={termId,themeId,unitId,lessonId:lesson.id};persistSelection({course,proof});''')
+s=s.replace('''   livePrep={url:location.href,course,unit:unit.unit,title:lesson.title,semester:$('stnHubSemester').value,termId,unitId,lessonId:lesson.id};''',
+'''   livePrep={url:location.href,course,unit:unit.unit,theme:unit.theme,title:lesson.title,semester:$('stnHubSemester').value,termId,themeId,unitId,lessonId:lesson.id};''')
+# Poll the official tree so a late-loaded tree or a teacher's live selection is detected without reopening the panel.
+needle=" treeLessonSelect.addEventListener('change',async()=>{"
+idx=s.find(needle)
+if idx<0: sys.exit("Could not locate official lesson selection listener")
+poll=""" const refreshOfficialTreeInBackground=()=>{
+  if(!root.isConnected||document.visibilityState==='hidden')return;
+  if(globalThis.NoorPrepBridge2828?.onAddPage?.())discoverOfficialTree().catch(()=>{});
+ };
+ setInterval(refreshOfficialTreeInBackground,1800);
+ document.addEventListener('visibilitychange',refreshOfficialTreeInBackground);
+"""
+s=s[:idx]+poll+s[idx:]
+# Do not leave a non-functional legacy tree box visible.
+s=s.replace("const legacyTree=root.querySelector('#stnHubLessonChoiceBox');if(legacyTree)legacyTree.hidden=false;",
+            "const legacyTree=root.querySelector('#stnHubLessonChoiceBox');if(legacyTree)legacyTree.hidden=true;")
+files[path] = s.encode()
+
+assert "themeId:tree.themeId||''" in files["content.js"].decode()
+assert "themeNodeId:chain[2]?.nodeId" in files["page-helper.js"].decode()
+assert "semester\\\\s*1" in files["noor-hub.js"].decode()
+assert "refreshOfficialTreeInBackground" in files["noor-hub.js"].decode()
 
 with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=6) as dest:
     for path,data in files.items():
