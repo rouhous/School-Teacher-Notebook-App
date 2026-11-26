@@ -5,6 +5,7 @@ on:
     paths:
       - "addons/incoming/*.xpi"
       - "addons/incoming/dropbox-request-*.json"
+      - "addons/incoming/*.patch"
   workflow_dispatch:
     inputs:
       xpi_path:
@@ -47,23 +48,39 @@ jobs:
           else
             mapfile -t xpis < <(git diff-tree --no-commit-id --name-only -r "$PUSH_SHA" -- 'addons/incoming/*.xpi')
             mapfile -t requests < <(git diff-tree --no-commit-id --name-only -r "$PUSH_SHA" -- 'addons/incoming/dropbox-request-*.json')
-            if [[ "${#xpis[@]}" -eq 1 && "${#requests[@]}" -eq 0 ]]; then
+            mapfile -t patches < <(git diff-tree --no-commit-id --name-only -r "$PUSH_SHA" -- 'addons/incoming/*.patch')
+            if [[ "${#xpis[@]}" -eq 1 && "${#requests[@]}" -eq 0 && "${#patches[@]}" -eq 0 ]]; then
               archive="${xpis[0]}"
-            elif [[ "${#requests[@]}" -eq 1 && "${#xpis[@]}" -eq 0 ]]; then
+            elif [[ "${#requests[@]}" -eq 1 && "${#xpis[@]}" -eq 0 && "${#patches[@]}" -eq 0 ]]; then
               [[ -n "$DROPBOX_ACCESS_TOKEN" ]] || { echo "::error::Missing DROPBOX_ACCESS_TOKEN repository secret"; exit 1; }
               request="${requests[0]}"
               dropbox_path="$(node -e 'const r=require("./"+process.argv[1]);if(typeof r.dropbox_path!=="string"||!r.dropbox_path.startsWith("/"))process.exit(2);process.stdout.write(r.dropbox_path)' "$request")"
-              filename="$(node -e 'const r=require("./"+process.argv[1]);if(typeof r.filename!=="string"||!/^[A-Za-z0-9._-]+\.xpi$/.test(r.filename))process.exit(2);process.stdout.write(r.filename)' "$request")"
+              filename="$(node -e 'const r=require("./"+process.argv[1]);if(typeof r.filename!=="string"||!/^[A-Za-z0-9._-]+\\.xpi$/.test(r.filename))process.exit(2);process.stdout.write(r.filename)' "$request")"
               archive="addons/incoming/$filename"
               mkdir -p addons/incoming
               curl --fail --silent --show-error --request POST \
                 --url "https://content.dropboxapi.com/2/files/download" \
                 --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
-                --header "Dropbox-API-Arg: {\"path\":\"$dropbox_path\"}" \
+                --header "Dropbox-API-Arg: {\\"path\\":\\"$dropbox_path\\"}" \
                 --output "$archive"
               echo "Downloaded requested XPI from Dropbox into the runner."
+            elif [[ "${#patches[@]}" -eq 1 && "${#xpis[@]}" -eq 0 && "${#requests[@]}" -eq 0 ]]; then
+              patch_file="${patches[0]}"
+              mkdir -p extension addons/incoming
+              base="addons/incoming/Noor-Unified-v2.8.119-base.xpi"
+              curl --fail --silent --show-error \
+                "https://raw.githubusercontent.com/rouhous/School-Teacher-Notebook-App/main/addons/files/Noor-Unified-v2.8.119-signed.xpi" \
+                --output "$base"
+              unzip -q "$base" -d extension
+              rm -rf extension/META-INF
+              patch -d extension -p1 < "$patch_file"
+              node -e 'const fs=require("fs"),p="extension/manifest.json",m=JSON.parse(fs.readFileSync(p));m.version="2.8.120";fs.writeFileSync(p,JSON.stringify(m,null,2)+"\\n")'
+              archive="addons/incoming/Noor-Unified-v2.8.120-unsigned.xpi"
+              (cd extension && zip -q -r "../$archive" . -x "README.md" "*.DS_Store")
+              rm -f "$base"
+              echo "Built unsigned v2.8.120 from the exact published 2.8.119 package plus the reviewed attachment patch."
             else
-              echo "::error::Expected exactly one XPI or one Dropbox request JSON in this push."
+              echo "::error::Expected exactly one XPI, one Dropbox request JSON, or one attachment patch in this push."
               exit 1
             fi
           fi
