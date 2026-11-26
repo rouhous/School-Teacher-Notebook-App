@@ -74,7 +74,22 @@ hs=hs.replace(old,new,1)
 hs=hs.replace("attachmentResume.hidden=false;}catch(e){actionStatus('تعذر إلغاء العملية", "attachmentResume.hidden=true;syncAttachmentResume();}catch(e){actionStatus('تعذر إلغاء العملية",1)
 h.write_text(hs)
 
-print('patched 2.8.121 attachment date, lesson autofill and visible cancel control')
+
+# Recognize the actual Material upload route even if the page's Arabic labels vary.
+old="""function attachmentForm(){return /attachment|resource|مرفق|مستودع/i.test(norm(document.body.innerText.slice(0,12000)))&&Boolean(document.querySelector('input[type="file"]'));}"""
+new="""function attachmentForm(){const materialRoute=/^\\/teacher\\/attachments\\/upload\\/Material\\/cid:[^/]+\\/tid:[^/]+\\/tuid:[^/]+\\/?$/i.test(location.pathname);return Boolean(document.querySelector('input[type="file"]'))&&(materialRoute||/attachment|resource|مرفق|مستودع/i.test(norm(document.body.innerText.slice(0,12000))));}"""
+if old not in s: raise SystemExit('attachmentForm function not found')
+s=s.replace(old,new,1)
+# Fix the regular-expression whitespace and date escapes in the generated JavaScript.
+s=s.replace(r'/(?:^|\\\\s)(?:الدروس|الدرس|درس|lesson)(?:\\\\s|$)/',r'/(?:^|\\s)(?:الدروس|الدرس|درس|lesson)(?:\\s|$)/')
+s=s.replace(r'/^\\\\d{4}-\\\\d{2}-\\\\d{2}$/',r'/^\\d{4}-\\d{2}-\\d{2}$/')
+# Accept text date controls when their field metadata clearly identifies publication date.
+old="""const dates=[...form.querySelectorAll('input[type="date"],input[name*=date i],input[id*=date i]')].filter(e=>visible(e)&&!e.disabled);"""
+new="""const dates=[...form.querySelectorAll('input[type="date"],input[name*=date i],input[id*=date i],input[type="text"],input:not([type])')].filter(e=>visible(e)&&!e.disabled);"""
+if old not in s: raise SystemExit('date field query not found')
+s=s.replace(old,new,1)
+
+print('patched 2.8.121 attachment date, lesson autofill, Material route detection and visible cancel control')
 
 # retry after delimiter correction
 # retry syntax fix
