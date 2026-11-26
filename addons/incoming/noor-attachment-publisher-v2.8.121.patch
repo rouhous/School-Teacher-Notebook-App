@@ -89,7 +89,44 @@ new="""const dates=[...form.querySelectorAll('input[type="date"],input[name*=dat
 if old not in s: raise SystemExit('date field query not found')
 s=s.replace(old,new,1)
 
-print('patched 2.8.121 attachment date, lesson autofill, Material route detection and visible cancel control')
+
+# Use Noor's observed Material index route directly; do not rediscover a flip-card path.
+p=base/'noor-attachment-publisher.js'
+s=p.read_text()
+old=" const isTeacherHome=()=>/^\\\\/teacher\\\\/?$/i.test(location.pathname);"
+new=old+"""
+ const isMaterialIndex=()=>/^\\\\/teacher\\\\/attachments\\\\/index\\\\/Material\\\\/cid:\\\\d+\\\\/?$/i.test(location.pathname);
+ const isMaterialUpload=()=>/^\\\\/teacher\\\\/attachments\\\\/upload\\\\/Material\\\\/cid:[A-Za-z0-9_-]+\\\\/tid:[A-Za-z0-9_-]+\\\\/tuid:[A-Za-z0-9_-]+\\\\/?$/i.test(location.pathname);
+ const materialIndexUrl=cid=>location.origin+'/teacher/attachments/index/Material/cid:'+encodeURIComponent(String(cid));
+"""
+if old not in s: raise SystemExit('teacher home marker missing')
+s=s.replace(old,new,1)
+old=" function attachmentForm(){return /attachment|resource|مرفق|مستودع/i.test(norm(document.body.innerText.slice(0,12000)))&&Boolean(document.querySelector('input[type=\"file\"]'));}"
+new=" function attachmentForm(){return Boolean(document.querySelector('input[type=\"file\"]'))&&(isMaterialUpload()||/attachment|resource|مرفق|مستودع/i.test(norm(document.body.innerText.slice(0,12000))));}"
+if old not in s: raise SystemExit('attachment form marker missing')
+s=s.replace(old,new,1)
+old="const initialPhase=attachmentForm()?'form':attachmentSection()?'section':attachmentRow()?'content':'card';"
+new="const initialPhase=attachmentForm()?'form':isMaterialIndex()?'index':attachmentSection()?'section':attachmentRow()?'content':'index';"
+if old not in s: raise SystemExit('initial phase marker missing')
+s=s.replace(old,new,1)
+s=s.replace("!['card','page3','content','lesson','section','form','awaiting_files','staged','submitted_unknown'].includes(j.phase)","!['index','card','page3','content','lesson','section','form','awaiting_files','staged','submitted_unknown'].includes(j.phase)",1)
+old="if(j.phase!=='form'&&!isTeacherHome()&&j.phase!=='content'&&j.phase!=='lesson'&&j.phase!=='section'){notice('افتح الصفحة الرئيسية لبوابة المعلم لاستكمال الوصول إلى بطاقة الصف.');return;}"
+new="""if(j.phase==='index'){
+    if(!isMaterialIndex()){notice('جارٍ فتح صفحة مرفقات المادة للصف المحدد مباشرة.');location.assign(materialIndexUrl(j.cid));return;}
+    const addNew=clickUnique(/^(?:تحميل\\\\s+مرفق\\\\s+جديد|اضافه\\\\s+مرفق\\\\s+جديد|إضافة\\\\s+مرفق\\\\s+جديد)$/i);
+    if(!addNew)throw Error('وصلت إلى صفحة مرفقات المادة، لكن لم أجد زر «تحميل مرفق جديد».');
+    j.phase='form';set(j);addNew.click();await sleep(800);schedule();return;
+   }
+   if(j.phase!=='form'&&!isTeacherHome()&&!isMaterialIndex()&&!isMaterialUpload()&&j.phase!=='content'&&j.phase!=='lesson'&&j.phase!=='section'){notice('افتح صفحة مرفقات المادة أو استكمل العملية المحفوظة.');return;}"""
+if old not in s: raise SystemExit('advance route guard marker missing')
+s=s.replace(old,new,1)
+old="if(initialPhase==='card'&&!isTeacherHome())location.assign(location.origin+'/teacher');else advance();"
+new="if(initialPhase==='index'&&!isMaterialIndex())location.assign(materialIndexUrl(j.cid));else advance();"
+if old not in s: raise SystemExit('start navigation marker missing')
+s=s.replace(old,new,1)
+p.write_text(s)
+
+print('patched direct Material index route, new-attachment action and upload form detection')
 
 # retry after delimiter correction
 # retry syntax fix
