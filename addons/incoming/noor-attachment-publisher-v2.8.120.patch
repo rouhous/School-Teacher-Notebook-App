@@ -31,3 +31,4 @@
 +    if(!nav)throw Error('لم أتعرف على بطاقة الصف المحددة أو رابطها الرسمي بعد انتظار تحميل بطاقات نور. لم أفتح صفًا آخر ولم أرفع أي ملف.');
 +    const key=location.href+'|'+nav.step+'|'+j.label;if((j.navigation||[]).includes(key))throw Error('توقف التنقل لتجنب تكرار الضغط على بطاقة الصف.');j.navigation=[...(j.navigation||[]),key];j.phase=(j.phase==='card'&&nav.step==='open')?'page3':'content';set(j);nav.element.click();notice(nav.step==='open'?'تم تحديد بطاقة الصف الصحيحة. جارٍ فتحها ثم الانتقال إلى الصفحة الثالثة…':'تم العثور على مسار بطاقة الصف المحددة. جارٍ فتح الصفحة الثالثة والوصول إلى المرفقات…');await sleep(900);schedule();return;
     }
+
