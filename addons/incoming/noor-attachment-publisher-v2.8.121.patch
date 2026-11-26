@@ -33,10 +33,10 @@ h=p.read_text()
 needle='<div class="stnHubTaskPicker" aria-label="اختر المهمة">'
 idx=h.index('</select></div>',h.index(needle))+len('</select></div>')
 if 'id="stnHubAttachmentDate"' not in h:
- h=h[:idx]+'\\n  <div class="stnAttachmentDate"><label for="stnHubAttachmentDate">تاريخ نشر المرفق</label><input id="stnHubAttachmentDate" type="date"><p class="stnNote">يُستخدم هذا التاريخ تلقائيًا في نموذج نور.</p></div>'+h[idx:]
+ h=h[:idx]+'\n  <div class="stnAttachmentDate"><label for="stnHubAttachmentDate">تاريخ نشر المرفق</label><input id="stnHubAttachmentDate" type="date"><p class="stnNote">يُستخدم هذا التاريخ تلقائيًا في نموذج نور.</p></div>'+h[idx:]
 anchor="const panelRoot=root.querySelector('#stnHubPanel');"
 if 'const attachmentDateInput=' not in h:
- h=h.replace(anchor,anchor+"\\n const attachmentDateInput=panelRoot.querySelector('#stnHubAttachmentDate');if(attachmentDateInput&&!attachmentDateInput.value){const d=new Date();attachmentDateInput.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}",1)
+ h=h.replace(anchor,anchor+"\n const attachmentDateInput=panelRoot.querySelector('#stnHubAttachmentDate');if(attachmentDateInput&&!attachmentDateInput.value){const d=new Date();attachmentDateInput.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}",1)
 old="""lesson:target.title,lessonId:target.lessonId});"""
 new="""lesson:target.title,lessonId:target.lessonId,publishDate:$('stnHubAttachmentDate').value});"""
 if old not in h: raise SystemExit('Attachment start call not found')
@@ -45,7 +45,7 @@ p.write_text(h)
 css=base/'noor-hub.css'
 c=css.read_text()
 if '.stnAttachmentDate' not in c:
- c+='\\n#stnNoorHub .stnAttachmentDate{display:grid;grid-template-columns:1fr;gap:4px;margin:6px 0 10px;padding:8px 10px;border:1px solid #dce9e1;border-radius:10px;background:#f5faf7}\\n#stnNoorHub .stnAttachmentDate label{font-size:12px;font-weight:700;color:#315d50}\\n#stnNoorHub .stnAttachmentDate input{width:100%;min-height:36px;border:1px solid #cbdcd2;border-radius:8px;padding:6px 9px;background:#fff}\\n#stnNoorHub .stnAttachmentDate .stnNote{margin:0;font-size:10px}\\n'
+ c+='\n#stnNoorHub .stnAttachmentDate{display:grid;grid-template-columns:1fr;gap:4px;margin:6px 0 10px;padding:8px 10px;border:1px solid #dce9e1;border-radius:10px;background:#f5faf7}\n#stnNoorHub .stnAttachmentDate label{font-size:12px;font-weight:700;color:#315d50}\n#stnNoorHub .stnAttachmentDate input{width:100%;min-height:36px;border:1px solid #cbdcd2;border-radius:8px;padding:6px 9px;background:#fff}\n#stnNoorHub .stnAttachmentDate .stnNote{margin:0;font-size:10px}\n'
  css.write_text(c)
 print('patched 2.8.121 attachment date and lesson autofill')
 
