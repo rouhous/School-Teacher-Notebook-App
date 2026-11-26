@@ -9,7 +9,7 @@ old=""" function setNative(el,value){const proto=el.tagName==='TEXTAREA'?HTMLTex
 new=""" function setNative(el,value){const proto=el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:el.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;if(setter)setter.call(el,value);else el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}"""
 if old in s:s=s.replace(old,new)
 start=s.index(' function fillLessonAndDate(form,j){')
-end=s.index('\\n function requiredMissing',start)
+end=s.index('function requiredMissing',start)-1
 fn=r''' function fillLessonAndDate(form,j){
   const meta=e=>norm([e.name,e.id,e.getAttribute('aria-label'),e.getAttribute('placeholder'),...(e.labels||[]).map(x=>x.textContent),e.closest('.form-group,.form-row,.form-floating,.mb-3')?.textContent].join(' '));
   const lessonName=norm(j.lesson),selects=[...form.querySelectorAll('select')].filter(e=>visible(e)&&!e.disabled);
