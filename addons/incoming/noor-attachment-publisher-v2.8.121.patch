@@ -93,10 +93,10 @@ s=s.replace(old,new,1)
 # Use Noor's observed Material index route directly; do not rediscover a flip-card path.
 p=base/'noor-attachment-publisher.js'
 s=p.read_text()
-old=" const isTeacherHome=()=>/^\\\\/teacher\\\\/?$/i.test(location.pathname);"
+old=" const isTeacherHome=()=>/^\\/teacher\\/?$/i.test(location.pathname);"
 new=old+"""
- const isMaterialIndex=()=>/^\\\\/teacher\\\\/attachments\\\\/index\\\\/Material\\\\/cid:\\\\d+\\\\/?$/i.test(location.pathname);
- const isMaterialUpload=()=>/^\\\\/teacher\\\\/attachments\\\\/upload\\\\/Material\\\\/cid:[A-Za-z0-9_-]+\\\\/tid:[A-Za-z0-9_-]+\\\\/tuid:[A-Za-z0-9_-]+\\\\/?$/i.test(location.pathname);
+ const isMaterialIndex=()=>/^\\/teacher\\/attachments\\/index\\/Material\\/cid:\\d+\\/?$/i.test(location.pathname);
+ const isMaterialUpload=()=>/^\\/teacher\\/attachments\\/upload\\/Material\\/cid:[A-Za-z0-9_-]+\\/tid:[A-Za-z0-9_-]+\\/tuid:[A-Za-z0-9_-]+\\/?$/i.test(location.pathname);
  const materialIndexUrl=cid=>location.origin+'/teacher/attachments/index/Material/cid:'+encodeURIComponent(String(cid));
 """
 if old not in s: raise SystemExit('teacher home marker missing')
