@@ -1,23 +1,30 @@
---- a/noor-attachment-publisher.js
-+++ b/noor-attachment-publisher.js
-@@ -23 +23 @@
--  const rows=[...document.querySelectorAll('tr,li,.row,.list-group-item,[role=\\"row\\"],.media-row,.content-row,div')].filter(e=>visible(e)&&!inHub(e)&&norm(e.innerText||e.textContent).length<260&&/مرفقات الماده|مرفقات المادة|course attachments/i.test(norm(e.innerText||e.textContent)));
-+  const rows=[...document.querySelectorAll('tr,li,.row,.list-group-item,[role=\\"row\\"],.media-row,.content-row,div')].filter(e=>visible(e)&&!inHub(e)&&norm(e.innerText||e.textContent).length<260&&/مرفقات(?:\s+الماده)?|course attachments/i.test(norm(e.innerText||e.textContent)));
-@@ -32 +32 @@
-- function attachmentSection(){const headings=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,strong,b,legend,[role="heading"],.card-title')].filter(e=>visible(e)&&!inHub(e)&&/^(مرفقات الماده|مرفقات المادة|course attachments|attachments)$/i.test(norm(e.textContent)));if(headings.length!==1)return null;let node=headings[0];for(let i=0;i<5&&node;i++,node=node.parentElement){const add=clickUnique(/^(?:\+?\s*)?(?:اضافه|إضافة|add)$/i,node);if(add)return {node,add};}return null;}
-+ function attachmentSection(){const headings=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,strong,b,legend,[role="heading"],.card-title')].filter(e=>visible(e)&&!inHub(e)&&/^(?:مرفقات(?:\s+الماده)?|course attachments|attachments)$/i.test(norm(e.textContent)));if(headings.length!==1)return null;let node=headings[0];for(let i=0;i<5&&node;i++,node=node.parentElement){const add=clickUnique(/^(?:\+?\s*)?(?:اضافه|إضافة|add)$/i,node);if(add)return {node,add};}return null;}
-@@ -86,3 +86,10 @@
--    const nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^(?:اداره المحتوى|مرفقات الماده|مرفقات المادة|content management)$/i);
--    if(!nav)throw Error('لم أتعرف على بطاقة الصف أو أزرار التنقل إلى الصفحة الثالثة. افتح بطاقة الصف المطلوبة ثم اضغط استكمال رفع المرفقات.');
--    const key=location.href+'|'+nav.step+'|'+j.label;if((j.navigation||[]).includes(key))throw Error('توقف التنقل لتجنب تكرار الضغط على بطاقة الصف.');j.navigation=[...(j.navigation||[]),key];j.phase=(j.phase==='card'&&nav.step==='open')?'page3':'content';set(j);nav.element.click();notice('جارٍ فتح بطاقة الصف ثم الصفحة الثالثة للوصول إلى مرفقات المادة.');await sleep(700);schedule();return;
-+    const catalog=root.NoorCourseCatalog;
-+    let nav=null;
-+    // Noor may render teacher cards and their popover controls asynchronously.
-+    // Retry discovery without changing the selected course or falling back to another grade.
-+    for(let attempt=0;attempt<28&&!nav;attempt++){
-+     catalog?.scan?.();
-+     nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^(?:اداره المحتوى|مرفقات(?:\s+الماده)?|content management)$/i);
-+     if(!nav)await sleep(250);
-+    }
-+    if(!nav)throw Error('لم أتعرف على بطاقة الصف المحددة أو رابطها الرسمي بعد انتظار تحميل بطاقات نور. لم أفتح صفًا آخر ولم أرفع أي ملف.');
-+    const key=location.href+'|'+nav.step+'|'+j.label;if((j.navigation||[]).includes(key))throw Error('توقف التنقل لتجنب تكرار الضغط على بطاقة الصف.');j.navigation=[...(j.navigation||[]),key];j.phase=(j.phase==='card'&&nav.step==='open')?'page3':'content';set(j);nav.element.click();notice(nav.step==='open'?'تم تحديد بطاقة الصف الصحيحة. جارٍ فتحها ثم الانتقال إلى الصفحة الثالثة…':'تم العثور على مسار بطاقة الصف المحددة. جارٍ فتح الصفحة الثالثة والوصول إلى المرفقات…');await sleep(900);schedule();return;
+#!/usr/bin/env python3
+import pathlib, sys
+p=pathlib.Path(sys.argv[1])
+s=p.read_text(encoding="utf-8")
+replacements=[
+("""&&/مرفقات الماده|مرفقات المادة|course attachments/i.test(norm(e.innerText||e.textContent))""",
+ """&&/مرفقات(?:\\s+الماده)?|course attachments/i.test(norm(e.innerText||e.textContent))"""),
+("""&&/^(مرفقات الماده|مرفقات المادة|course attachments|attachments)$/i.test(norm(e.textContent))""",
+ """&&/^(?:مرفقات(?:\\s+الماده)?|course attachments|attachments)$/i.test(norm(e.textContent))"""),
+("""    const nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^(?:اداره المحتوى|مرفقات الماده|مرفقات المادة|content management)$/i);
+    if(!nav)throw Error('لم أتعرف على بطاقة الصف أو أزرار التنقل إلى الصفحة الثالثة. افتح بطاقة الصف المطلوبة ثم اضغط استكمال رفع المرفقات.');
+    const key=location.href+'|'+nav.step+'|'+j.label;if((j.navigation||[]).includes(key))throw Error('توقف التنقل لتجنب تكرار الضغط على بطاقة الصف.');j.navigation=[...(j.navigation||[]),key];j.phase=(j.phase==='card'&&nav.step==='open')?'page3':'content';set(j);nav.element.click();notice('جارٍ فتح بطاقة الصف ثم الصفحة الثالثة للوصول إلى مرفقات المادة.');await sleep(700);schedule();return;""",
+ """    const catalog=root.NoorCourseCatalog;
+    let nav=null;
+    // Noor may render teacher cards and their popover controls asynchronously.
+    // Retry discovery without changing the selected course or falling back to another grade.
+    for(let attempt=0;attempt<28&&!nav;attempt++){
+     catalog?.scan?.();
+     nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^(?:اداره المحتوى|مرفقات(?:\\s+الماده)?|content management)$/i);
+     if(!nav)await sleep(250);
+    }
+    if(!nav)throw Error('لم أتعرف على بطاقة الصف المحددة أو رابطها الرسمي بعد انتظار تحميل بطاقات نور. لم أفتح صفًا آخر ولم أرفع أي ملف.');
+    const key=location.href+'|'+nav.step+'|'+j.label;if((j.navigation||[]).includes(key))throw Error('توقف التنقل لتجنب تكرار الضغط على بطاقة الصف.');j.navigation=[...(j.navigation||[]),key];j.phase=(j.phase==='card'&&nav.step==='open')?'page3':'content';set(j);nav.element.click();notice(nav.step==='open'?'تم تحديد بطاقة الصف الصحيحة. جارٍ فتحها ثم الانتقال إلى الصفحة الثالثة…':'تم العثور على مسار بطاقة الصف المحددة. جارٍ فتح الصفحة الثالثة والوصول إلى المرفقات…');await sleep(900);schedule();return;""")
+]
+for old,new in replacements:
+    if old not in s:
+        raise SystemExit("Expected source block not found; refusing partial patch")
+    s=s.replace(old,new,1)
+p.write_text(s,encoding="utf-8")
+print("Patched three attachment navigation blocks")
