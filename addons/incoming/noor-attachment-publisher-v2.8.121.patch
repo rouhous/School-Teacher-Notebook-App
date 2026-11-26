@@ -51,3 +51,4 @@ print('patched 2.8.121 attachment date and lesson autofill')
 
 # retry after delimiter correction
 # retry syntax fix
+# rerun after escaping fix
