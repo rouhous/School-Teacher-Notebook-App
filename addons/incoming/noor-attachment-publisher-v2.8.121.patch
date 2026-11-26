@@ -1,0 +1,50 @@
+from pathlib import Path
+import sys
+base=Path(sys.argv[1])
+p=base/'noor-attachment-publisher.js'
+s=p.read_text()
+s=s.replace('/مرفقات الماده|مرفقات المادة|course attachments/i.test(norm(e.innerText||e.textContent))','/مرفقات(?:\\s+الماده)?|course attachments/i.test(norm(e.innerText||e.textContent))')
+s=s.replace('/^(مرفقات الماده|مرفقات المادة|course attachments|attachments)$/i.test(norm(e.textContent))','/^(?:مرفقات(?:\\s+الماده)?|course attachments|attachments)$/i.test(norm(e.textContent))')
+old=""" function setNative(el,value){const proto=el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;if(setter)setter.call(el,value);else el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}"""
+new=""" function setNative(el,value){const proto=el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:el.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;if(setter)setter.call(el,value);else el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}"""
+if old in s:s=s.replace(old,new)
+start=s.index(' function fillLessonAndDate(form,j){')
+end=s.index('\\n function requiredMissing',start)
+fn=r''' function fillLessonAndDate(form,j){
+  const meta=e=>norm([e.name,e.id,e.getAttribute('aria-label'),e.getAttribute('placeholder'),...(e.labels||[]).map(x=>x.textContent),e.closest('.form-group,.form-row,.form-floating,.mb-3')?.textContent].join(' '));
+  const lessonName=norm(j.lesson),selects=[...form.querySelectorAll('select')].filter(e=>visible(e)&&!e.disabled);
+  const lessonSelects=selects.filter(sel=>/درس|lesson/.test(meta(sel))||[...sel.options].some(o=>norm(o.textContent)===lessonName||norm(o.textContent).endsWith(lessonName)));
+  if(lessonSelects.length===1){const sel=lessonSelects[0],hits=[...sel.options].filter(o=>norm(o.textContent)===lessonName||norm(o.textContent).endsWith(lessonName)||lessonName.endsWith(norm(o.textContent)));if(hits.length===1)setNative(sel,hits[0].value);}
+  const textFields=[...form.querySelectorAll('input:not([type]),input[type="text"],textarea')].filter(e=>visible(e)&&!e.disabled);
+  const lessonFields=textFields.filter(e=>/(?:^|\\s)(?:الدروس|الدرس|درس|lesson)(?:\\s|$)/.test(meta(e))&&!/تحضير|preparation|description/.test(meta(e)));
+  if(lessonFields.length===1&&String(lessonFields[0].value||'').trim()!==j.lesson){setNative(lessonFields[0],j.lesson);lessonFields[0].dispatchEvent(new Event('blur',{bubbles:true}));}
+  const dates=[...form.querySelectorAll('input[type="date"],input[name*=date i],input[id*=date i]')].filter(e=>visible(e)&&!e.disabled);
+  const dateHits=dates.filter(e=>/تاريخ النشر|publish date|publication date/.test(meta(e)));
+  if(dateHits.length===1){const value=/^\\d{4}-\\d{2}-\\d{2}$/.test(j.publishDate||'')?j.publishDate:(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})();if(dateHits[0].value!==value)setNative(dateHits[0],value);}
+ }'''
+s=s[:start]+fn+s[end:]
+old="""lesson:clean(opts.lesson),lessonId:String(opts.lessonId),files:[],index:0,phase:initialPhase"""
+new="""lesson:clean(opts.lesson),lessonId:String(opts.lessonId),publishDate:/^\\d{4}-\\d{2}-\\d{2}$/.test(opts.publishDate||'')?opts.publishDate:'',files:[],index:0,phase:initialPhase"""
+if old not in s: raise SystemExit('Job context insertion point missing')
+s=s.replace(old,new,1)
+p.write_text(s)
+p=base/'noor-hub.js'
+h=p.read_text()
+needle='<div class="stnHubTaskPicker" aria-label="اختر المهمة">'
+idx=h.index('</select></div>',h.index(needle))+len('</select></div>')
+if 'id="stnHubAttachmentDate"' not in h:
+ h=h[:idx]+'\\n  <div class="stnAttachmentDate"><label for="stnHubAttachmentDate">تاريخ نشر المرفق</label><input id="stnHubAttachmentDate" type="date"><p class="stnNote">يُستخدم هذا التاريخ تلقائيًا في نموذج نور.</p></div>'+h[idx:]
+anchor="const panelRoot=root.querySelector('#stnHubPanel');"
+if 'const attachmentDateInput=' not in h:
+ h=h.replace(anchor,anchor+"\\n const attachmentDateInput=panelRoot.querySelector('#stnHubAttachmentDate');if(attachmentDateInput&&!attachmentDateInput.value){const d=new Date();attachmentDateInput.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}",1)
+old="""lesson:target.title,lessonId:target.lessonId});"""
+new="""lesson:target.title,lessonId:target.lessonId,publishDate:$('stnHubAttachmentDate').value});"""
+if old not in h: raise SystemExit('Attachment start call not found')
+h=h.replace(old,new,1)
+p.write_text(h)
+css=base/'noor-hub.css'
+c=css.read_text()
+if '.stnAttachmentDate' not in c:
+ c+='\\n#stnNoorHub .stnAttachmentDate{display:grid;grid-template-columns:1fr;gap:4px;margin:6px 0 10px;padding:8px 10px;border:1px solid #dce9e1;border-radius:10px;background:#f5faf7}\\n#stnNoorHub .stnAttachmentDate label{font-size:12px;font-weight:700;color:#315d50}\\n#stnNoorHub .stnAttachmentDate input{width:100%;min-height:36px;border:1px solid #cbdcd2;border-radius:8px;padding:6px 9px;background:#fff}\\n#stnNoorHub .stnAttachmentDate .stnNote{margin:0;font-size:10px}\\n'
+ css.write_text(c)
+print('patched 2.8.121 attachment date and lesson autofill')
