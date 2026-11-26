@@ -1,21 +1,12 @@
 --- a/noor-attachment-publisher.js
 +++ b/noor-attachment-publisher.js
-@@ -20,7 +20,7 @@
-  function clickUnique(re,scope=document){const list=actions(re,scope);const unique=[...new Set(list.map(e=>e.closest('a,button,[role="button"]')||e))];return unique.length===1?unique[0]:null;}
-  const isTeacherHome=()=>/^\/teacher\/?$/i.test(location.pathname);
-  function attachmentRow(){
+@@ -23 +23 @@
 -  const rows=[...document.querySelectorAll('tr,li,.row,.list-group-item,[role="row"],.media-row,.content-row,div')].filter(e=>visible(e)&&!inHub(e)&&norm(e.innerText||e.textContent).length<260&&/مرفقات الماده|مرفقات المادة|course attachments/i.test(norm(e.innerText||e.textContent)));
 +  const rows=[...document.querySelectorAll('tr,li,.row,.list-group-item,[role="row"],.media-row,.content-row,div')].filter(e=>visible(e)&&!inHub(e)&&norm(e.innerText||e.textContent).length<260&&/مرفقات(?:\s+الماده)?|course attachments/i.test(norm(e.innerText||e.textContent)));
-@@ -29,7 +29,7 @@
-  function attachmentForm(){return /attachment|resource|مرفق|مستودع/i.test(norm(document.body.innerText.slice(0,12000)))&&Boolean(document.querySelector('input[type="file"]'));}
-  function setNative(el,value){const proto=el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;if(setter)setter.call(el,value);else el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}
-  function lessonAction(j){const pool=[...document.querySelectorAll('a,button,[role="button"],[role="treeitem"],.lesson,.lesson-item,li')].filter(e=>visible(e)&&!inHub(e));const compact=v=>norm(v).replace(/[\s:：._-]/g,'');const wanted=compact(j.lesson);const tail=compact(String(j.lesson||'').split(/[»›>]/).pop().replace(/^media\s*:/i,''));const id=String(j.lessonId||'');const byId=id?pool.filter(e=>[e.getAttribute('data-id'),e.getAttribute('data-node-id'),e.getAttribute('data-lesson-id'),e.getAttribute('aria-controls')].some(v=>v&&String(v)===id)||[e.getAttribute('href')].some(v=>v&&new RegExp('(?:^|[/=:])'+id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:$|[/?#&])').test(v))):[];const exact=pool.filter(e=>compact(e.textContent)===wanted||compact(e.textContent)===tail);let matches=byId.length?byId:exact;if(!matches.length&&tail)matches=pool.filter(e=>{const t=compact(e.textContent);return t===tail||t.endsWith(tail)});const top=matches.filter(e=>!matches.some(p=>p!==e&&p.contains(e)));return top.length===1?top[0]:null;}
+@@ -32 +32 @@
 - function attachmentSection(){const headings=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,strong,b,legend,[role="heading"],.card-title')].filter(e=>visible(e)&&!inHub(e)&&/^(مرفقات الماده|مرفقات المادة|course attachments|attachments)$/i.test(norm(e.textContent)));if(headings.length!==1)return null;let node=headings[0];for(let i=0;i<5&&node;i++,node=node.parentElement){const add=clickUnique(/^(?:\+?\s*)?(?:اضافه|إضافة|add)$/i,node);if(add)return {node,add};}return null;}
 + function attachmentSection(){const headings=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6,strong,b,legend,[role="heading"],.card-title')].filter(e=>visible(e)&&!inHub(e)&&/^(?:مرفقات(?:\s+الماده)?|course attachments|attachments)$/i.test(norm(e.textContent)));if(headings.length!==1)return null;let node=headings[0];for(let i=0;i<5&&node;i++,node=node.parentElement){const add=clickUnique(/^(?:\+?\s*)?(?:اضافه|إضافة|add)$/i,node);if(add)return {node,add};}return null;}
-@@ -83,9 +83,17 @@
-    if(j.phase!=='form'&&!isTeacherHome()&&j.phase!=='content'&&j.phase!=='lesson'&&j.phase!=='section'){notice('افتح الصفحة الرئيسية لبوابة المعلم لاستكمال الوصول إلى بطاقة الصف.');return;}
-    if(j.phase==='card'||j.phase==='page3'){
-     if(!isTeacherHome()){notice('جارٍ العودة إلى بطاقات الصفوف في بوابة المعلم.');location.assign(location.origin+'/teacher');return;}
+@@ -86,3 +86,10 @@
 -    const nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^(?:اداره المحتوى|مرفقات الماده|مرفقات المادة|content management)$/i);
 -    if(!nav)throw Error('لم أتعرف على بطاقة الصف أو أزرار التنقل إلى الصفحة الثالثة. افتح بطاقة الصف المطلوبة ثم اضغط استكمال رفع المرفقات.');
 -    const key=location.href+'|'+nav.step+'|'+j.label;if((j.navigation||[]).includes(key))throw Error('توقف التنقل لتجنب تكرار الضغط على بطاقة الصف.');j.navigation=[...(j.navigation||[]),key];j.phase=(j.phase==='card'&&nav.step==='open')?'page3':'content';set(j);nav.element.click();notice('جارٍ فتح بطاقة الصف ثم الصفحة الثالثة للوصول إلى مرفقات المادة.');await sleep(700);schedule();return;
@@ -30,5 +21,3 @@
 +    }
 +    if(!nav)throw Error('لم أتعرف على بطاقة الصف المحددة أو رابطها الرسمي بعد انتظار تحميل بطاقات نور. لم أفتح صفًا آخر ولم أرفع أي ملف.');
 +    const key=location.href+'|'+nav.step+'|'+j.label;if((j.navigation||[]).includes(key))throw Error('توقف التنقل لتجنب تكرار الضغط على بطاقة الصف.');j.navigation=[...(j.navigation||[]),key];j.phase=(j.phase==='card'&&nav.step==='open')?'page3':'content';set(j);nav.element.click();notice(nav.step==='open'?'تم تحديد بطاقة الصف الصحيحة. جارٍ فتحها ثم الانتقال إلى الصفحة الثالثة…':'تم العثور على مسار بطاقة الصف المحددة. جارٍ فتح الصفحة الثالثة والوصول إلى المرفقات…');await sleep(900);schedule();return;
-    }
-
