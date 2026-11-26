@@ -95,6 +95,14 @@ jobs:
           echo "release_version=$version" >> "$GITHUB_OUTPUT"
           echo "Validated unsigned XPI version $version at $archive"
 
+      - name: Upload exact unsigned XPI for signing job
+        uses: actions/upload-artifact@v4
+        with:
+          name: noor-unsigned-xpi
+          path: ${{ steps.source.outputs.archive }}
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Validate JavaScript syntax
         run: |
           set -euo pipefail
@@ -120,6 +128,11 @@ jobs:
         with:
           persist-credentials: true
           fetch-depth: 0
+      - name: Download exact unsigned XPI from validation job
+        uses: actions/download-artifact@v4
+        with:
+          name: noor-unsigned-xpi
+          path: addons/incoming
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
