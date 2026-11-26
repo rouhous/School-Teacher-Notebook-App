@@ -64,6 +64,16 @@ if '.stnTaskCancel' not in cs:
  cs+='\n#stnNoorHub .stnTaskCancel{border-color:#d9b6a9;background:#fff5f1;color:#8b3d2c}\n#stnNoorHub .stnTaskCancel[hidden]{display:none!important}\n'
  css.write_text(cs)
 
+
+# Keep the cancel action synchronized with any pending job.
+hs=h.read_text()
+old="""const syncAttachmentResume=()=>{const job=globalThis.NoorAttachmentPublisher?.inspect?.();attachmentResume.hidden=!job||!['paused','card','page3','content','navigate','lesson','section','form','awaiting_files','staged','submitted_unknown'].includes(job.phase);};"""
+new="""const syncAttachmentResume=()=>{const job=globalThis.NoorAttachmentPublisher?.inspect?.();const pending=!!job&&job.phase!=='done';attachmentResume.hidden=!pending||!['paused','card','page3','content','navigate','lesson','section','form','awaiting_files','staged','submitted_unknown'].includes(job.phase);const cancel=$('stnHubAttachmentCancel');if(cancel)cancel.hidden=!pending||job.phase==='submitted_unknown';};"""
+if old not in hs: raise SystemExit('resume sync function not found')
+hs=hs.replace(old,new,1)
+hs=hs.replace("attachmentResume.hidden=false;}catch(e){actionStatus('تعذر إلغاء العملية", "attachmentResume.hidden=true;syncAttachmentResume();}catch(e){actionStatus('تعذر إلغاء العملية",1)
+h.write_text(hs)
+
 print('patched 2.8.121 attachment date, lesson autofill and visible cancel control')
 
 # retry after delimiter correction
