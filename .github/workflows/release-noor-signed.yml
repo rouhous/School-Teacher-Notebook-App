@@ -1,245 +1,137 @@
-# [release-noor] Publish and Mozilla-sign Noor 2.8.113 after source validation; footer Gemini launcher removed.
 name: Sign and publish Noor Firefox extension via Mozilla
+
 on:
   push:
     paths:
-      - ".github/workflows/release-noor-signed.yml"
-      - ".github/scripts/publish-noor-release.mjs"
-      - ".github/scripts/prepare-noor-2865.py"
+      - "addons/incoming/*.xpi"
   workflow_dispatch:
     inputs:
-      version:
-        description: "Tested unified source version, e.g. 2.8.110"
+      xpi_path:
+        description: "Repository path to the unsigned XPI, e.g. addons/incoming/Noor-Unified-v2.8.117-unsigned.xpi"
         type: string
         required: true
-        default: "2.8.113"
+
 permissions:
   contents: write
   pages: write
   id-token: write
+
 concurrency:
   group: noor-mozilla-sign-publish
   cancel-in-progress: false
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     outputs:
       archive: ${{ steps.source.outputs.archive }}
+      release_version: ${{ steps.source.outputs.release_version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-      - name: Generate 2.8.113 source from the existing approved 2.8.64 source
-        run: python3 .github/scripts/prepare-noor-2865.py
-      - name: Check source and expected extension ID
+          fetch-depth: 0
+
+      - name: Select the uploaded XPI
         id: source
         env:
-          RELEASE_VERSION: ${{ inputs.version || '2.8.113' }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_XPI_PATH: ${{ inputs.xpi_path || '' }}
+          PUSH_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
-          shopt -s nullglob
-          files=(addons/unified/*-v"$RELEASE_VERSION"-*-source.zip)
-          if [[ ${#files[@]} -ne 1 ]]; then
-            echo "::error::Expected exactly one source ZIP for version $RELEASE_VERSION; found ${#files[@]}"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            archive="$INPUT_XPI_PATH"
+          else
+            mapfile -t files < <(git diff-tree --no-commit-id --name-only -r "$PUSH_SHA" -- 'addons/incoming/*.xpi')
+            if [[ "${#files[@]}" -ne 1 ]]; then
+              echo "::error::Expected exactly one new/updated XPI under addons/incoming in this push; found ${#files[@]}"
+              exit 1
+            fi
+            archive="${files[0]}"
+          fi
+          [[ "$archive" == addons/incoming/*.xpi ]] || { echo "::error::XPI must be stored under addons/incoming/"; exit 1; }
+          test -s "$archive"
+          unzip -t "$archive" >/dev/null
+          mkdir -p extension
+          unzip -q "$archive" -d extension
+          test -f extension/manifest.json
+          test -f extension/noor-attachment-publisher.js
+          test ! -e extension/lessons.js
+          if unzip -Z1 "$archive" | grep -q '^META-INF/'; then
+            echo "::error::Input XPI must be unsigned; META-INF signature files were found."
             exit 1
           fi
-          echo "archive=${files[0]}" >> "$GITHUB_OUTPUT"
-          mkdir -p extension
-          unzip -q "${files[0]}" -d extension
-          test -f extension/manifest.json
-          test ! -e extension/lessons.js
-          test ! -e extension/META-INF/mozilla.rsa
-          node -e 'const m=require("./extension/manifest.json");if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io"||m.browser_specific_settings?.gecko?.update_url!=="https://rouhous.github.io/School-Teacher-Notebook-App/addons/updates.json")process.exit(1)'
-          node --check .github/scripts/publish-noor-release.mjs
-          test -f extension/noor-license.js
-          test -f extension/noor-license-ui.js
-          grep -Fq 'widget.append(heading,message,link' extension/noor-license-ui.js
-          if grep -Fq 'innerHTML' extension/noor-license-ui.js; then echo 'Unsafe membership UI HTML assignment'; exit 1; fi
-          test -f extension/noor-scorm.js
-          grep -Fq 'stnHubScormImageMode' extension/noor-hub.js
-          grep -Fq 'gemini_none' extension/noor-hub.js
-          grep -Fq "kind:'svg-fallback'" extension/noor-hub.js
-          grep -Fq "themeId" extension/page-helper.js
-          grep -Fq "themeId:tree.themeId||''" extension/content.js
-          grep -Fq "firstSemester=officialTreeUnits.filter" extension/noor-hub.js
-          grep -Fq "refreshOfficialTreeInBackground" extension/noor-hub.js
-          node --check extension/page-helper.js
-          node --check extension/content.js
-          node --check extension/noor-hub.js
-          grep -Fq "omani-lesson-scene.svg" extension/noor-scorm.js
-          grep -Fq 'stnNoorPrepSubmitReceipt:v1' extension/page-helper.js
-          grep -Fq 'scheduled:true' extension/page-helper.js
-          test -f extension/noor-scorm-publisher.js
-          grep -Fq 'stnNoorUnitBatch:v1' extension/noor-hub.js
-          grep -Fq 'confirmedUnitLessons' extension/noor-hub.js
-          grep -Fq 'stnHubActivityScope' extension/noor-hub.js
-          grep -Fq 'stnHubScormScope' extension/noor-hub.js
-          grep -Fq 'stnHubMinimize' extension/noor-hub.js
-          grep -Fq 'stnTaskCard' extension/noor-hub.js
-          grep -Fq 'stnHubGeminiHeader' extension/noor-hub.js
-          grep -Fq 'stnHubKeyDialog' extension/noor-hub.js
-          grep -Fq 'stnHubLegacyActions' extension/noor-hub.js
-          grep -Fq 'await switchTask(task)' extension/noor-hub.js
-          grep -Fq 'stnLangToggle' extension/noor-hub.js
-          grep -Fq 'applyOfficialOmanSemester' extension/noor-hub.js
-          grep -Fq 'Asia/Muscat' extension/noor-hub.js
-          grep -Fq 'stnHubChecks input[type=checkbox]' extension/noor-hub.css
-          grep -Fq 'stnHubBatchCancel' extension/noor-hub.js
-          grep -Fq 'confirmedSaved' extension/noor-scorm-publisher.js
-          grep -Fq 'stnHubMinimized' extension/noor-hub.css
-          grep -Fq 'manualSelection' extension/noor-hub.js
-          grep -Fq 'Science Noor tree' extension/noor-lesson-numbers.js
-          node - <<'NODE'
-          require('./extension/noor-lesson-numbers.js');
-          const r=globalThis.NoorLessonNumbers;
-          const units=[{term:'الفصل الأول',termId:'s1',unitId:'u4',unit:'4 الخلايا والكائنات الحية',
-            lessons:[{id:'l41',title:'4-1 خصائص الكائنات الحية'},{id:'l42',title:'4-2 الكائنات الحية الدقيقة'}]}];
-          if(r.resolve(units,{semester:'1',unit:'4',lesson:'1'}).lessonId!=='l41')throw Error('Science auto lesson 4-1');
-          if(r.resolve(units,{semester:'1',unit:'الوحدة الرابعة',lesson:'الدرس الثاني'}).lessonId!=='l42')throw Error('Science ordinal 4-2');
-          if(r.resolve(units,{semester:'1',unit:'4',lesson:'1',manualSelection:{termId:'s1',unitId:'u4',lessonId:'l42'}}).lessonId!=='l42')throw Error('Teacher manual node choice');
-          if(r.resolve(units,{semester:'1',unit:'4',lesson:'5-1'}).ok)throw Error('Cross unit false positive');
-          console.log('Science auto + manual regression passed');
+          node - "$archive" <<'NODE'
+          const fs=require('fs');
+          const cp=require('child_process');
+          const m=JSON.parse(fs.readFileSync('extension/manifest.json','utf8'));
+          if(!/^\\d+\\.\\d+\\.\\d+$/.test(m.version)) throw Error('Invalid manifest version');
+          if(m.browser_specific_settings?.gecko?.id!=='noor-prep-filler-private-2026@rouhous.github.io') throw Error('Unexpected Firefox add-on ID');
+          if(m.browser_specific_settings?.gecko?.update_url!=='https://rouhous.github.io/School-Teacher-Notebook-App/addons/updates.json') throw Error('Unexpected update URL');
+          const scripts=(m.content_scripts||[]).flatMap(x=>x.js||[]);
+          if(!scripts.includes('noor-attachment-publisher.js')) throw Error('Attachment publisher is not loaded by manifest');
+          if(!scripts.includes('noor-hub.js')) throw Error('Noor hub is missing from manifest');
+          console.log(m.version);
           NODE
-          test -f extension/noor-scorm-evidence.js
-          grep -Fq 'NOOR_GEMINI_SCORM_IMAGE' extension/gemini-background.js
-          grep -Fq 'generateScormImage' extension/noor-hub.js
-          grep -Fq 'const LESSONS_ACTION=' extension/noor-scorm-publisher.js
-          grep -Fq 'cards.next(' extension/noor-scorm-publisher.js
-          grep -Fq 'function pickNav(j)' extension/noor-scorm-publisher.js
-          if grep -Fq 'function otherLibrariesExpand(panel)' extension/noor-scorm-publisher.js; then echo 'New Other Libraries route must not exist in card-resume release'; exit 1; fi
-          grep -Fq 'id="stnHubCount" type="number"' extension/noor-hub.js
-          grep -Fq 'retryActivityGeneration' extension/noor-hub.js
-          grep -Fq 'cancelCurrentTask' extension/noor-hub.js
-          grep -Fq 'stnNoorTeacherSelection:v2:' extension/noor-hub.js
-          node --check extension/noor-exam.js
-          node --check extension/noor-class-card.js
-          node --check extension/smart/src/noor-automator.js
-          grep -Fq 'findQuestionChoice' extension/smart/src/noor-automator.js
-          grep -Fq 'stnHubActivityResumeQuestions' extension/noor-hub.js
-          grep -Fq 'outcomeIndex' extension/gemini-background.js
-          grep -Fq 'function questionTable' extension/smart/src/noor-automator.js
-          grep -Fq 'function examTypePattern' extension/noor-exam.js
-          grep -Fq 'five numbered gaps' extension/smart-background.js
-          grep -Fq 'function actionBlocked' extension/noor-hub.js
-          grep -Fq 'id="stnHubActivityPause"' extension/noor-hub.js
-          grep -Fq 'function bindPrimaryActions' extension/noor-hub.js
-          test -f extension/noor-bulk-items.js
-          node --check extension/noor-bulk-items.js
-          grep -Fq 'qti_form' extension/noor-exam.js
-          grep -Fq 'stnFilePicker' extension/noor-hub.css
-          grep -Fq 'stnHubLanguage' extension/noor-hub.js
-          grep -Fq 'stnNoorUiLanguage' extension/noor-ui-language.js
-          grep -Fq "gradeNames.set('nineth',9)" extension/smart/src/noor-context.js
-          grep -Fq 'stnHubPrepTransfer:v3' extension/page-helper.js
-          grep -Fq 'applyActivityPublishDate' extension/smart/src/noor-automator.js
-          grep -Fq 'generateComplete' extension/smart/src/noor-gemini.js
-          grep -Fq 'omani-lesson-scene.' extension/noor-scorm.js
-          grep -Fq 'function encode(bytes)' extension/noor-scorm-publisher.js
-          if grep -Fq 'bytes.subarray(' extension/noor-scorm-publisher.js; then echo 'Firefox Xray unsafe subarray detected'; exit 1; fi
-          grep -Fq 'NOOR_GEMINI_SCORM_GENERATE' extension/gemini-background.js
-          grep -Fq 'matchQuestion' extension/noor-scorm.js
-          grep -Fq 'orderQuestion' extension/noor-scorm.js
-          grep -Fq 'STN_NOOR_LICENSE.authorized()' extension/gemini-background.js
-          grep -Fq 'saveReviewedPreparation({automatic:true})' extension/noor-hub.js
-          test -f extension/noor-lesson-numbers.js
-          grep -Fq 'async activeTreeLesson()' extension/content.js
-          grep -Fq 'lessonNodeId:chain[0].nodeId' extension/page-helper.js
-          grep -Fq 'المحور' extension/noor-lesson-numbers.js
-          test -f extension/noor-lesson-evidence.js
-          grep -Fq 'resolveFromList' extension/noor-lesson-evidence.js
-          grep -Fq 'unit_mismatch' extension/noor-lesson-evidence.js
-          grep -Fq 'ensureVisibleSection' extension/noor-scorm-publisher.js
-          grep -Fq 'resolveVerifiedLesson' extension/noor-hub.js
-          grep -Fq 'async function startFromDashboard' extension/noor-hub.js
-          grep -Fq 'id="stnHubDetails" hidden' extension/noor-hub.js
-          grep -Fq 'value="grades" hidden disabled' extension/noor-hub.js
-          grep -Fq 'allowUnlinkedLesson' extension/smart/src/noor-automator.js
-          grep -Fq "const scormSaveMode=()=>'auto'" extension/noor-hub.js
-          grep -Fq 'stnNoorTeacherSelection:v1:' extension/noor-hub.js
-          grep -Fq 'async orderedUnit' extension/page-helper.js
-          test -f extension/noor-curriculum-discovery.js
-          node - <<'NODE'
-          require('./extension/noor-curriculum-discovery.js');
-          const d=globalThis.NoorCurriculumDiscovery;
-          const branch={termId:'term',unitId:'id',lessons:[{id:'90',title:'Lesson 8'},{id:'20',title:'A new topic'}]};
-          if(d.position('٣')!==3||d.lessonAt(branch,'٢')?.id!=='20'||d.lessonAt(branch,3)!==null)throw Error('Position lookup does not preserve tree order');
-          if(!d.matchIds(branch,d.lessonAt(branch,2),{termId:'term',unitId:'id',lessonId:'20'}))throw Error('Tree node IDs must match');
-          NODE
-          test -f extension/noor-gemini-models.js
-          grep -Fq 'gemini-3.5-flash-lite' extension/noor-gemini-models.js
-          grep -Fq 'NoorGeminiModels.generate' extension/smart-background.js
-          node -e "const m=require('./extension/manifest.json');if(m.background.scripts[0]!=='noor-license.js'||m.background.scripts[1]!=='noor-gemini-models.js')process.exit(1)"
-          grep -Fq 'stnCourseCatalog:v4:' extension/noor-course-catalog.js
-          grep -Fq 'stnHubDragHandle' extension/noor-hub.js
-          test ! -e extension/noor-pipeline.js
-          test ! -e extension/noor-pipeline-background.js
-          grep -Fq 'stnHubSubject' extension/noor-hub.js
-          grep -Fq 'stnHubActivityQuantity' extension/noor-hub.js
-          grep -Fq 'stnHubScormQuantity' extension/noor-hub.js
-          grep -Fq '2.8.102 responsive panel and readable task form' extension/noor-hub.css
-          grep -Fq 'width:calc(100vw - 24px)!important' extension/noor-hub.css
-          grep -Fq 'display:block!important' extension/noor-hub.css
-          grep -Fq 'SAVED TEACHER PREPARATION — PRIMARY SOURCE' extension/noor-hub.js
-          grep -Fq 'STRICT LESSON IDENTITY' extension/noor-hub.js
-          grep -Fq 'MANDATORY CURRICULUM RESEARCH USING THE ENABLED GOOGLE SEARCH TOOL' extension/smart-background.js
-          grep -Fq 'tools:[{googleSearch:{}}]' extension/smart-background.js
-          grep -Fq 'groundingChunks' extension/smart-background.js
-          grep -Fq 'webSearchQueries' extension/smart-background.js
-          grep -Fq 'slice(0,4800)' extension/smart/src/noor-panel.js
-          grep -Fq 'trim(input.description,5000)' extension/smart/src/noor-gemini.js
-          grep -Fq 'publishSelection' extension/smart/src/noor-panel.js
+          version="$(node -p "require('./extension/manifest.json').version")"
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+          echo "release_version=$version" >> "$GITHUB_OUTPUT"
+          echo "Validated unsigned XPI version $version at $archive"
+
+      - name: Validate JavaScript syntax
+        run: |
+          set -euo pipefail
           find extension -type f -name '*.js' \
-             ! -name 'pdf.min.js' ! -name 'pdf.worker.min.js' ! -name 'mammoth.browser.min.js' \
-             -print0 | xargs -0 -r -n1 node --check
-          echo "Source validated. Signing requires workflow_dispatch or an explicitly tagged [release-noor] source commit."
+            ! -name 'pdf.min.js' ! -name 'pdf.worker.min.js' ! -name 'mammoth.browser.min.js' \
+            -print0 | xargs -0 -r -n1 node --check
+
   sign_and_publish:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release-noor]'))
     needs: validate
     runs-on: ubuntu-22.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      RELEASE_VERSION: ${{ inputs.version || '2.8.113' }}
+      RELEASE_VERSION: ${{ needs.validate.outputs.release_version }}
+      ARCHIVE: ${{ needs.validate.outputs.archive }}
       WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
       WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
       AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
-      ARCHIVE: ${{ needs.validate.outputs.archive }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
           fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Generate 2.8.113 source for Mozilla signing
-        run: python3 .github/scripts/prepare-noor-2865.py
-      - name: Verify one-time signing credentials and release branch
+
+      - name: Verify signing credentials and release branch
         shell: bash
         run: |
           set -euo pipefail
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-             echo "::error::Only main can publish releases"
-             exit 1
+            echo "::error::Only main can publish Mozilla-signed releases"
+            exit 1
           fi
           if [[ -z "$WEB_EXT_API_KEY" || -z "$WEB_EXT_API_SECRET" ]]; then
-             echo "::error::Add secrets AMO_JWT_ISSUER and AMO_JWT_SECRET under GitHub repository Actions secrets"
-             exit 1
+            echo "::error::Missing GitHub Actions secrets AMO_JWT_ISSUER and/or AMO_JWT_SECRET"
+            exit 1
           fi
           node -e 'const f=require("./addons/updates.json");const x=f.addons["noor-prep-filler-private-2026@rouhous.github.io"].updates;if(x.some(e=>e.version===process.env.RELEASE_VERSION))throw Error("Version already published")'
-      - name: Prepare source for Mozilla signing
+
+      - name: Prepare the exact uploaded XPI for Mozilla
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p extension signed
           unzip -q "$ARCHIVE" -d extension
           npm install --prefix "$RUNNER_TEMP/noor-sign-cli" --no-save --ignore-scripts --no-audit --no-fund web-ext@10
-      - name: Sign on Mozilla as unlisted add-on
+
+      - name: Sign the uploaded build on Mozilla AMO
         shell: bash
         timeout-minutes: 35
         run: |
@@ -252,64 +144,53 @@ jobs:
             --approval-timeout 1500000 >"$SIGN_LOG" 2>&1; then
             cat "$SIGN_LOG"
           elif grep -Fq "Version ${RELEASE_VERSION} already exists." "$SIGN_LOG"; then
-            echo "This version already exists at Mozilla. The next step will import and verify the approved XPI."
+            cat "$SIGN_LOG"
+            echo "Version already submitted to AMO; importing its approved XPI."
           else
             cat "$SIGN_LOG"
             exit 1
           fi
           rm -f "$SIGN_LOG"
-      - name: Verify the returned signed XPI
+
+      - name: Import and verify the Mozilla-approved XPI
         shell: bash
         run: |
           set -euo pipefail
           dest="addons/files/Noor-Unified-v${RELEASE_VERSION}-signed.xpi"
           mkdir -p addons/files
-          # Re-import the approved XPI from Mozilla using the developer API; verify its hash against AMO.
           node .github/scripts/import-noor-amo-signed.mjs
           test -s "$dest"
           python3 - "$ARCHIVE" "$dest" <<'PY'
-          import json
-          import sys
+          import json, sys
           from zipfile import ZipFile
-
           with ZipFile(sys.argv[1]) as source, ZipFile(sys.argv[2]) as signed:
-              expected = {item.filename for item in source.infolist() if not item.is_dir()}
-              actual = {item.filename for item in signed.infolist()
-                        if not item.is_dir() and not item.filename.startswith('META-INF/')}
-              expected.discard('README.md')
-              actual.discard('README.md')
+              expected={x.filename for x in source.infolist() if not x.is_dir()}
+              actual={x.filename for x in signed.infolist() if not x.is_dir() and not x.filename.startswith('META-INF/')}
+              expected.discard('README.md'); actual.discard('README.md')
               if expected != actual:
-                  sys.exit('Signed XPI file list differs: ' + ', '.join(sorted(expected ^ actual)))
-              changed = sorted(name for name in expected - {'manifest.json'}
-                               if source.read(name) != signed.read(name))
-              source_manifest = json.loads(source.read('manifest.json'))
-              signed_manifest = json.loads(signed.read('manifest.json'))
-              # Description is store metadata; require all runtime settings to match.
-              source_manifest.pop('description', None)
-              signed_manifest.pop('description', None)
-              if source_manifest != signed_manifest:
-                  fields = sorted(key for key in source_manifest.keys() | signed_manifest.keys()
-                                  if source_manifest.get(key) != signed_manifest.get(key))
-                  sys.exit('Signed manifest settings differ: ' + ', '.join(fields))
-              if changed:
-                  sys.exit('Signed XPI content differs: ' + ', '.join(changed))
-          print('Signed XPI runtime contents match the validated archive.')
+                  sys.exit('Signed XPI file list differs: '+', '.join(sorted(expected ^ actual)))
+              changed=sorted(n for n in expected-{'manifest.json'} if source.read(n)!=signed.read(n))
+              sm=json.loads(source.read('manifest.json')); tm=json.loads(signed.read('manifest.json'))
+              sm.pop('description',None); tm.pop('description',None)
+              if sm != tm: sys.exit('Signed manifest settings differ')
+              if changed: sys.exit('Signed runtime files differ: '+', '.join(changed))
+          print('Mozilla-signed XPI runtime contents match the exact uploaded XPI.')
           PY
           unzip -t "$dest" | tail -n 1
-          unzip -Z1 "$dest" | grep -Eq '^META-INF/[^/]+\.rsa$'
+          unzip -Z1 "$dest" | grep -Eq '^META-INF/[^/]+\\.rsa$'
           unzip -p "$dest" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const m=JSON.parse(s);if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io")process.exit(1)})'
-          for f in noor-hub.js noor-exam.js noor-class-card.js noor-course-catalog.js noor-scorm.js noor-grade-csv.js smart/src/noor-panel.js; do unzip -Z1 "$dest" | grep -Fxq "$f"; done
-          ! unzip -Z1 "$dest" | grep -Exq 'noor-pipeline.js|noor-pipeline-background.js'
-          ! unzip -Z1 "$dest" | grep -Fxq lessons.js
+          unzip -Z1 "$dest" | grep -Fxq 'noor-attachment-publisher.js'
           sha256sum "$dest"
           echo "SIGNED_XPI=$dest" >> "$GITHUB_ENV"
-      - name: Save the signed XPI as a build artifact
+
+      - name: Save signed XPI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-v${{ inputs.version || '2.8.110' }}-Mozilla-signed
+          name: Noor-v${{ needs.validate.outputs.release_version }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
-      - name: Publish the signed XPI and update manifest
+
+      - name: Publish signed XPI and update the Firefox update feed
         shell: bash
         run: |
           set -euo pipefail
@@ -319,15 +200,17 @@ jobs:
           git add "$SIGNED_XPI" addons/updates.json addons/latest.json addons/index.html
           git commit -m "Publish Mozilla-signed Noor Tools v${RELEASE_VERSION}"
           git push origin HEAD:main
-      - name: Remove temporary source and signing files
-        shell: bash
-        run: rm -rf extension signed
-      - uses: actions/configure-pages@v5
+
+      - name: Deploy updated GitHub Pages
+        uses: actions/configure-pages@v5
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
-      - name: Wait for GitHub Pages artifact indexing
+
+      - name: Wait for Pages artifact indexing
         run: sleep 20
-      - name: Deploy signed XPI and the updated Notebook library
+
+      - name: Deploy signed XPI and update feed
         id: deployment
         uses: actions/deploy-pages@v4
