@@ -64,7 +64,6 @@ jobs:
           fi
           node - "$archive" <<'NODE'
           const fs=require('fs');
-          const cp=require('child_process');
           const m=JSON.parse(fs.readFileSync('extension/manifest.json','utf8'));
           if(!/^\\d+\\.\\d+\\.\\d+$/.test(m.version)) throw Error('Invalid manifest version');
           if(m.browser_specific_settings?.gecko?.id!=='noor-prep-filler-private-2026@rouhous.github.io') throw Error('Unexpected Firefox add-on ID');
