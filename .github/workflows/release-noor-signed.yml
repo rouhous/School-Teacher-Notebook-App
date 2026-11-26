@@ -4,10 +4,11 @@ on:
   push:
     paths:
       - "addons/incoming/*.xpi"
+      - "addons/incoming/dropbox-request-*.json"
   workflow_dispatch:
     inputs:
       xpi_path:
-        description: "Repository path to the unsigned XPI, e.g. addons/incoming/Noor-Unified-v2.8.117-unsigned.xpi"
+        description: "Repository path to an unsigned XPI"
         type: string
         required: true
 
@@ -31,32 +32,49 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Select the uploaded XPI
+      - name: Select or download the unsigned XPI
         id: source
         env:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_XPI_PATH: ${{ inputs.xpi_path || '' }}
           PUSH_SHA: ${{ github.sha }}
+          DROPBOX_ACCESS_TOKEN: ${{ secrets.DROPBOX_ACCESS_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             archive="$INPUT_XPI_PATH"
           else
-            mapfile -t files < <(git diff-tree --no-commit-id --name-only -r "$PUSH_SHA" -- 'addons/incoming/*.xpi')
-            if [[ "${#files[@]}" -ne 1 ]]; then
-              echo "::error::Expected exactly one new/updated XPI under addons/incoming in this push; found ${#files[@]}"
+            mapfile -t xpis < <(git diff-tree --no-commit-id --name-only -r "$PUSH_SHA" -- 'addons/incoming/*.xpi')
+            mapfile -t requests < <(git diff-tree --no-commit-id --name-only -r "$PUSH_SHA" -- 'addons/incoming/dropbox-request-*.json')
+            if [[ "${#xpis[@]}" -eq 1 && "${#requests[@]}" -eq 0 ]]; then
+              archive="${xpis[0]}"
+            elif [[ "${#requests[@]}" -eq 1 && "${#xpis[@]}" -eq 0 ]]; then
+              [[ -n "$DROPBOX_ACCESS_TOKEN" ]] || { echo "::error::Missing DROPBOX_ACCESS_TOKEN repository secret"; exit 1; }
+              request="${requests[0]}"
+              dropbox_path="$(node -e 'const r=require("./"+process.argv[1]);if(typeof r.dropbox_path!=="string"||!r.dropbox_path.startsWith("/"))process.exit(2);process.stdout.write(r.dropbox_path)' "$request")"
+              filename="$(node -e 'const r=require("./"+process.argv[1]);if(typeof r.filename!=="string"||!/^[A-Za-z0-9._-]+\.xpi$/.test(r.filename))process.exit(2);process.stdout.write(r.filename)' "$request")"
+              archive="addons/incoming/$filename"
+              mkdir -p addons/incoming
+              curl --fail --silent --show-error --request POST \
+                --url "https://content.dropboxapi.com/2/files/download" \
+                --header "Authorization: Bearer $DROPBOX_ACCESS_TOKEN" \
+                --header "Dropbox-API-Arg: {\"path\":\"$dropbox_path\"}" \
+                --output "$archive"
+              echo "Downloaded requested XPI from Dropbox into the runner."
+            else
+              echo "::error::Expected exactly one XPI or one Dropbox request JSON in this push."
               exit 1
             fi
-            archive="${files[0]}"
           fi
-          [[ "$archive" == addons/incoming/*.xpi ]] || { echo "::error::XPI must be stored under addons/incoming/"; exit 1; }
+          [[ "$archive" == addons/incoming/*.xpi ]] || { echo "::error::XPI must be under addons/incoming/"; exit 1; }
           test -s "$archive"
           unzip -t "$archive" >/dev/null
           mkdir -p extension
           unzip -q "$archive" -d extension
           test -f extension/manifest.json
           test -f extension/noor-attachment-publisher.js
+          test -f extension/noor-hub.js
           test ! -e extension/lessons.js
           if unzip -Z1 "$archive" | grep -q '^META-INF/'; then
             echo "::error::Input XPI must be unsigned; META-INF signature files were found."
@@ -65,12 +83,11 @@ jobs:
           node - "$archive" <<'NODE'
           const fs=require('fs');
           const m=JSON.parse(fs.readFileSync('extension/manifest.json','utf8'));
-          if(!/^\\d+\\.\\d+\\.\\d+$/.test(m.version)) throw Error('Invalid manifest version');
-          if(m.browser_specific_settings?.gecko?.id!=='noor-prep-filler-private-2026@rouhous.github.io') throw Error('Unexpected Firefox add-on ID');
+          if(!/^\d+\.\d+\.\d+$/.test(m.version)) throw Error('Invalid version');
+          if(m.browser_specific_settings?.gecko?.id!=='noor-prep-filler-private-2026@rouhous.github.io') throw Error('Unexpected add-on ID');
           if(m.browser_specific_settings?.gecko?.update_url!=='https://rouhous.github.io/School-Teacher-Notebook-App/addons/updates.json') throw Error('Unexpected update URL');
           const scripts=(m.content_scripts||[]).flatMap(x=>x.js||[]);
-          if(!scripts.includes('noor-attachment-publisher.js')) throw Error('Attachment publisher is not loaded by manifest');
-          if(!scripts.includes('noor-hub.js')) throw Error('Noor hub is missing from manifest');
+          if(!scripts.includes('noor-attachment-publisher.js')||!scripts.includes('noor-hub.js')) throw Error('Required Noor scripts are missing from manifest');
           console.log(m.version);
           NODE
           version="$(node -p "require('./extension/manifest.json').version")"
@@ -103,55 +120,39 @@ jobs:
         with:
           persist-credentials: true
           fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - name: Verify signing credentials and release branch
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-            echo "::error::Only main can publish Mozilla-signed releases"
-            exit 1
-          fi
-          if [[ -z "$WEB_EXT_API_KEY" || -z "$WEB_EXT_API_SECRET" ]]; then
-            echo "::error::Missing GitHub Actions secrets AMO_JWT_ISSUER and/or AMO_JWT_SECRET"
-            exit 1
-          fi
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || { echo "::error::Only main can publish Mozilla-signed releases"; exit 1; }
+          [[ -n "$WEB_EXT_API_KEY" && -n "$WEB_EXT_API_SECRET" ]] || { echo "::error::Missing AMO_JWT_ISSUER or AMO_JWT_SECRET"; exit 1; }
           node -e 'const f=require("./addons/updates.json");const x=f.addons["noor-prep-filler-private-2026@rouhous.github.io"].updates;if(x.some(e=>e.version===process.env.RELEASE_VERSION))throw Error("Version already published")'
-
-      - name: Prepare the exact uploaded XPI for Mozilla
-        shell: bash
+      - name: Prepare exact XPI for Mozilla
         run: |
           set -euo pipefail
           mkdir -p extension signed
           unzip -q "$ARCHIVE" -d extension
           npm install --prefix "$RUNNER_TEMP/noor-sign-cli" --no-save --ignore-scripts --no-audit --no-fund web-ext@10
-
-      - name: Sign the uploaded build on Mozilla AMO
+      - name: Sign build on Mozilla AMO
         shell: bash
         timeout-minutes: 35
         run: |
           set -euo pipefail
           SIGN_LOG="$(mktemp)"
-          if "$RUNNER_TEMP/noor-sign-cli/node_modules/.bin/web-ext" sign \
-            --source-dir extension \
-            --artifacts-dir signed \
-            --channel unlisted \
-            --approval-timeout 1500000 >"$SIGN_LOG" 2>&1; then
+          if "$RUNNER_TEMP/noor-sign-cli/node_modules/.bin/web-ext" sign --source-dir extension --artifacts-dir signed --channel unlisted --approval-timeout 1500000 >"$SIGN_LOG" 2>&1; then
             cat "$SIGN_LOG"
           elif grep -Fq "Version ${RELEASE_VERSION} already exists." "$SIGN_LOG"; then
             cat "$SIGN_LOG"
-            echo "Version already submitted to AMO; importing its approved XPI."
+            echo "Version already submitted to AMO; importing approved XPI."
           else
             cat "$SIGN_LOG"
             exit 1
           fi
           rm -f "$SIGN_LOG"
-
-      - name: Import and verify the Mozilla-approved XPI
+      - name: Import and verify Mozilla-approved XPI
         shell: bash
         run: |
           set -euo pipefail
@@ -166,8 +167,7 @@ jobs:
               expected={x.filename for x in source.infolist() if not x.is_dir()}
               actual={x.filename for x in signed.infolist() if not x.is_dir() and not x.filename.startswith('META-INF/')}
               expected.discard('README.md'); actual.discard('README.md')
-              if expected != actual:
-                  sys.exit('Signed XPI file list differs: '+', '.join(sorted(expected ^ actual)))
+              if expected != actual: sys.exit('Signed XPI file list differs')
               changed=sorted(n for n in expected-{'manifest.json'} if source.read(n)!=signed.read(n))
               sm=json.loads(source.read('manifest.json')); tm=json.loads(signed.read('manifest.json'))
               sm.pop('description',None); tm.pop('description',None)
@@ -176,20 +176,18 @@ jobs:
           print('Mozilla-signed XPI runtime contents match the exact uploaded XPI.')
           PY
           unzip -t "$dest" | tail -n 1
-          unzip -Z1 "$dest" | grep -Eq '^META-INF/[^/]+\\.rsa$'
+          unzip -Z1 "$dest" | grep -Eq '^META-INF/[^/]+\.rsa$'
           unzip -p "$dest" manifest.json | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{const m=JSON.parse(s);if(m.version!==process.env.RELEASE_VERSION||m.browser_specific_settings?.gecko?.id!=="noor-prep-filler-private-2026@rouhous.github.io")process.exit(1)})'
           unzip -Z1 "$dest" | grep -Fxq 'noor-attachment-publisher.js'
           sha256sum "$dest"
           echo "SIGNED_XPI=$dest" >> "$GITHUB_ENV"
-
       - name: Save signed XPI artifact
         uses: actions/upload-artifact@v4
         with:
           name: Noor-v${{ needs.validate.outputs.release_version }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
-
-      - name: Publish signed XPI and update the Firefox update feed
+      - name: Publish signed XPI and update Firefox feed
         shell: bash
         run: |
           set -euo pipefail
@@ -197,19 +195,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$SIGNED_XPI" addons/updates.json addons/latest.json addons/index.html
-          git commit -m "Publish Mozilla-signed Noor Tools v${RELEASE_VERSION}"
+          git commit -m "Publish Mozilla-signed Noor Tools v$RELEASE_VERSION"
           git push origin HEAD:main
-
       - name: Deploy updated GitHub Pages
         uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
-
       - name: Wait for Pages artifact indexing
         run: sleep 20
-
       - name: Deploy signed XPI and update feed
         id: deployment
         uses: actions/deploy-pages@v4
