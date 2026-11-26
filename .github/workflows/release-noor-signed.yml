@@ -87,6 +87,7 @@ jobs:
           [[ "$archive" == addons/incoming/*.xpi ]] || { echo "::error::XPI must be under addons/incoming/"; exit 1; }
           test -s "$archive"
           unzip -t "$archive" >/dev/null
+          rm -rf extension
           mkdir -p extension
           unzip -q "$archive" -d extension
           test -f extension/manifest.json
