@@ -193,25 +193,14 @@ new = """if(job?.phase==='awaiting_files'){$('stnHubAttachmentFiles').click();re
 p.write_text(s, encoding="utf-8")
 
 # A form or content page is trusted only if its route CID equals the saved
-# selected class CID; a same-looking attachment section in another class is
-# never reused.
-old = """   if(j.phase==='form'){
-    if(!attachmentForm())throw Error('لم يظهر نموذج رفع مرفقات المادة بعد فتحه.');"""
-if old in s:
-    s = s.replace(old, """new = old.replace("if(!attachmentForm())", "if(!selectedRoute(j.cid))throw Error('تغيّر معرّف الصف في صفحة المرفقات. أوقفت العملية لحماية الملفات من الرفع إلى صف آخر.');\\n    if(!attachmentForm())")
-    s = s.replace(old, new, 1)
-elif "if(!selectedRoute(j.cid))" not in s:
-    raise SystemExit("Could not verify CID guard in attachment form")
-new = """   if(j.phase==='form'){
-    if(!selectedRoute(j.cid))throw Error('تغيّر معرّف الصف في صفحة المرفقات. أوقفت العملية لحماية الملفات من الرفع إلى صف آخر.');
-    if(!attachmentForm())throw Error('لم يظهر نموذج رفع مرفقات المادة بعد فتحه.');"""
-if old not in s:
-    raise SystemExit("Could not locate attachment form verification")
-s = s.replace(old, new, 1)
-
+# selected class CID; never reuse a same-looking section from another class.
+guard = "if(!selectedRoute(j.cid))throw Error('تغيّر معرّف الصف في صفحة المرفقات. أوقفت العملية لحماية الملفات من الرفع إلى صف آخر.');"
+if guard not in s:
+    marker = "   if(j.phase==='form'){"
+    if marker not in s:
+        raise SystemExit("Could not locate form phase for CID guard")
+    s = s.replace(marker, marker + "\\n    " + guard, 1)
 p.write_text(s, encoding="utf-8")
-print("Applied shared class-card open-state detection and CID-guarded attachment navigation.")
-
 
 # Open the native file picker directly inside the user's click gesture. Only
 # after the file selection event do we resolve the Noor context and navigate.
