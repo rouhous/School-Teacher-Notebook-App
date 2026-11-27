@@ -196,7 +196,7 @@ p.write_text(s, encoding="utf-8")
 # selected class CID; never reuse a same-looking section from another class.
 guard = "if(!selectedRoute(j.cid))"
 if guard not in s:
-    pattern = r"(?m)^([ \\t]*if\\(j\\.phase===[\\'\\\"]form[\\'\\\"]\\)\\{)"
+    pattern = r"""(?m)^([ \t]*if\s*\(\s*j\.phase\s*===\s*['"]form['"]\s*\)\s*\{)"""
     s, count = re.subn(pattern, lambda m: m.group(1) + "\\n    if(!selectedRoute(j.cid))throw Error('تغيّر معرّف الصف في صفحة المرفقات. أوقفت العملية لحماية الملفات من الرفع إلى صف آخر.');", s, count=1)
     if count != 1:
         raise SystemExit("Could not locate attachment form phase for CID guard")
