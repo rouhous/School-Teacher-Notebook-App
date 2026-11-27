@@ -194,12 +194,12 @@ p.write_text(s, encoding="utf-8")
 
 # A form or content page is trusted only if its route CID equals the saved
 # selected class CID; never reuse a same-looking section from another class.
-guard = "if(!selectedRoute(j.cid))throw Error('تغيّر معرّف الصف في صفحة المرفقات. أوقفت العملية لحماية الملفات من الرفع إلى صف آخر.');"
+guard = "if(!selectedRoute(j.cid))"
 if guard not in s:
-    marker = "   if(j.phase==='form'){"
-    if marker not in s:
-        raise SystemExit("Could not locate form phase for CID guard")
-    s = s.replace(marker, marker + "\\n    " + guard, 1)
+    pattern = r"(?m)^([ \\t]*if\\(j\\.phase===[\\'\\\"]form[\\'\\\"]\\)\\{)"
+    s, count = re.subn(pattern, lambda m: m.group(1) + "\\n    if(!selectedRoute(j.cid))throw Error('تغيّر معرّف الصف في صفحة المرفقات. أوقفت العملية لحماية الملفات من الرفع إلى صف آخر.');", s, count=1)
+    if count != 1:
+        raise SystemExit("Could not locate attachment form phase for CID guard")
 p.write_text(s, encoding="utf-8")
 
 # Open the native file picker directly inside the user's click gesture. Only
