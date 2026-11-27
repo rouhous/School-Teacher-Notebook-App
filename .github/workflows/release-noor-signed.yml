@@ -89,7 +89,7 @@ jobs:
               unzip -q "$base" -d extension
               rm -rf extension/META-INF
               cp addons/incoming/noor-attachment-publisher-v2.8.127.js extension/noor-attachment-publisher.js
-              node -e 'const fs=require("fs"),p="extension/manifest.json",m=JSON.parse(fs.readFileSync(p));m.version="2.8.127";fs.writeFileSync(p,JSON.stringify(m,null,2)+"\\n")'
+              node -e 'const fs=require("fs"),p="extension/manifest.json",m=JSON.parse(fs.readFileSync(p));m.version="2.8.127";fs.writeFileSync(p,JSON.stringify(m,null,2)+"\n")'
               archive="addons/incoming/Noor-Unified-v2.8.127-unsigned.xpi"
               (cd extension && zip -q -r "../$archive" . -x "README.md" "*.DS_Store")
               rm -f "$base"
