@@ -18,6 +18,11 @@ jobs:
           mkdir ext
           curl -fsSL "https://raw.githubusercontent.com/rouhous/School-Teacher-Notebook-App/main/addons/files/Noor-Unified-v2.8.120-signed.xpi" -o /tmp/noor.xpi
           unzip -q /tmp/noor.xpi -d ext
+          mkdir -p /tmp/noor-source
+          cp ext/noor-class-card.js ext/noor-course-catalog.js ext/noor-hub.js ext/noor-scorm-publisher.js ext/noor-attachment-publisher.js ext/noor-scorm.js /tmp/noor-source/
+          cd /tmp/noor-source && zip -q /tmp/noor-source.zip *.js
+          cd "$GITHUB_WORKSPACE"
+          echo "=== Upload exact runtime sources as diagnostic artifact ==="
           echo "=== manifest scripts ==="
           node -e "const m=require('./ext/manifest.json');console.log((m.content_scripts||[]).map(x=>x.js))"
           echo "=== source files ==="
@@ -38,3 +43,9 @@ jobs:
           grep -n -A45 -B15 -E 'function.*(Class|Card)|const .*CID|courseId|course_id' ext/noor-attachment-publisher.js | head -240 || true
           echo "=== SCORM source files and resolver references ==="
           grep -n -A35 -B15 -Ei 'scorm|function.*(Class|Card)|courseId|course_id' ext/noor-hub.js ext/noor-pipeline.js ext/noor-*.js | head -260 || true
+
+      - name: Upload exact runtime source files
+        uses: actions/upload-artifact@v4
+        with:
+          name: noor-runtime-source-2.8.120
+          path: /tmp/noor-source.zip
