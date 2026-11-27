@@ -28,7 +28,7 @@ new = """ function openControl(card){
   const triggers=[...card.querySelectorAll('[aria-expanded="true"],[aria-controls],[aria-describedby],[data-target],[data-bs-target]')].filter(visible);
   for(const trigger of triggers){
    const ids=[trigger.getAttribute('aria-controls'),trigger.getAttribute('aria-describedby'),trigger.getAttribute('data-target'),trigger.getAttribute('data-bs-target'),trigger.getAttribute('href')]
-    .filter(Boolean).flatMap(v=>v.split(/\\\\s+/)).map(v=>v.replace(/^#/,'')).filter(v=>/^[A-Za-z][\\\\w:.-]*$/.test(v));
+    .filter(Boolean).flatMap(v=>v.split(/\\s+/)).map(v=>v.replace(/^#/,'')).filter(v=>/^[A-Za-z][\\w:.-]*$/.test(v));
    for(const id of ids){const target=document.getElementById(id);if(target&&visible(target)&&!target.closest('#stnNoorHub'))return target;}
    if(trigger.getAttribute('aria-expanded')==='true'){
     const related=[...document.querySelectorAll('.popover,.dropdown-menu,[role="menu"],[role="dialog"],[class*="course-actions"],[class*="material-actions"]')].filter(el=>visible(el)&&!el.closest('#stnNoorHub'));
