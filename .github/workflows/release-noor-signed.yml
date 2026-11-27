@@ -6,6 +6,7 @@ on:
       - "addons/incoming/*.xpi"
       - "addons/incoming/dropbox-request-*.json"
       - "addons/incoming/*.patch"
+      - "addons/incoming/noor-attachment-publisher-v2.8.127.js"
       - ".github/workflows/release-noor-signed.yml"
   workflow_dispatch:
     inputs:
