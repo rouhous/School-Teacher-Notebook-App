@@ -197,6 +197,11 @@ p.write_text(s, encoding="utf-8")
 # never reused.
 old = """   if(j.phase==='form'){
     if(!attachmentForm())throw Error('لم يظهر نموذج رفع مرفقات المادة بعد فتحه.');"""
+if old in s:
+    s = s.replace(old, """new = old.replace("if(!attachmentForm())", "if(!selectedRoute(j.cid))throw Error('تغيّر معرّف الصف في صفحة المرفقات. أوقفت العملية لحماية الملفات من الرفع إلى صف آخر.');\\n    if(!attachmentForm())")
+    s = s.replace(old, new, 1)
+elif "if(!selectedRoute(j.cid))" not in s:
+    raise SystemExit("Could not verify CID guard in attachment form")
 new = """   if(j.phase==='form'){
     if(!selectedRoute(j.cid))throw Error('تغيّر معرّف الصف في صفحة المرفقات. أوقفت العملية لحماية الملفات من الرفع إلى صف آخر.');
     if(!attachmentForm())throw Error('لم يظهر نموذج رفع مرفقات المادة بعد فتحه.');"""
