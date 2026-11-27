@@ -1,0 +1,32 @@
+name: Diagnose Noor class discovery and SCORM flow
+on:
+  push:
+    paths:
+      - ".github/workflows/diagnose-noor.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download published baseline and inspect shared class resolver
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir ext
+          curl -fsSL "https://raw.githubusercontent.com/rouhous/School-Teacher-Notebook-App/main/addons/files/Noor-Unified-v2.8.120-signed.xpi" -o /tmp/noor.xpi
+          unzip -q /tmp/noor.xpi -d ext
+          echo "=== manifest scripts ==="
+          node -e "const m=require('./ext/manifest.json');console.log((m.content_scripts||[]).map(x=>x.js))"
+          echo "=== source files ==="
+          find ext -maxdepth 1 -type f -name '*.js' -printf '%f\n' | sort
+          echo "=== map call sites in Noor runtime (excluding vendor) ==="
+          grep -nE '\\.map\\(' ext/noor-*.js | head -100 || true
+          echo "=== class / CID / SCORM navigation call sites ==="
+          grep -nEi 'openClass|openCard|resolveClass|classCard|courseId|course_id|CID|scorm|teacher/homeworks|location\\.(assign|href)' ext/noor-*.js | head -220 || true
+          echo "=== attachment publisher class resolver ==="
+          grep -n -A45 -B15 -E 'function.*(Class|Card)|const .*CID|courseId|course_id' ext/noor-attachment-publisher.js | head -240 || true
+          echo "=== SCORM source files and resolver references ==="
+          grep -n -A35 -B15 -Ei 'scorm|function.*(Class|Card)|courseId|course_id' ext/noor-hub.js ext/noor-pipeline.js ext/noor-*.js | head -260 || true
