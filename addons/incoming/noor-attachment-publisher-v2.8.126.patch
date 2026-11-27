@@ -1,0 +1,256 @@
+from pathlib import Path
+import re
+import sys
+
+base = Path(sys.argv[1])
+card_path = base / "noor-class-card.js"
+s = card_path.read_text(encoding="utf-8")
+
+# The card opener must be identified by evidence, not by blindly clicking the
+# first button. Noor can render its action menu inside the card or in a linked
+# Bootstrap popover/dropdown outside the card.
+old = """ function openControl(card){
+  if(!card)return null;
+  return card.querySelector('[data-toggle="popover"],[data-bs-toggle="popover"],button[type="button"]')||card;
+ }"""
+new = """ function openControl(card){
+  if(!card)return null;
+  const candidates=[...card.querySelectorAll('[data-toggle="popover"],[data-bs-toggle="popover"],[data-toggle="dropdown"],[data-bs-toggle="dropdown"],[aria-haspopup="true"],[aria-expanded],button[type="button"]')].filter(visible);
+  const preferred=candidates.filter(el=>el.matches('[data-toggle="popover"],[data-bs-toggle="popover"],[data-toggle="dropdown"],[data-bs-toggle="dropdown"],[aria-haspopup="true"],[aria-expanded]'));
+  const pool=preferred.length?preferred:candidates;
+  const unique=pool.filter(el=>!pool.some(parent=>parent!==el&&parent.contains(el)));
+  if(unique.length===1)return unique[0];
+  if(unique.length>1)return null;
+  return card.matches('a[href],button,[role="button"]')?card:null;
+ }
+ function linkedOpenMenu(card){
+  if(!card)return null;
+  const triggers=[...card.querySelectorAll('[aria-expanded="true"],[aria-controls],[aria-describedby],[data-target],[data-bs-target]')].filter(visible);
+  for(const trigger of triggers){
+   const ids=[trigger.getAttribute('aria-controls'),trigger.getAttribute('aria-describedby'),trigger.getAttribute('data-target'),trigger.getAttribute('data-bs-target'),trigger.getAttribute('href')]
+    .filter(Boolean).flatMap(v=>v.split(/\\s+/)).map(v=>v.replace(/^#/,'')).filter(v=>/^[A-Za-z][\\w:.-]*$/.test(v));
+   for(const id of ids){const target=document.getElementById(id);if(target&&visible(target)&&!target.closest('#stnNoorHub'))return target;}
+   if(trigger.getAttribute('aria-expanded')==='true'){
+    const related=[...document.querySelectorAll('.popover,.dropdown-menu,[role="menu"],[role="dialog"],[class*="course-actions"],[class*="material-actions"]')].filter(el=>visible(el)&&!el.closest('#stnNoorHub'));
+    if(related.length===1)return related[0];
+   }
+  }
+  return null;
+ }"""
+if old not in s:
+    raise SystemExit("Could not locate openControl() in noor-class-card.js")
+s = s.replace(old, new, 1)
+
+old = """  if(opened?.card!==card){
+   opened={card,previous:new Map(popovers().map(el=>[el,normalize(el.textContent)])),retry:0};
+   const opener=openControl(card);
+   if(opener)return {element:opener,step:'open'};
+  }
+  let scopes=[card];
+  if(opened?.card===card){
+   const fresh=popovers().filter(el=>!opened.previous.has(el)||opened.previous.get(el)!==normalize(el.textContent));
+   if(fresh.length===1)scopes=[fresh[0],card];
+  }"""
+new = """  if(opened?.card!==card){
+   const previous=new Map(popovers().map(el=>[el,normalize(el.textContent)]));
+   const alreadyOpen=linkedOpenMenu(card);
+   opened={card,previous,retry:0,menu:alreadyOpen||null};
+   if(!alreadyOpen){
+    const opener=openControl(card);
+    if(opener)return {element:opener,step:'open'};
+   }
+  }
+  let scopes=[card];
+  if(opened?.card===card){
+   const linked=opened.menu&&visible(opened.menu)?opened.menu:linkedOpenMenu(card);
+   const fresh=popovers().filter(el=>!opened.previous.has(el)||opened.previous.get(el)!==normalize(el.textContent));
+   const menu=linked||(fresh.length===1?fresh[0]:null);
+   if(menu){opened.menu=menu;scopes=[menu,card];}
+  }"""
+if old not in s:
+    raise SystemExit("Could not locate next() open-state block in noor-class-card.js")
+s = s.replace(old, new, 1)
+card_path.write_text(s, encoding="utf-8")
+
+# Attachment navigation is only allowed to resume from page 3 when Noor's
+# current route proves it belongs to the selected CID. Otherwise start at the
+# teacher home and use the shared class-card navigator.
+p = base / "noor-attachment-publisher.js"
+s = p.read_text(encoding="utf-8")
+old = """ const isTeacherHome=()=>/^\\/teacher\\/?$/i.test(location.pathname);"""
+new = old + """
+ function routeCid(){const m=location.pathname.match(/(?:^|\\/)cid:(\\d+)(?:\\/|$)/i);return m?m[1]:'';}
+ const selectedRoute=cid=>routeCid()===String(cid||'');
+"""
+if old not in s:
+    raise SystemExit("Could not locate isTeacherHome()")
+s = s.replace(old, new, 1)
+
+old = """  const initialPhase=attachmentForm()?'form':attachmentSection()?'section':attachmentRow()?'content':'card';"""
+new = """  const onSelectedCourse=selectedRoute(c.cid);
+  const initialPhase=attachmentForm()&&onSelectedCourse?'form':
+   onSelectedCourse&&attachmentSection()?'section':
+   onSelectedCourse&&attachmentRow()?'content':'card';"""
+if old not in s:
+    raise SystemExit("Could not locate initialPhase decision")
+s = s.replace(old, new, 1)
+
+old = """   if(j.phase==='card'||j.phase==='page3'){
+    if(!isTeacherHome()){notice('جارٍ العودة إلى بطاقات الصفوف في بوابة المعلم.');location.assign(location.origin+'/teacher');return;}
+    const catalog=root.NoorCourseCatalog;
+    let nav=null;
+    // Noor may render teacher cards and their popover controls asynchronously.
+    // Retry discovery without changing the selected course or falling back to another grade.
+    for(let attempt=0;attempt<28&&!nav;attempt++){
+     catalog?.scan?.();
+     nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^(?:اداره المحتوى|مرفقات(?:\\s+الماده)?|content management)$/i);
+     if(!nav)await sleep(250);
+    }
+    if(!nav)throw Error('لم أتعرف على بطاقة الصف المحددة أو رابطها الرسمي بعد انتظار تحميل بطاقات نور. لم أفتح صفًا آخر ولم أرفع أي ملف.');
+    const key=location.href+'|'+nav.step+'|'+j.label;if((j.navigation||[]).includes(key))throw Error('توقف التنقل لتجنب تكرار الضغط على بطاقة الصف.');j.navigation=[...(j.navigation||[]),key];j.phase=(j.phase==='card'&&nav.step==='open')?'page3':'content';set(j);nav.element.click();notice(nav.step==='open'?'تم تحديد بطاقة الصف الصحيحة. جارٍ فتحها ثم الانتقال إلى الصفحة الثالثة…':'تم العثور على مسار بطاقة الصف المحددة. جارٍ فتح الصفحة الثالثة والوصول إلى المرفقات…');await sleep(900);schedule();return;
+   }
+   if(j.phase==='content'){
+    const row=attachmentRow();if(!row)throw Error('لم أجد صف «مرفقات المادة» وزر «إضافة» في الصفحة الثالثة من بطاقة الصف. لم أرفع أي ملف.');
+    j.phase='form';set(j);row.add.click();await sleep(650);
+   }"""
+new = """   if(j.phase==='card'||j.phase==='page3'){
+    if(!isTeacherHome()){notice('جارٍ العودة إلى بطاقات الصفوف في بوابة المعلم.');location.assign(location.origin+'/teacher');return;}
+    const catalog=root.NoorCourseCatalog;
+    let nav=null;
+    // Repeatedly ask the shared navigator for the next verified step. It
+    // recognizes an already-open card menu and never toggles it closed.
+    for(let attempt=0;attempt<36&&!nav;attempt++){
+     catalog?.scan?.();
+     nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^(?:اداره المحتوى|مرفقات(?:\\s+الماده)?|content management)$/i);
+     if(!nav)await sleep(250);
+    }
+    if(!nav)throw Error('لم أتعرف على بطاقة الصف المحددة أو الصفحة الثالثة. تحقق من ظهور البطاقة وقائمة خدماتها؛ لم أفتح صفًا آخر ولم أرفع أي ملف.');
+    const key=location.href+'|'+nav.step+'|'+j.label;
+    if((j.navigation||[]).includes(key)&&nav.step!=='open')throw Error('توقف التنقل لتجنب تكرار الضغط على بطاقة الصف.');
+    j.navigation=[...(j.navigation||[]),key];
+    j.phase=nav.step==='open'?'page3':'content';set(j);
+    nav.element.click();
+    notice(nav.step==='open'?'تم تحديد بطاقة الصف الصحيحة. جارٍ فتح القائمة ثم الانتقال إلى الصفحة الثالثة…':'تم تحديد خطوة الصفحة الثالثة في بطاقة الصف. جارٍ الوصول إلى قسم المرفقات…');
+    await sleep(700);schedule();return;
+   }
+   if(j.phase==='content'){
+    let row=null;
+    for(let attempt=0;attempt<24&&!row;attempt++){row=attachmentRow();if(!row)await sleep(250);}
+    if(!row)throw Error('وصلت إلى بطاقة الصف، لكن لم يظهر صف «مرفقات المادة» وزر «إضافة» في الصفحة الثالثة. لم أضغط زرًا آخر ولم أرفع أي ملف.');
+    j.phase='form';set(j);row.add.click();await sleep(650);
+   }"""
+if old not in s:
+    raise SystemExit("Could not locate attachment card/page3 navigation block")
+s = s.replace(old, new, 1)
+
+# File selection happens before any page navigation. Keep the chosen files
+# in extension storage, then resume the already selected course/page workflow.
+old = """  const j={id:'a'+Date.now()+'-'+Math.random().toString(36).slice(2,8),at:Date.now(),teacherId:t,cid:String(c.cid),grade:Number(c.grade),label:c.label,subject:c.subject,unit:clean(opts.unit),lesson:clean(opts.lesson),lessonId:String(opts.lessonId),files:[],index:0,phase:initialPhase,navigation:[],savedContext:true};"""
+new = """  const j={id:'a'+Date.now()+'-'+Math.random().toString(36).slice(2,8),at:Date.now(),teacherId:t,cid:String(c.cid),grade:Number(c.grade),label:c.label,subject:c.subject,unit:clean(opts.unit),lesson:clean(opts.lesson),lessonId:String(opts.lessonId),files:[],index:0,targetPhase:initialPhase,phase:'awaiting_files',navigation:[],savedContext:true};"""
+if old not in s:
+    raise SystemExit("Could not locate attachment job initialization")
+s = s.replace(old, new, 1)
+old = """  if(initialPhase==='form')notice('تم التعرف على نموذج المرفقات المفتوح. اختر الملف الآن دون إعادة التنقل.');
+  else if(initialPhase==='section')notice('تم التعرف على قسم مرفقات المادة المفتوح. سأكمل من هنا.');
+  else if(initialPhase==='content')notice('تم التعرف على صفحة مرفقات المادة. سأفتح نموذج الإضافة مباشرة.');
+  else notice('تم حفظ الصف والوحدة والدرس. جارٍ الوصول إلى مرفقات المادة.');
+  if(initialPhase==='card'&&!isTeacherHome())location.assign(location.origin+'/teacher');else advance();"""
+new = """  notice('تم حفظ الصف والوحدة والدرس. اختر ملف المرفق أولًا؛ لن يبدأ التنقل قبل استلام الملف.');
+"""
+if old not in s:
+    raise SystemExit("Could not locate start() navigation tail")
+s = s.replace(old, new, 1)
+old = """  await browser.storage.local.set({[fileKey(j)]:{teacherId:j.teacherId,files:packed}});j.files=packed.map(x=>x.name);j.index=0;j.phase='form';set(j);const pick=document.getElementById('stnHubAttachFiles');if(pick)pick.textContent='📎 إضافة مرفقات';notice('تم استلام الملفات. جارٍ استكمال تعبئة نموذج مرفقات المادة.');advance();return {ok:true,count:packed.length};"""
+new = """  await browser.storage.local.set({[fileKey(j)]:{teacherId:j.teacherId,files:packed}});j.files=packed.map(x=>x.name);j.index=0;j.phase=j.targetPhase||'card';set(j);const pick=document.getElementById('stnHubAttachFiles');if(pick)pick.textContent='📎 إضافة مرفقات';notice('تم حفظ الملفات. جارٍ الآن فتح بطاقة الصف المحددة والوصول إلى مرفقاتها.');if(j.phase==='card'&&!isTeacherHome())location.assign(location.origin+'/teacher');else advance();return {ok:true,count:packed.length};"""
+if old not in s:
+    raise SystemExit("Could not locate attach() completion")
+s = s.replace(old, new, 1)
+p.write_text(s, encoding="utf-8")
+
+# The attachments workflow must reach the third card page first. Do not click
+# a generic content-management shortcut that may appear on another card page.
+p = base / "noor-attachment-publisher.js"
+s = p.read_text(encoding="utf-8")
+old = """nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^(?:اداره المحتوى|مرفقات(?:\\s+الماده)?|content management)$/i);"""
+new = """nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^__no_attachment_shortcut__$/i);"""
+if old not in s:
+    raise SystemExit("Could not locate attachment page-3 navigator call")
+s = s.replace(old, new, 1)
+p.write_text(s, encoding="utf-8")
+
+# Start the browser file picker immediately after the context has been verified;
+# the change handler stores the file before any route transition can happen.
+p = base / "noor-hub.js"
+s = p.read_text(encoding="utf-8")
+old = """actionStatus('بدأ فتح بطاقة الصف والصفحة الثالثة. سيظهر طلب اختيار الملف عند الوصول إلى نموذج المرفقات.');attachmentResume.hidden=false;"""
+new = """actionStatus('تم التحقق من الصف والدرس. اختر ملف المرفق الآن؛ سيبدأ فتح بطاقة الصف بعد استلام الملف.');attachmentResume.hidden=false;$('stnHubAttachmentFiles').click();"""
+if old not in s:
+    raise SystemExit("Could not locate attachment picker trigger")
+s = s.replace(old, new, 1)
+old = """if(job?.phase==='awaiting_files'){$('stnHubAttachmentFiles').click();return;}"""
+new = """if(job?.phase==='awaiting_files'){$('stnHubAttachmentFiles').click();return;}"""
+# Resume already opens the picker for an awaiting-files job.
+p.write_text(s, encoding="utf-8")
+
+# A form or content page is trusted only if its route CID equals the saved
+# selected class CID; a same-looking attachment section in another class is
+# never reused.
+old = """   if(j.phase==='form'){
+    if(!attachmentForm())throw Error('لم يظهر نموذج رفع مرفقات المادة بعد فتحه.');"""
+new = """   if(j.phase==='form'){
+    if(!selectedRoute(j.cid))throw Error('تغيّر معرّف الصف في صفحة المرفقات. أوقفت العملية لحماية الملفات من الرفع إلى صف آخر.');
+    if(!attachmentForm())throw Error('لم يظهر نموذج رفع مرفقات المادة بعد فتحه.');"""
+if old not in s:
+    raise SystemExit("Could not locate attachment form verification")
+s = s.replace(old, new, 1)
+
+p.write_text(s, encoding="utf-8")
+print("Applied shared class-card open-state detection and CID-guarded attachment navigation.")
+
+
+# Open the native file picker directly inside the user's click gesture. Only
+# after the file selection event do we resolve the Noor context and navigate.
+p = base / "noor-hub.js"
+h = p.read_text(encoding="utf-8")
+start = h.index("  $('stnHubAttachFiles').addEventListener('click'")
+end = h.index("\n  attachmentResume.addEventListener", start)
+h = h[:start] + """  $('stnHubAttachFiles').addEventListener('click',()=>{
+   const job=globalThis.NoorAttachmentPublisher?.inspect?.();
+   if(job&&job.phase!=='done'&&job.phase!=='awaiting_files'){
+    actionStatus('هناك عملية مرفقات قيد التنفيذ. استكمل العملية أو ألغها قبل بدء عملية جديدة.');return;
+   }
+   // Must happen synchronously in the trusted click event; browsers may block
+   // a file picker opened only after asynchronous Noor lookups.
+   $('stnHubAttachmentFiles').click();
+  });""" + h[end:]
+start = h.index("  $('stnHubAttachmentFiles').addEventListener('change'")
+end = h.index("\n", start)
+h = h[:start] + """  $('stnHubAttachmentFiles').addEventListener('change',async()=>{
+   const files=[...($('stnHubAttachmentFiles').files||[])];$('stnHubAttachmentFiles').value='';if(!files.length)return;
+   try{
+    const api=globalThis.NoorAttachmentPublisher;if(!api?.start||!api?.attach)throw Error('خدمة المرفقات غير محمّلة.');
+    let job=api.inspect?.();
+    if(!job||job.phase==='done'){
+     const opts=selected();
+     if(!opts.course||!opts.unitNo||!opts.lessonNo||!opts.proof?.lessonId)throw Error('اختر الصف والوحدة والدرس وتحقق من ظهورها في معاينة شجرة نور أولًا.');
+     const epoch=operationEpoch;busy=true;opts.service='attachments';
+     if(!opts.course?.verified||!/^[0-9]+$/.test(String(opts.course.cid||''))){
+      const cardOpts={...opts,service:'scorm'};await resolveScormCard(cardOpts,epoch);opts.course=cardOpts.course;
+     }
+     checkContext(opts,true);
+     const target=await resolveVerifiedLesson(opts,{required:true,refresh:true});
+     if(!target?.lessonId)throw Error('تعذر التحقق من معرّف الدرس الرسمي.');
+     await persistSelection({course:opts.course,proof:{...opts.proof,lessonId:target.lessonId}});
+     const started=await api.start({teacherId:classTeacherId,course:opts.course,unit:target.unit,lesson:target.title,lessonId:target.lessonId});
+     if(!started?.ok)throw Error('لم تُحفظ عملية المرفقات.');
+     job=api.inspect?.();
+    }
+    if(job?.phase!=='awaiting_files')throw Error('توجد عملية مرفقات أخرى قيد التنفيذ؛ لم أخلط الملفات معها.');
+    const result=await api.attach(files);if(!result?.ok)throw Error('لم يتم حفظ الملفات.');
+    actionStatus('تم حفظ '+result.count+' ملفًا قبل التنقل. جارٍ فتح بطاقة الصف المحددة والوصول إلى مرفقاتها.');
+    attachmentResume.hidden=false;syncAttachmentResume();
+   }catch(e){actionStatus('توقف تجهيز المرفقات: '+String(e.message||e));}
+   finally{busy=false;}
+  });""" + h[end:]
+p.write_text(h, encoding="utf-8")
+print("Moved native file selection ahead of all asynchronous Noor lookups and card navigation.")
