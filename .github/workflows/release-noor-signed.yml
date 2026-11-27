@@ -74,11 +74,11 @@ jobs:
               unzip -q "$base" -d extension
               rm -rf extension/META-INF
               python3 "$patch_file" extension
-              node -e 'const fs=require("fs"),p="extension/manifest.json",m=JSON.parse(fs.readFileSync(p));m.version="2.8.125";fs.writeFileSync(p,JSON.stringify(m,null,2)+"\n")'
-              archive="addons/incoming/Noor-Unified-v2.8.125-unsigned.xpi"
+              node -e 'const fs=require("fs"),p="extension/manifest.json",m=JSON.parse(fs.readFileSync(p));m.version="2.8.126";fs.writeFileSync(p,JSON.stringify(m,null,2)+"\n")'
+              archive="addons/incoming/Noor-Unified-v2.8.126-unsigned.xpi"
               (cd extension && zip -q -r "../$archive" . -x "README.md" "*.DS_Store")
               rm -f "$base"
-              echo "Built unsigned v2.8.125 from the exact published 2.8.120 package plus the shared class-card and CID-guarded attachment patch."
+              echo "Built unsigned v2.8.126 from the exact published 2.8.120 package plus the shared class-card and CID-guarded attachment patch."
             else
               echo "::error::Expected exactly one XPI, one Dropbox request JSON, or one attachment patch in this push."
               exit 1
