@@ -143,6 +143,55 @@ if old not in s:
     raise SystemExit("Could not locate attachment card/page3 navigation block")
 s = s.replace(old, new, 1)
 
+# File selection happens before any page navigation. Keep the chosen files
+# in extension storage, then resume the already selected course/page workflow.
+old = """  const j={id:'a'+Date.now()+'-'+Math.random().toString(36).slice(2,8),at:Date.now(),teacherId:t,cid:String(c.cid),grade:Number(c.grade),label:c.label,subject:c.subject,unit:clean(opts.unit),lesson:clean(opts.lesson),lessonId:String(opts.lessonId),files:[],index:0,phase:initialPhase,navigation:[],savedContext:true};"""
+new = """  const j={id:'a'+Date.now()+'-'+Math.random().toString(36).slice(2,8),at:Date.now(),teacherId:t,cid:String(c.cid),grade:Number(c.grade),label:c.label,subject:c.subject,unit:clean(opts.unit),lesson:clean(opts.lesson),lessonId:String(opts.lessonId),files:[],index:0,targetPhase:initialPhase,phase:'awaiting_files',navigation:[],savedContext:true};"""
+if old not in s:
+    raise SystemExit("Could not locate attachment job initialization")
+s = s.replace(old, new, 1)
+old = """  if(initialPhase==='form')notice('تم التعرف على نموذج المرفقات المفتوح. اختر الملف الآن دون إعادة التنقل.');
+  else if(initialPhase==='section')notice('تم التعرف على قسم مرفقات المادة المفتوح. سأكمل من هنا.');
+  else if(initialPhase==='content')notice('تم التعرف على صفحة مرفقات المادة. سأفتح نموذج الإضافة مباشرة.');
+  else notice('تم حفظ الصف والوحدة والدرس. جارٍ الوصول إلى مرفقات المادة.');
+  if(initialPhase==='card'&&!isTeacherHome())location.assign(location.origin+'/teacher');else advance();"""
+new = """  notice('تم حفظ الصف والوحدة والدرس. اختر ملف المرفق أولًا؛ لن يبدأ التنقل قبل استلام الملف.');
+"""
+if old not in s:
+    raise SystemExit("Could not locate start() navigation tail")
+s = s.replace(old, new, 1)
+old = """  await browser.storage.local.set({[fileKey(j)]:{teacherId:j.teacherId,files:packed}});j.files=packed.map(x=>x.name);j.index=0;j.phase='form';set(j);const pick=document.getElementById('stnHubAttachFiles');if(pick)pick.textContent='📎 إضافة مرفقات';notice('تم استلام الملفات. جارٍ استكمال تعبئة نموذج مرفقات المادة.');advance();return {ok:true,count:packed.length};"""
+new = """  await browser.storage.local.set({[fileKey(j)]:{teacherId:j.teacherId,files:packed}});j.files=packed.map(x=>x.name);j.index=0;j.phase=j.targetPhase||'card';set(j);const pick=document.getElementById('stnHubAttachFiles');if(pick)pick.textContent='📎 إضافة مرفقات';notice('تم حفظ الملفات. جارٍ الآن فتح بطاقة الصف المحددة والوصول إلى مرفقاتها.');if(j.phase==='card'&&!isTeacherHome())location.assign(location.origin+'/teacher');else advance();return {ok:true,count:packed.length};"""
+if old not in s:
+    raise SystemExit("Could not locate attach() completion")
+s = s.replace(old, new, 1)
+p.write_text(s, encoding="utf-8")
+
+# The attachments workflow must reach the third card page first. Do not click
+# a generic content-management shortcut that may appear on another card page.
+p = base / "noor-attachment-publisher.js"
+s = p.read_text(encoding="utf-8")
+old = """nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^(?:اداره المحتوى|مرفقات(?:\\s+الماده)?|content management)$/i);"""
+new = """nav=root.NoorClassCard?.next?.({label:j.label,cid:j.cid,grade:j.grade,subject:j.subject},3,/^__no_attachment_shortcut__$/i);"""
+if old not in s:
+    raise SystemExit("Could not locate attachment page-3 navigator call")
+s = s.replace(old, new, 1)
+p.write_text(s, encoding="utf-8")
+
+# Start the browser file picker immediately after the context has been verified;
+# the change handler stores the file before any route transition can happen.
+p = base / "noor-hub.js"
+s = p.read_text(encoding="utf-8")
+old = """actionStatus('بدأ فتح بطاقة الصف والصفحة الثالثة. سيظهر طلب اختيار الملف عند الوصول إلى نموذج المرفقات.');attachmentResume.hidden=false;"""
+new = """actionStatus('تم التحقق من الصف والدرس. اختر ملف المرفق الآن؛ سيبدأ فتح بطاقة الصف بعد استلام الملف.');attachmentResume.hidden=false;$('stnHubAttachmentFiles').click();"""
+if old not in s:
+    raise SystemExit("Could not locate attachment picker trigger")
+s = s.replace(old, new, 1)
+old = """if(job?.phase==='awaiting_files'){$('stnHubAttachmentFiles').click();return;}"""
+new = """if(job?.phase==='awaiting_files'){$('stnHubAttachmentFiles').click();return;}"""
+# Resume already opens the picker for an awaiting-files job.
+p.write_text(s, encoding="utf-8")
+
 # A form or content page is trusted only if its route CID equals the saved
 # selected class CID; a same-looking attachment section in another class is
 # never reused.
