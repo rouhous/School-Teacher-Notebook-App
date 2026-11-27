@@ -23,7 +23,15 @@ jobs:
           echo "=== source files ==="
           find ext -maxdepth 1 -type f -name '*.js' -printf '%f\n' | sort
           echo "=== map call sites in Noor runtime (excluding vendor) ==="
-          grep -nE '\\.map\\(' ext/noor-*.js | head -100 || true
+          grep -nF '.map(' ext/noor-*.js | head -100 || true
+          echo "=== FULL CLASS CARD ENGINE ==="
+          sed -n '1,180p' ext/noor-class-card.js
+          echo "=== COURSE CATALOG ROUTE DISCOVERY ==="
+          sed -n '1,330p' ext/noor-course-catalog.js
+          echo "=== HUB COURSE SELECTION AND NAVIGATION ==="
+          sed -n '520,700p' ext/noor-hub.js
+          echo "=== ATTACHMENT PUBLISHER FLOW ==="
+          sed -n '1,190p' ext/noor-attachment-publisher.js
           echo "=== class / CID / SCORM navigation call sites ==="
           grep -nEi 'openClass|openCard|resolveClass|classCard|courseId|course_id|CID|scorm|teacher/homeworks|location\\.(assign|href)' ext/noor-*.js | head -220 || true
           echo "=== attachment publisher class resolver ==="
