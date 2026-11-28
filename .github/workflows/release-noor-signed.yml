@@ -201,6 +201,8 @@ jobs:
           fi
           rm -f "$SIGN_LOG"
       - name: Import and verify Mozilla-approved XPI
+        env:
+          SIGNED_XPI_DIR: signed
         shell: bash
         run: |
           set -euo pipefail
