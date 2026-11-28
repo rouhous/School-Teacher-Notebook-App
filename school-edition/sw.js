@@ -1,29 +1,10 @@
 /* Offline shell only. Authorization remains in application/session layer. */
 const CACHE_PREFIX='school-notebook-shell-';
-const BUILD_FILES=['./sw.js','./school-notebook.html','./session-auth.js','./offline-pin.js','./passkey-auth.js','./manifest.webmanifest','../index.html'];
-const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./duty-roster-admin.html','./supervisor-timetables.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./firefox-addon-install.js','./session-auth.js','./offline-pin.js','./passkey-auth.js','../index.html','../assets/school-home-approved.png','../assets/school-home-reference-clean1.png','../assets/school-home-reference-clean2.png'];
-const REQUIRED=['./school-notebook.html','./session-auth.js','./offline-pin.js','../index.html'];
-const hex=bytes=>Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
-async function resolveCacheName(){
- try{
-  const parts=await Promise.all(BUILD_FILES.map(async path=>{
-   const response=await fetch(new URL(path,self.registration.scope),{cache:'no-store'});
-   if(!response.ok)throw Error('BUILD_RESOURCE_UNAVAILABLE:'+path);
-   const digest=await crypto.subtle.digest('SHA-256',await response.arrayBuffer());
-   return path+':'+hex(digest);
-  }));
-  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(parts.join('\n')));
-  return CACHE_PREFIX+hex(digest).slice(0,20);
- }catch(error){
-  const keys=await caches.keys();
-  const existing=keys.filter(key=>key.startsWith(CACHE_PREFIX));
-  if(existing.length)return existing[existing.length-1];
-  throw error;
- }
-}
-const CACHE_NAME_PROMISE=resolveCacheName();
+const CACHE_NAME='school-notebook-shell-20261128-fix-e';
+const ASSETS=['./teacher-home.html','./attendance.html','./founder-dashboard.html','./duty-roster-admin.html','./supervisor-timetables.html','./data-admin.html','./manifest.webmanifest','./app-icon.svg','./school-notebook.html','./update-banner.js','./firefox-addon-install.js','./session-auth.js','./offline-pin.js','./passkey-auth.js','../index.html','../assets/school-home-approved.png','../assets/school-home-reference-clean1.png','../assets/school-home-reference-clean2.png'];
+const REQUIRED=['./school-notebook.html','./update-banner.js','./session-auth.js','./offline-pin.js','../index.html'];
 async function cacheOfflineFiles(){
- const cache=await caches.open(await CACHE_NAME_PROMISE);
+ const cache=await caches.open(CACHE_NAME);
  await Promise.all(REQUIRED.map(path=>cache.add(new Request(path,{cache:'reload'}))));
  const additional=ASSETS.filter(path=>!REQUIRED.includes(path));
  const results=await Promise.allSettled(additional.map(path=>cache.add(new Request(path,{cache:'reload'}))));
@@ -38,7 +19,7 @@ self.addEventListener('message',event=>{
 });
 self.addEventListener('activate',event=>{
  event.waitUntil((async()=>{
-  const current=await CACHE_NAME_PROMISE;
+  const current=CACHE_NAME
   const keys=await caches.keys();
   await Promise.all(keys.filter(key=>key.startsWith(CACHE_PREFIX)&&key!==current).map(key=>caches.delete(key)));
   await self.clients.claim();
@@ -50,7 +31,7 @@ self.addEventListener('fetch',event=>{
  if(req.method!=='GET'||u.origin!==self.location.origin||!u.pathname.startsWith('/School-Teacher-Notebook-App/school-edition/'))return;
  if(req.mode==='navigate'){
   event.respondWith((async()=>{
-   const cache=await caches.open(await CACHE_NAME_PROMISE);
+   const cache=await caches.open(CACHE_NAME);
    try{
     const fresh=await fetch(req,{cache:'no-store'});
     if(fresh.ok)await cache.put(req,fresh.clone());
@@ -61,7 +42,7 @@ self.addEventListener('fetch',event=>{
  }
  if(/\.(?:js|css|html|svg|webmanifest|png|jpg|jpeg|webp)$/.test(u.pathname)){
   event.respondWith((async()=>{
-   const cache=await caches.open(await CACHE_NAME_PROMISE);
+   const cache=await caches.open(CACHE_NAME);
    try{
     const fresh=await fetch(req,{cache:'no-store'});
     if(fresh.ok)await cache.put(req,fresh.clone());
