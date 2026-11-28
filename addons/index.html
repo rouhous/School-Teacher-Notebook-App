@@ -103,7 +103,7 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:3
    const response=await fetch('./latest.json?refresh='+Date.now(),{cache:'no-store',credentials:'omit'});
    if(!response.ok)throw new Error('Legacy latest.json HTTP '+response.status);
    const latest=await response.json();
-   if(latest.id!==id||!/^\\d+\\.\\d+\\.\\d+$/.test(latest.version))throw new Error('Bad legacy release metadata');
+   if(latest.id!==id||!/^\d+\.\d+\.\d+$/.test(latest.version))throw new Error('Bad legacy release metadata');
    const filename='Noor-Unified-v'+latest.version+'-signed.xpi';
    const address=new URL(latest.download_url,location.href);
    if(address.origin!==location.origin||!address.pathname.endsWith('/addons/files/'+filename))throw new Error('Unexpected legacy download URL');
