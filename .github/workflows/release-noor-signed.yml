@@ -7,7 +7,6 @@ on:
       - "addons/incoming/dropbox-request-*.json"
       - "addons/incoming/*.patch"
       - "addons/incoming/noor-attachment-publisher-v2.8.127.js"
-      - ".github/workflows/release-noor-signed.yml"
   workflow_dispatch:
     inputs:
       xpi_path:
@@ -17,8 +16,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: noor-mozilla-sign-publish
@@ -147,9 +144,6 @@ jobs:
   sign_and_publish:
     needs: validate
     runs-on: ubuntu-22.04
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     env:
       RELEASE_VERSION: ${{ needs.validate.outputs.release_version }}
       ARCHIVE: ${{ needs.validate.outputs.archive }}
@@ -160,7 +154,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: true
+          persist-credentials: false
           fetch-depth: 0
       - name: Download exact unsigned XPI from validation job
         uses: actions/download-artifact@v4
@@ -171,12 +165,19 @@ jobs:
         with:
           node-version: "22"
       - name: Verify signing credentials and release branch
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           [[ "$GITHUB_REF" == "refs/heads/main" ]] || { echo "::error::Only main can publish Mozilla-signed releases"; exit 1; }
           [[ -n "$WEB_EXT_API_KEY" && -n "$WEB_EXT_API_SECRET" ]] || { echo "::error::Missing AMO_JWT_ISSUER or AMO_JWT_SECRET"; exit 1; }
-          node -e 'const f=require("./addons/updates.json");const x=f.addons["noor-prep-filler-private-2026@rouhous.github.io"].updates;if(x.some(e=>e.version===process.env.RELEASE_VERSION))throw Error("Version already published")'
+          node -e 'const f=require("./addons/updates.json");const x=f.addons["noor-prep-filler-private-2026@rouhous.github.io"].updates;if(x.some(e=>e.version===process.env.RELEASE_VERSION))throw Error("Version already published in the legacy feed")'
+          tag="noor-v${RELEASE_VERSION}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::GitHub Release $tag already exists; refusing to overwrite a published XPI."
+            exit 1
+          fi
       - name: Prepare exact XPI for Mozilla
         run: |
           set -euo pipefail
@@ -200,11 +201,13 @@ jobs:
           fi
           rm -f "$SIGN_LOG"
       - name: Import and verify Mozilla-approved XPI
+        env:
+          SIGNED_XPI_DIR: signed
         shell: bash
         run: |
           set -euo pipefail
-          dest="addons/files/Noor-Unified-v${RELEASE_VERSION}-signed.xpi"
-          mkdir -p addons/files
+          dest="signed/Noor-Unified-v${RELEASE_VERSION}-signed.xpi"
+          mkdir -p signed
           node .github/scripts/import-noor-amo-signed.mjs
           test -s "$dest"
           python3 - "$ARCHIVE" "$dest" <<'PY'
@@ -234,23 +237,15 @@ jobs:
           name: Noor-v${{ needs.validate.outputs.release_version }}-Mozilla-signed
           path: ${{ env.SIGNED_XPI }}
           retention-days: 30
-      - name: Publish signed XPI and update Firefox feed
+      - name: Publish signed XPI to GitHub Releases only
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          node .github/scripts/publish-noor-release.mjs "$RELEASE_VERSION" "$SIGNED_XPI"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$SIGNED_XPI" addons/updates.json addons/latest.json addons/index.html
-          git commit -m "Publish Mozilla-signed Noor Tools v$RELEASE_VERSION"
-          git push origin HEAD:main
-      - name: Deploy updated GitHub Pages
-        uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - name: Wait for Pages artifact indexing
-        run: sleep 20
-      - name: Deploy signed XPI and update feed
-        id: deployment
-        uses: actions/deploy-pages@v4
+          tag="noor-v${RELEASE_VERSION}"
+          gh release create "$tag" "$SIGNED_XPI" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Noor Unified Tools v${RELEASE_VERSION} (Mozilla signed)" \
+            --notes "Mozilla-approved signed Firefox XPI. Published as a GitHub Release asset; no signed XPI output, update-feed, or Pages artifact is committed or deployed by this workflow. The legacy updates.json feed remains unchanged until its separately approved migration."
