@@ -10,9 +10,10 @@ function send(status:number,data:unknown,origin=''){return new Response(JSON.str
 const b64 = (bytes:Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'');
 const fromB64 = (value:string) => Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-value.length%4)%4)),c=>c.charCodeAt(0));
 async function hmacKey(){
-  // Server-only key; never sent to the extension. The service role is used as
-  // derivation material if a dedicated signing secret has not been configured.
-  const secret = Deno.env.get('NOOR_ADDON_SIGNING_SECRET') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  // Dedicated server-only signing key; never sent to the extension.
+  // Fail closed when it is absent or too short. Never derive signing keys
+  // from Supabase credentials or any other fallback secret.
+  const secret = Deno.env.get('NOOR_ADDON_SIGNING_SECRET');
   if (!secret || secret.length < 30) throw Error('NOT_CONFIGURED');
   const material = await crypto.subtle.digest('SHA-256',enc.encode('noor-addon-token-v1:'+secret));
   return crypto.subtle.importKey('raw',material,{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);
