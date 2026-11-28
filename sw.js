@@ -1,5 +1,5 @@
 const VERSION='school-pwa-v28-managed-offline';
-const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png','./assets/school-home-approved.png','./school-edition/school-notebook.html','./school-edition/session-auth.js','./school-edition/offline-pin.js','./school-edition/passkey-auth.js','./school-edition/manifest.webmanifest'];
+const SHELL=['./','./index.html','./manifest.webmanifest','./assets/school-icon-192.png','./assets/school-icon-512.png','./assets/school-home-reference-clean1.png','./assets/school-home-reference-clean2.png','./assets/school-home-approved.png','./assets/home-approved.webp','./school-edition/school-notebook.html','./school-edition/session-auth.js','./school-edition/offline-pin.js','./school-edition/passkey-auth.js','./school-edition/manifest.webmanifest'];
 const REQUIRED=['./','./index.html','./school-edition/school-notebook.html','./school-edition/session-auth.js','./school-edition/offline-pin.js'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(VERSION).then(async cache=>{
@@ -32,7 +32,7 @@ self.addEventListener('fetch',event=>{
    })());
    return;
  }
- if(/\/assets\/school-home-(?:reference-clean[12]|approved)\.png$/.test(u.pathname)){
+ if(/\/assets\/school-home-(?:reference-clean[12]|approved)\.png$/.test(u.pathname)||u.pathname.endsWith('/assets/home-approved.webp')){
    event.respondWith((async()=>{
      const cache=await caches.open(VERSION);
      const local=await cache.match(u.pathname);
