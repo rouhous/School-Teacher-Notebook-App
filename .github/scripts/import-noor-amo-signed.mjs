@@ -51,7 +51,7 @@ if(xpi.length<15000||xpi.length>30000000)throw Error("Signed XPI has unexpected 
 if(xpi[0]!==0x50||xpi[1]!==0x4b)throw Error("Mozilla returned a non-ZIP file");
 const actual=createHash("sha256").update(xpi).digest("hex");
 if(actual!==expected)throw Error("Downloaded XPI SHA-256 does not match Mozilla");
-const filePath=resolve("addons/files/Noor-Unified-v"+VERSION+"-signed.xpi");
-await mkdir(resolve("addons/files"),{recursive:true});
+const filePath=resolve("signed/Noor-Unified-v"+VERSION+"-signed.xpi");
+await mkdir(resolve("signed"),{recursive:true});
 await writeFile(filePath,xpi);
 console.log("Verified and saved Mozilla-approved signed XPI version",VERSION,"bytes",xpi.length,"SHA-256",actual);

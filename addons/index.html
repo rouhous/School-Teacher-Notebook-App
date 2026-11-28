@@ -82,18 +82,40 @@ a:focus-visible,summary:focus-visible{outline:3px solid #d9a743;outline-offset:3
  // The verified path is restricted to the same GitHub Pages origin.
  (async()=>{
   const status=document.getElementById('release-status');
-  try{
+  const id='noor-prep-filler-private-2026@rouhous.github.io';
+  async function fromGitHubRelease(){
+   const response=await fetch('https://api.github.com/repos/rouhous/School-Teacher-Notebook-App/releases?per_page=100',{credentials:'omit',headers:{Accept:'application/vnd.github+json'}});
+   if(!response.ok)throw new Error('GitHub Releases HTTP '+response.status);
+   const releases=await response.json();
+   const release=(Array.isArray(releases)?releases:[]).find(item=>{
+    const match=/^noor-v(\d+\.\d+\.\d+)$/.exec(String(item.tag_name||''));
+    return Boolean(match&&!item.draft&&!item.prerelease&&(item.assets||[]).some(asset=>asset.name==='Noor-Unified-v'+match[1]+'-signed.xpi'&&asset.state==='uploaded'&&asset.browser_download_url));
+   });
+   if(!release)throw new Error('No published Noor XPI release found');
+   const match=/^noor-v(\d+\.\d+\.\d+)$/.exec(String(release.tag_name||''));
+   const version=match[1],filename='Noor-Unified-v'+version+'-signed.xpi';
+   const asset=release.assets.find(x=>x.name===filename&&x.state==='uploaded'&&x.browser_download_url);
+   const address=new URL(asset.browser_download_url);
+   if(address.origin!=='https://github.com'||!address.pathname.startsWith('/rouhous/School-Teacher-Notebook-App/releases/download/'+release.tag_name+'/'))throw new Error('Unexpected GitHub release asset URL');
+   return {version,filename,url:address.href,source:'GitHub Releases'};
+  }
+  async function fromLegacyFeed(){
    const response=await fetch('./latest.json?refresh='+Date.now(),{cache:'no-store',credentials:'omit'});
-   if(!response.ok)throw new Error('HTTP '+response.status);
+   if(!response.ok)throw new Error('Legacy latest.json HTTP '+response.status);
    const latest=await response.json();
-   if(latest.id!=='noor-prep-filler-private-2026@rouhous.github.io'||!/^\d+\.\d+\.\d+$/.test(latest.version))throw new Error('bad release metadata');
+   if(latest.id!==id||!/^\\d+\\.\\d+\\.\\d+$/.test(latest.version))throw new Error('Bad legacy release metadata');
    const filename='Noor-Unified-v'+latest.version+'-signed.xpi';
    const address=new URL(latest.download_url,location.href);
-   if(address.origin!==location.origin||!address.pathname.endsWith('/addons/files/'+filename))throw new Error('unexpected release address');
-   link.href='./files/'+filename+'?v='+encodeURIComponent(latest.version);
+   if(address.origin!==location.origin||!address.pathname.endsWith('/addons/files/'+filename))throw new Error('Unexpected legacy download URL');
+   return {version:latest.version,filename,url:'./files/'+filename+'?v='+encodeURIComponent(latest.version),source:'legacy Pages'};
+  }
+  try{
+   let latest;
+   try{latest=await fromGitHubRelease()}catch(_){latest=await fromLegacyFeed()}
+   link.href=latest.url;
    link.textContent='تنزيل إضافة Firefox — '+latest.version;
-   status.textContent='الإصدار الحالي: '+latest.version;
-   if(android)link.setAttribute('download',filename);
+   status.textContent='الإصدار الحالي: '+latest.version+' · '+latest.source;
+   if(android)link.setAttribute('download',latest.filename);
   }catch(_){
    status.textContent='تعذّر التحقق من أحدث إصدار. أعد تحميل الصفحة لاحقًا.';
   }
